@@ -1,0 +1,3 @@
+import LeanCondensed.Discrete.Colimit
+import LeanCondensed.Discrete.IsDiscrete
+import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
