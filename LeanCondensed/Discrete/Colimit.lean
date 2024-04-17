@@ -32,7 +32,7 @@ example : functorOp c ⋙ CostructuredArrow.proj toProfinite.op ⟨c.pt⟩ ≅ F
 
 variable (hc : IsLimit c)
 
-lemma _root_.Profinite.exists_hom {X : FintypeCat} (f : c.pt ⟶ toProfinite.obj X) :
+lemma _root_.Profinite.exists_hom' {X : FintypeCat} (f : c.pt ⟶ toProfinite.obj X) :
     ∃ (i : I) (g : F.obj i ⟶ X), f = c.π.app i ≫ toProfinite.map g := by
   have : DiscreteTopology (toProfinite.obj X) := by
     dsimp only [toProfinite, Profinite.of]
@@ -48,7 +48,7 @@ theorem functor_initial [∀ i, Epi (c.π.app i)] : Initial (functor c) := by
   rw [initial_iff_of_isCofiltered (F := functor c)]
   constructor
   · intro ⟨_, X, (f : c.pt ⟶ _)⟩
-    obtain ⟨i, g, h⟩ := Profinite.exists_hom c hc f
+    obtain ⟨i, g, h⟩ := Profinite.exists_hom' c hc f
     refine ⟨i, ⟨homMk g h.symm⟩⟩
   · intro ⟨_, X, (f : c.pt ⟶ _)⟩ i ⟨_, (s : F.obj i ⟶ X), (w : f = c.π.app i ≫ _)⟩
       ⟨_, (s' : F.obj i ⟶ X), (w' : f = c.π.app i ≫ _)⟩
