@@ -22,7 +22,7 @@ We define the functor `topCatToLightCondensed : TopCat.{u} ⥤ CondensedSet.{u}`
 
 universe w w' v u
 
-open CategoryTheory Opposite Limits regularTopology ContinuousMap
+open CategoryTheory Opposite Limits regularTopology ContinuousMap LeanCondensed
 
 /--
 Associate to a `u`-small topological space the corresponding light condensed set, given by

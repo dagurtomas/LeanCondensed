@@ -183,10 +183,10 @@ variable (M L : ℕᵒᵖ ⥤ LightProfinite) (i : (n : ℕ) → L.obj ⟨n⟩ �
     (map : (n m : ℕ) → (L.obj ⟨n+1⟩).diagram.obj ⟨m⟩ ⟶ (L.obj ⟨n⟩).diagram.obj ⟨m⟩)
     [h : IsLevelRepresentationDiagram M L i map]
 
-def extracted_1 (n : ℕ) : of (limitFunctor M L i map) ⟶ L.obj { unop := n } := sorry
+def limitFunctorProj (n : ℕ) : of (limitFunctor M L i map) ⟶ L.obj { unop := n } := sorry
 
 def limitCone' : Cone L :=
-  L.nat_op_cone_mk (of <| limitFunctor M L i map) (fun n ↦ extracted_1 _ _ _ _ n) sorry
+  L.nat_op_cone_mk (of <| limitFunctor M L i map) (fun n ↦ limitFunctorProj _ _ _ _ n) sorry
 
 def limitCone : Cone L where
   pt := of <| limitFunctor M L i map

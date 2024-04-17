@@ -33,6 +33,8 @@ open CategoryTheory Opposite Limits regularTopology ContinuousMap
 variable {C : Type*} [Category C] (G : C ⥤ TopCat)
   (X : Type*) [TopologicalSpace X]
 
+namespace LeanCondensed
+
 /--
 An auxiliary lemma to that allows us to use `QuotientMap.lift` in the proof of
 `equalizerCondition_yonedaPresheaf`.
@@ -121,5 +123,5 @@ noncomputable def TopCat.toCondensed (X : TopCat.{u+1}) : CondensedSet.{u} :=
 `TopCat.toCondensed` yields a functor from `TopCat.{u+1}` to `CondensedSet.{u}`.
 -/
 noncomputable def topCatToCondensed : TopCat.{u+1} ⥤ CondensedSet.{u} where
-  obj X := X.toCondensed
+  obj X := TopCat.toCondensed X
   map f := ⟨⟨fun _ g ↦ f.comp g, by aesop⟩⟩
