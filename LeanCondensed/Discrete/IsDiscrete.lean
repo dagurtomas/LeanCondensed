@@ -76,9 +76,12 @@ noncomputable def isColimitLocallyConstantPresheaf (X' : Type (u+1)) (S : Profin
 theorem isDiscrete_of_isColimit_mapCone (h : ∀ S : Profinite.{u},
     IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op) :
     IsDiscrete X := by
-  sorry
-  -- Suffices to give an iso `X ≅ lanCondensedSet X(*)`.
-  --
+  let e : CondensedSet.{u} ≌ Sheaf (coherentTopology Profinite) _ :=
+    (ProfiniteCompHaus.equivalence (Type (u + 1))).symm
+  let i : (e.functor.obj X).val ≅ (e.functor.obj (LocallyConstant.functor.obj _)).val :=
+    isoDiscrete _ h
+  rw [isDiscrete_iff_nonempty_iso_LC]
+  exact ⟨_, ⟨e.functor.preimageIso ((sheafToPresheaf _ _).preimageIso i)⟩⟩
 
 noncomputable def isColimitMapConeOfIsDiscrete [IsDiscrete X] (S : Profinite.{u}) :
     IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op :=
