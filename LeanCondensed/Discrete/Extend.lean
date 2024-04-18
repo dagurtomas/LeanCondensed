@@ -98,6 +98,7 @@ section Colimit
 
 variable {C : Type*} [Category C] (G : Profiniteᵒᵖ ⥤ C)
 
+@[simps]
 def cocone (S : Profinite) :
     Cocone (CostructuredArrow.proj toProfinite.op ⟨S⟩ ⋙ toProfinite.op ⋙ G) where
   pt := G.obj ⟨S⟩
@@ -139,58 +140,3 @@ noncomputable def asLimit' : IsLimit S.asLimitCone' := isLimitCone _ (𝟭 _) S.
 noncomputable def lim' : LimitCone S.diagram' := ⟨S.asLimitCone', S.asLimit'⟩
 
 end ProfiniteAsLimit
-
-section LocallyConstantAsColimit
-
-variable (X : Type*)
-
-@[simps]
-def locallyConstantPresheaf : Profiniteᵒᵖ ⥤ Type _ where
-  obj S := LocallyConstant S.unop X
-  map f g := g.comap f.unop
-
-noncomputable def isColimitLocallyConstantPresheaf (hc : IsLimit c) [∀ i, Epi (c.π.app i)] :
-    IsColimit <| (locallyConstantPresheaf X).mapCocone c.op := by
-  refine Types.FilteredColimit.isColimitOf _ _ ?_ ?_
-  · intro (f : LocallyConstant c.pt X)
-    obtain ⟨j, h⟩ := Profinite.exists_locallyConstant.{_, u} c hc f
-    exact ⟨⟨j⟩, h⟩
-  · intro ⟨i⟩ ⟨j⟩ (fi : LocallyConstant _ _) (fj : LocallyConstant _ _)
-      (h : fi.comap (c.π.app i) = fj.comap (c.π.app j))
-    obtain ⟨k, ki, kj, _⟩ := IsCofilteredOrEmpty.cone_objs i j
-    refine ⟨⟨k⟩, ki.op, kj.op, ?_⟩
-    dsimp only [comp_obj, op_obj, locallyConstantPresheaf_obj, Opposite.unop_op,
-      toProfinite_obj_toCompHaus_toTop_α, Functor.comp_map, op_map, Quiver.Hom.unop_op,
-      locallyConstantPresheaf_map]
-    apply DFunLike.ext
-    intro x'
-    obtain ⟨x, hx⟩ := ((epi_iff_surjective (c.π.app k)).mp inferInstance) x'
-    rw [← hx]
-    change fi ((c.π.app k ≫ (F ⋙ toProfinite).map _) x) =
-      fj ((c.π.app k ≫ (F ⋙ toProfinite).map _) x)
-    have h := LocallyConstant.congr_fun h x
-    rwa [c.w, c.w]
-
-variable (S : Profinite)
-
-noncomputable def isColimitLocallyConstantPresheafDiagram :
-    IsColimit <| (locallyConstantPresheaf X).mapCocone S.asLimitCone.op :=
-  isColimitLocallyConstantPresheaf _ _ S.asLimit
-
-noncomputable def isColimitCocone' {C : Type*} [Category C] (G : Profiniteᵒᵖ ⥤ C) (S : Profinite)
-    (hc' : IsColimit <| G.mapCocone S.asLimitCone.op) : IsColimit (cocone G S) :=
-  isColimitCocone _ _ S.asLimit hc'
-
-noncomputable def isColimitLocallyConstantPresheafDiagram' :
-    IsColimit (cocone (locallyConstantPresheaf X) S) :=
-  isColimitCocone' (locallyConstantPresheaf X) S (isColimitLocallyConstantPresheafDiagram X S)
-
-example : (diagram' S).op ⋙ locallyConstantPresheaf X =
-    StructuredArrow.toCostructuredArrow _ _ ⋙  CostructuredArrow.proj toProfinite.op ⟨S⟩ ⋙
-      toProfinite.op ⋙ locallyConstantPresheaf X :=
-  rfl
-
-example : (cocone (locallyConstantPresheaf X) S).whisker (StructuredArrow.toCostructuredArrow _ _)
-    = (locallyConstantPresheaf X).mapCocone S.asLimitCone'.op := rfl
-
-end LocallyConstantAsColimit
