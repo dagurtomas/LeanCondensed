@@ -73,6 +73,12 @@ noncomputable def isColimitLocallyConstantPresheaf (X' : Type (u+1)) (S : Profin
     have h := LocallyConstant.congr_fun h x
     rwa [S.asLimitCone.w, S.asLimitCone.w]
 
+-- TODO: add to `Condensed/Explicit` 
+noncomputable instance (Y : Sheaf (coherentTopology Profinite.{u}) (Type (u+1))) :
+    PreservesFiniteProducts Y.val :=
+    Profinite.isSheaf_iff_preservesFiniteProducts_and_equalizerCondition' (𝟭 _) Y.val |>.mp
+      Y.cond |>.1.some
+
 theorem isDiscrete_of_isColimit_mapCone (h : ∀ S : Profinite.{u},
     IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op) :
     IsDiscrete X := by

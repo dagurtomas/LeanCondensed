@@ -149,7 +149,7 @@ def lanCondensedSet (X : Type (u+1)) : CondensedSet.{u} :=
   (ProfiniteCompHaus.equivalence _).functor.obj (lanCondensedSet' X)
 
 variable (F : Profinite.{u}ᵒᵖ ⥤ Type (u+1))
-  [PreservesFiniteProducts F]
+  [p : PreservesFiniteProducts F]
 
 open Opposite
 
@@ -183,23 +183,42 @@ def fintypeCatAsCofan (X : FintypeCat) :
     Cofan (fun (_ : X) ↦ toProfinite.obj (of (PUnit.{u+1}))) :=
   Cofan.mk (toProfinite.obj X) (fun x ↦ toProfinite.map (mapOfElement x))
 
-def isoCoproduct' {X : FintypeCat} : toProfinite.obj X ≅
-    ∐ (fun (x : X) ↦ toProfinite.obj (of (PUnit.{u+1}))) := by
-  sorry
+def fintypeCatAsCofanIsColimit (X : FintypeCat.{u}) :
+    IsColimit (fintypeCatAsCofan X) := by
+  refine mkCofanColimit _ (fun t ↦ ⟨fun x ↦ t.inj x PUnit.unit, continuous_bot⟩) (by aesop) ?_
+  intro t m h
+  ext x
+  change m x = t.inj x _
+  rw [← h x]
+  rfl
 
-def isoCoproduct {X : FintypeCat} : toProfinite.op.obj ⟨X⟩ ≅
-    ∏ (fun (x : X) ↦ toProfinite.op.obj ⟨of (PUnit.{u+1})⟩) := by
-  dsimp only [op_obj]
-  sorry
+def fintypeCatAsCofanOpIsLimit (X : FintypeCat.{u}) : IsLimit (fintypeCatAsCofan X).op :=
+  Cofan.IsColimit.op (fintypeCatAsCofanIsColimit X)
 
+noncomputable instance (X : FintypeCat.{u}) : PreservesLimitsOfShape (Discrete X) F :=
+  let X' := (Countable.toSmall X).equiv_small.choose
+  let e : X ≃ X' := (Countable.toSmall X).equiv_small.choose_spec.some
+  have : Fintype X' := Fintype.ofEquiv X e
+  preservesLimitsOfShapeOfEquiv (Discrete.equivalence e.symm) F
+
+@[simps!]
 def finYonedaIso'_components (X : FintypeCat) :
-    F.obj (toProfinite.op.obj ⟨X⟩) ≅ (X → F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩)) where
-  hom f x := (toProfinite.op ⋙ F).map (mapOfElement x).op f
-  inv f := sorry
-  hom_inv_id := sorry
-  inv_hom_id := sorry
+    F.obj ((toProfinite.op.obj ⟨X⟩)) ≅ (X → F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩)) :=
+  (isLimitFanMkObjOfIsLimit F _ _ (fintypeCatAsCofanOpIsLimit X)).conePointUniqueUpToIso
+    (Types.productLimitCone.{u, u+1} fun _ ↦ F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩)).2
 
-def finYonedaIso' : toProfinite.op ⋙ F ≅ finYoneda F := sorry
+def finYonedaIso' : toProfinite.op ⋙ F ≅ finYoneda F := by
+  refine NatIso.ofComponents (fun X ↦ finYonedaIso'_components F X.unop) ?_
+  intro X Y f
+  ext
+  simp only [finYoneda_obj, op_obj, comp_obj, Functor.comp_map, op_map, types_comp_apply,
+    finYonedaIso'_components_hom]
+  ext
+  simp only [finYoneda_map, op_obj, Function.comp_apply]
+  simp only [Types.productLimitCone, const_obj_obj, fintypeCatAsCofan, Cofan.mk_pt, cofan_mk_inj,
+    Fan.mk_pt, Fan.mk_π_app]
+  rw [← FunctorToTypes.map_comp_apply]
+  congr
 
 def isoCompToProfinite : toProfinite.op ⋙ F ≅ toProfinite.op ⋙ profiniteToCompHaus.op ⋙
     functorToPresheaves.obj (F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩)) :=
@@ -214,55 +233,3 @@ def isoDiscrete (hF : ∀ S : Profinite, IsColimit <| F.mapCocone S.asLimitCone.
     functorToPresheaves.obj (F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩)) :=
   isoLanDiscrete F hF ≪≫
     lanPresheaf_iso_functorToPresheaves' (F.obj (toProfinite.op.obj ⟨of PUnit.{u+1}⟩))
-
-#exit
-
-section SigmaComparison
-
-open CompHaus
-
-variable (X : CondensedSet.{u}) {α : Type u} [Finite α] (σ : α → Type u)
-  [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
-
-/--
-The comparison map from the value of a condensed set on a finite coproduct to the product of the
-values on the components.
--/
-def sigmaComparison : X.val.obj ⟨(of ((a : α) × σ a))⟩ ⟶ ((a : α) → X.val.obj ⟨of (σ a)⟩) :=
-  fun x a ↦ X.val.map ⟨Sigma.mk a, continuous_sigmaMk⟩ x
-
-noncomputable instance : PreservesLimitsOfShape (Discrete α) X.val :=
-  let α' := (Countable.toSmall α).equiv_small.choose
-  let e : α ≃ α' := (Countable.toSmall α).equiv_small.choose_spec.some
-  have : Fintype α := Fintype.ofFinite _
-  have : Fintype α' := Fintype.ofEquiv α e
-  preservesLimitsOfShapeOfEquiv (Discrete.equivalence e.symm) X.val
-
-theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
-    (X.val.mapIso (opCoproductIsoProduct' (finiteCoproduct.isColimit.{u, u} fun a ↦ of (σ a))
-      (productIsProduct fun x ↦ Opposite.op (of (σ x))))).hom ≫
-    (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
-    (Types.productIso.{u, u + 1} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
-  ext x a
-  simp only [finiteCoproduct.cocone_pt, Fan.mk_pt, Functor.mapIso_hom,
-    PreservesProduct.iso_hom, types_comp_apply, Types.productIso_hom_comp_eval_apply]
-  have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
-  simp only [types_comp_apply] at this
-  rw [this, ← FunctorToTypes.map_comp_apply]
-  simp only [sigmaComparison]
-  apply congrFun
-  congr 2
-  erw [← opCoproductIsoProduct_inv_comp_ι]
-  simp only [coe_of, Opposite.unop_op, unop_comp, Quiver.Hom.unop_op, Category.assoc]
-  change finiteCoproduct.ι.{u, u} (fun a ↦ of (σ a)) _ = _
-  rw [← Sigma.ι_comp_toFiniteCoproduct]
-  congr
-  simp only [opCoproductIsoProduct, ← unop_comp, coproductIsoCoproduct,
-    opCoproductIsoProduct'_comp_self]
-  rfl
-
-instance : IsIso <| sigmaComparison X σ := by
-  rw [sigmaComparison_eq_comp_isos]
-  infer_instance
-
-end SigmaComparison
