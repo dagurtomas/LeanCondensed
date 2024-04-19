@@ -93,3 +93,17 @@ noncomputable def isColimitMapConeOfIsDiscrete [IsDiscrete X] (S : Profinite.{u}
     IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op :=
   IsColimit.mapCoconeEquiv (isoWhiskerLeft profiniteToCompHaus.op (isoSetOfDiscrete'_val X).symm)
     (isColimitLocallyConstantPresheaf (SetOfDiscrete X) S)
+
+theorem isIsoCounit_of_isColimit_mapCone (h : ∀ S : Profinite.{u},
+    IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op) :
+    IsIso (LocallyConstant.adjunction.counit.app X) := by
+  let e : CondensedSet.{u} ≌ Sheaf (coherentTopology Profinite) _ :=
+    (ProfiniteCompHaus.equivalence (Type (u + 1))).symm
+  let i : (e.functor.obj X).val ≅ (e.functor.obj (LocallyConstant.functor.obj _)).val :=
+    isoDiscrete _ h
+  let j := e.functor.preimageIso ((sheafToPresheaf _ _).preimageIso i)
+  sorry
+  -- have : IsIso j.inv := inferInstance
+  -- convert this
+  -- simp [j]
+    -- IsIso (discrete_underlying_adj (Type (u+1))).counit := sorry

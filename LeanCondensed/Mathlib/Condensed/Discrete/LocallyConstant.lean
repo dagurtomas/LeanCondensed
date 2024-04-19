@@ -269,7 +269,7 @@ The hard part of this adjunction is to define the counit. See `counitAppApp` for
 -/
 
 variable {S T : CompHaus.{u}} (g : T ⟶ S) {Y : CondensedSet.{u}}
-  (f : LocallyConstant S (Y.val.obj (op (⊤_ _))))
+  (f : LocallyConstant S (Y.val.obj (op (CompHaus.of PUnit.{u+1}))))
 
 lemma sigmaComparison_comp_sigmaIso' (X : CondensedSet.{u}) (a : α f):
     (X.val.mapIso (sigmaIso f).op).hom ≫ sigmaComparison X (σ f) ≫ (fun g ↦ g a) =
@@ -285,7 +285,7 @@ lemma sigmaComparison_comp_sigmaIso (a : α f):
 
 /-- The projection of the counit. -/
 noncomputable def counitAppAppImage : (a : α f) → Y.val.obj ⟨CompHaus.of <| a.val⟩ :=
-  fun a ↦ Y.val.map (terminal.from _).op a.image
+  fun a ↦ Y.val.map (IsTerminal.from CompHaus.isTerminalPUnit _).op a.image
 
 /--
 The counit is defined as follows: given a locally constant map `f : S → Y(*)`, let
@@ -295,7 +295,7 @@ the value of `f` on `Sᵢ`. Our desired element is the image of `yᵢ` under the
 `Y(*) → Y(Sᵢ)`.
 -/
 noncomputable def counitAppApp (S : CompHaus.{u}) (Y : CondensedSet.{u}) :
-    LocallyConstant S (Y.val.obj (op (⊤_ _))) ⟶ Y.val.obj ⟨S⟩ :=
+    LocallyConstant S (Y.val.obj (op (CompHaus.of PUnit.{u+1}))) ⟶ Y.val.obj ⟨S⟩ :=
   fun f ↦ ((inv (sigmaComparison Y (σ f))) ≫ (Y.val.mapIso (sigmaIso f).op).inv)
     (counitAppAppImage f)
 
@@ -329,14 +329,14 @@ def component_hom (a : α (f.comap g)) :
     ⟩
   continuous_toFun := Continuous.subtype_mk (Continuous.comp g.continuous continuous_subtype_val) _
 
-lemma incl_comap {S T : CompHausᵒᵖ} (f : LocallyConstant S.unop (Y.val.obj (op (⊤_ _))))
+lemma incl_comap {S T : CompHausᵒᵖ} (f : LocallyConstant S.unop (Y.val.obj (op (CompHaus.of PUnit.{u+1}))))
     (g : S ⟶ T) (a : α (f.comap g.unop)) : g ≫ (sigmaIncl (f.comap g.unop) a).op =
     (sigmaIncl f _).op ≫ (component_hom g.unop f a).op := by
   rfl
 
 /-- The counit is natural in the compact Hausdorff space `S` -/
 @[simps!]
-noncomputable def counitApp (Y : CondensedSet.{u}) : functor.obj (Y.val.obj (op (⊤_ _))) ⟶ Y where
+noncomputable def counitApp (Y : CondensedSet.{u}) : functor.obj (Y.val.obj (op (CompHaus.of PUnit.{u+1}))) ⟶ Y where
   val := {
     app := fun ⟨S⟩ ↦ counitAppApp S Y
     naturality := by
@@ -350,20 +350,20 @@ noncomputable def counitApp (Y : CondensedSet.{u}) : functor.obj (Y.val.obj (op 
       simp only [op_unop, FunctorToTypes.map_comp_apply]
       rw [incl_of_counitAppApp]
       simp only [counitAppAppImage, ← FunctorToTypes.map_comp_apply, ← op_comp,
-        terminal.comp_from, α.image_eq_image_mk]
+        IsTerminal.comp_from, α.image_eq_image_mk]
   }
 
 theorem hom_apply_counitAppApp {X : CondensedSet.{u}} (g : Y ⟶ X)
-    (a : α (f.map (g.val.app (op (⊤_ CompHaus))))) :
-    X.val.map (sigmaIncl (map (g.val.app (op (⊤_ CompHaus))) f) a).op
+    (a : α (f.map (g.val.app (op (CompHaus.of PUnit.{u+1}))))) :
+    X.val.map (sigmaIncl (map (g.val.app (op (CompHaus.of PUnit.{u+1}))) f) a).op
       (g.val.app ⟨S⟩ (counitAppApp S Y f)) =
-        counitAppAppImage (map (g.val.app (op (⊤_ CompHaus))) f) a := by
+        counitAppAppImage (map (g.val.app (op (CompHaus.of PUnit.{u+1}))) f) a := by
   apply locallyConstantCondensed_ext (f.comap (sigmaIncl _ _))
   intro b
   simp only [← FunctorToTypes.map_comp_apply, ← op_comp]
   simp only [counitAppAppImage]
   simp only [← FunctorToTypes.map_comp_apply, ← op_comp]
-  simp only [CompHaus.coe_of, map_apply, terminal.comp_from]
+  simp only [CompHaus.coe_of, map_apply, IsTerminal.comp_from]
   rw [← α.map_preimage_eq_image_map]
   change (_ ≫ X.val.map _) _ = (_ ≫ X.val.map _) _
   simp only [← g.val.naturality]
@@ -371,7 +371,7 @@ theorem hom_apply_counitAppApp {X : CondensedSet.{u}} (g : Y ⟶ X)
   simp only [coe_comap, map_apply, CompHaus.coe_of, op_comp, Functor.map_comp, types_comp_apply]
   rw [incl_of_counitAppApp]
   simp only [counitAppAppImage, ← FunctorToTypes.map_comp_apply, ← op_comp,
-    terminal.comp_from]
+    IsTerminal.comp_from]
   erw [α.mk_image]
   change (Y.val.map _ ≫ _) _ = (Y.val.map _ ≫ _) _
   simp only [g.val.naturality]
@@ -383,9 +383,28 @@ theorem hom_apply_counitAppApp {X : CondensedSet.{u}} (g : Y ⟶ X)
   erw [← α.mem_iff_eq_image (f := g.val.app _ ∘ f)]
   exact (b.preimage).prop
 
+-- TODO: change the following two defs in mathlib
+/--
+The underlying object of a condensed object in `C` is the condensed object evaluated at a point.
+This can be viewed as a sort of forgetful functor from `Condensed C` to `C`
+-/
+@[simps!]
+noncomputable def _root_.Condensed.underlying'
+    (C : Type w) [Category.{u+1} C] [HasWeakSheafify (coherentTopology CompHaus) C] :
+    Condensed.{u} C ⥤ C := (sheafSections _ _).obj (op (CompHaus.of PUnit.{u+1}))
+
+/--
+Discreteness is left adjoint to the forgetful functor. When `C` is `Type*`, this is analogous to
+`TopCat.adj₁ : TopCat.discrete ⊣ forget TopCat`.  
+-/
+noncomputable def _root_.Condensed.discrete_underlying_adj'
+    (C : Type w) [Category.{u+1} C] [HasWeakSheafify (coherentTopology CompHaus) C] :
+    discrete C ⊣ underlying' C :=
+  constantSheafAdj _ _ CompHaus.isTerminalPUnit
+
 /-- The counit is natural in both the compact Hausdorff space `S` and the condensed set `Y` -/
 @[simps]
-noncomputable def counit : underlying (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
+noncomputable def counit : underlying' (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
   app := counitApp
   naturality X Y g := by
     apply Sheaf.hom_ext
@@ -395,7 +414,7 @@ noncomputable def counit : underlying (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
     rw [Sheaf.instCategorySheaf_comp_val, Sheaf.instCategorySheaf_comp_val]
     ext S (f : LocallyConstant _ _)
     simp only [FunctorToTypes.comp, counitApp_val_app]
-    apply locallyConstantCondensed_ext (f.map (g.val.app (op (⊤_ _))))
+    apply locallyConstantCondensed_ext (f.map (g.val.app (op (CompHaus.of PUnit.{u+1}))))
     intro a
     simp only [map_apply, op_unop]
     erw [incl_of_counitAppApp]
@@ -405,7 +424,7 @@ noncomputable def counit : underlying (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
 The unit of the adjunciton is given by mapping each element to the corresponding constant map.
 -/
 @[simps]
-def unit : 𝟭 _ ⟶ functor ⋙ underlying _ where
+def unit : 𝟭 _ ⟶ functor ⋙ underlying' _ where
   app X x := LocallyConstant.const _ x
 
 theorem locallyConstantAdjunction_left_triangle (X : Type (u + 1)) :
@@ -425,28 +444,15 @@ theorem locallyConstantAdjunction_left_triangle (X : Type (u + 1)) :
   rfl
 
 /-- The unit of the adjunction is an iso. -/
-noncomputable def unitIso : 𝟭 (Type (u+1)) ≅ functor ⋙ underlying _ where
+noncomputable def unitIso : 𝟭 (Type (u+1)) ≅ functor ⋙ underlying' _ where
   hom := unit
-  inv := { app := fun X f ↦ f.toFun (CompHaus.terminalIsoPUnit.inv PUnit.unit) }
-  inv_hom_id := by
-    ext
-    simp only [Functor.comp_obj, underlying_obj, functor_obj_val, functorToPresheaves_obj_obj,
-      FunctorToTypes.comp, toFun_eq_coe, unit_app, const, NatTrans.id_app, types_id_apply]
-    apply DFunLike.ext
-    intro _
-    simp only [coe_mk, Function.const_apply]
-    congr
-    apply_fun CompHaus.terminalIsoPUnit.hom
-    · rfl
-    · intro _ _ h
-      convert congrArg CompHaus.terminalIsoPUnit.inv h
-      all_goals simp
+  inv := { app := fun X f ↦ f.toFun PUnit.unit }
 
 /--
 `Condensed.LocallyConstant.functor` is left adjoint to the forgetful functor.
 -/
 @[simps! unit_app_apply counit_app_val_app]
-noncomputable def adjunction : functor ⊣ underlying _ :=
+noncomputable def adjunction : functor ⊣ underlying' _ :=
   Adjunction.mkOfUnitCounit {
     unit := unit
     counit := counit
@@ -466,13 +472,12 @@ noncomputable def adjunction : functor ⊣ underlying _ :=
       apply locallyConstantCondensed_ext (unit.app _ x)
       intro a
       erw [incl_of_counitAppApp]
-      simp only [unit, Functor.id_obj, coe_const, counitAppAppImage]
-      let y : ⊤_ CompHaus := CompHaus.terminalIsoPUnit.inv PUnit.unit
-      have := α.map_eq_image _ a ⟨y, by simp [α.mem_iff_eq_image, ← α.map_preimage_eq_image, unit]⟩
+      simp only [CompHaus.coe_of, unit, Functor.id_obj, coe_const, counitAppAppImage]
+      have := α.map_eq_image _ a ⟨PUnit.unit, by
+        simp [α.mem_iff_eq_image (a := a), ← α.map_preimage_eq_image]⟩
       erw [← this]
       simp only [unit, Functor.id_obj, coe_const, Function.const_apply]
-      have hh : sigmaIncl (const _ x) a = terminal.from _ := Unique.uniq _ _
-      rw [hh] }
+      congr }
 
 instance : IsIso adjunction.unit := (inferInstance : IsIso unitIso.hom)
 
@@ -483,7 +488,7 @@ end Adjunction
 adjoints).
 -/
 noncomputable def iso : functor ≅ discrete _ :=
-  adjunction.leftAdjointUniq (discrete_underlying_adj _)
+  adjunction.leftAdjointUniq (discrete_underlying_adj' _)
 
 instance : functor.Faithful := L_faithful_of_unit_isIso adjunction
 
