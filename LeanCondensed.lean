@@ -7,6 +7,7 @@ import LeanCondensed.LightProfinite.Sequences
 import LeanCondensed.LightProfinite.SequentialLimits
 import LeanCondensed.LightProfinite.Subcategory
 import LeanCondensed.LightProfinite.Surjective
+import LeanCondensed.Mathlib.CategoryTheory.Sites.Discrete
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.Abelian
 import LeanCondensed.Mathlib.Condensed.Light.Adjunctions
@@ -15,7 +16,6 @@ import LeanCondensed.Mathlib.Condensed.Light.Discrete
 import LeanCondensed.Mathlib.Condensed.Light.Explicit
 import LeanCondensed.Mathlib.Condensed.Light.Functors
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
-import LeanCondensed.Mathlib.Condensed.TopComparison
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Basic
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.EffectiveEpi
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Limits

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Mathlib.Condensed.Light.Explicit
-import LeanCondensed.Mathlib.Condensed.TopComparison -- Only difference is universes
+import Mathlib.Condensed.TopComparison -- Only difference is universes
 
 /-!
 
@@ -22,7 +22,7 @@ We define the functor `topCatToLightCondensed : TopCat.{u} ⥤ CondensedSet.{u}`
 
 universe w w' v u
 
-open CategoryTheory Opposite Limits regularTopology ContinuousMap LeanCondensed
+open CategoryTheory Opposite Limits regularTopology ContinuousMap
 
 /--
 Associate to a `u`-small topological space the corresponding light condensed set, given by
