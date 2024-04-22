@@ -7,6 +7,8 @@ import LeanCondensed.LightProfinite.Sequences
 import LeanCondensed.LightProfinite.SequentialLimits
 import LeanCondensed.LightProfinite.Subcategory
 import LeanCondensed.LightProfinite.Surjective
+import LeanCondensed.Mathlib.CategoryTheory.Adjunction.FullyFaithful
+import LeanCondensed.Mathlib.CategoryTheory.Sites.ConstantSheaf
 import LeanCondensed.Mathlib.CategoryTheory.Sites.Discrete
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.Abelian
