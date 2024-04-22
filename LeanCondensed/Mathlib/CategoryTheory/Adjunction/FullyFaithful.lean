@@ -6,7 +6,7 @@ namespace CategoryTheory
 variable {C D : Type*} [Category C] [Category D] {L : C ⥤ D} {R : D ⥤ C} (adj : L ⊣ R)
   [L.Faithful] [L.Full] {X : D} (i : X ≅ L.obj (R.obj X))
 
-lemma isIso_counit : IsIso (adj.counit.app X : L.obj (R.obj X) ⟶ X) := by
+lemma Adjunction.isIso_counit_of_iso : IsIso (adj.counit.app X : L.obj (R.obj X) ⟶ X) := by
   let D' := L.EssImageSubcategory
   let iD' : D' ⥤ D := L.essImageInclusion
   let L' : C ⥤ D' := L.toEssImage

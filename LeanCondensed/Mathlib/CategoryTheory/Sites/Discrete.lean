@@ -1,6 +1,6 @@
-import Mathlib.CategoryTheory.Adjunction.Mates
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
 import Mathlib.CategoryTheory.Sites.InducedTopology
+import LeanCondensed.Mathlib.CategoryTheory.Adjunction.FullyFaithful
 
 namespace CategoryTheory
 
@@ -13,10 +13,18 @@ variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
   [HasWeakSheafify J A]
   {t : C} (ht : IsTerminal t)
 
+namespace Sheaf
+
 class IsDiscrete (F : Sheaf J A) : Prop where
   isIsoCounit : IsIso <| (constantSheafAdj _ _ ht).counit.app F
 
 attribute [instance] IsDiscrete.isIsoCounit
+
+theorem isDiscrete_iff_exists_iso [(constantSheaf J A).Full] [(constantSheaf J A).Faithful]
+    (F : Sheaf J A) : IsDiscrete J A ht F ↔
+    Nonempty (F ≅ (constantSheaf J A).obj (((sheafSections J A).obj (op t)).obj F)) :=
+  ⟨fun _ ↦ ⟨(asIso <| (constantSheafAdj _ _ ht).counit.app F).symm⟩,
+    fun ⟨i⟩ ↦ ⟨(constantSheafAdj _ _ ht).isIso_counit_of_iso i⟩⟩
 
 instance (F : Sheaf J A) [IsIso <| ((constantSheafAdj _ _ ht).counit.app F).val] :
     IsDiscrete J A ht F where
@@ -79,3 +87,5 @@ noncomputable example :
       Functor.IsCoverDense.sheafEquivOfCoverPreservingCoverLifting G J K A
   (Adjunction.leftAdjointUniq ((constantSheafAdj J A ht).comp e.toAdjunction)
     (constantSheafAdj K A ht'))
+
+end CategoryTheory.Sheaf
