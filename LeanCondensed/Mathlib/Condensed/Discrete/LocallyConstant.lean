@@ -17,7 +17,7 @@ We prove that this functor is left adjoint to `Condensed.underlying`, and hence 
 `Condensed.discrete` is fully faithful.
 -/
 
-universe u
+universe u w
 
 open CategoryTheory Limits Condensed LocallyConstant Opposite
 

@@ -1,4 +1,5 @@
 import LeanCondensed.Discrete.Colimit
+import LeanCondensed.Mathlib.CategoryTheory.Sites.Discrete
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 
 universe u
@@ -9,6 +10,8 @@ namespace Condensed
 
 variable {C : Type*} [Category C]
   [HasWeakSheafify (coherentTopology CompHaus) C] (X : Condensed C)
+
+abbrev IsDiscrete' := Sheaf.IsDiscrete (coherentTopology CompHaus) C CompHaus.isTerminalPUnit X
 
 class IsDiscrete : Prop where
   isoDiscrete : ∃ (X' : C), Nonempty (X ≅ (discrete C).obj X')

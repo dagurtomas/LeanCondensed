@@ -20,11 +20,43 @@ class IsDiscrete (F : Sheaf J A) : Prop where
 
 attribute [instance] IsDiscrete.isIsoCounit
 
+instance (X : A) :
+    IsSplitEpi <| (constantSheafAdj _ _ ht).counit.app ((constantSheaf J A).obj X) := by
+  constructor
+  use (constantSheaf J A).map ((constantSheafAdj _ _ ht).unit.app X)
+  simp
+
 theorem isDiscrete_iff_exists_iso [(constantSheaf J A).Full] [(constantSheaf J A).Faithful]
     (F : Sheaf J A) : IsDiscrete J A ht F ↔
     Nonempty (F ≅ (constantSheaf J A).obj (((sheafSections J A).obj (op t)).obj F)) :=
   ⟨fun _ ↦ ⟨(asIso <| (constantSheafAdj _ _ ht).counit.app F).symm⟩,
     fun ⟨i⟩ ↦ ⟨(constantSheafAdj _ _ ht).isIso_counit_of_iso i⟩⟩
+
+theorem isDiscrete_iff_exists_iso_discrete [(constantSheaf J A).Full] [(constantSheaf J A).Faithful]
+    (F : Sheaf J A) : IsDiscrete J A ht F ↔
+    ∃ (G : Sheaf J A) (_ : IsDiscrete J A ht G), Nonempty (F ≅ G) := by
+  constructor
+  · intro h
+    refine ⟨F, h, ⟨Iso.refl _⟩⟩
+  · rintro ⟨G, h, ⟨i⟩⟩
+    rw [isDiscrete_iff_exists_iso]
+    exact ⟨i ≪≫ (asIso ((constantSheafAdj _ _ ht).counit.app G)).symm ≪≫ Functor.mapIso _ i.symm⟩
+
+instance (X : A)  [(constantSheaf J A).Full] [(constantSheaf J A).Faithful] :
+    IsDiscrete J A ht <| (constantSheaf J A).obj X := by
+  rw [isDiscrete_iff_exists_iso]
+  exact ⟨(constantSheaf J A).mapIso (asIso ((constantSheafAdj _ _ ht).unit.app X))⟩
+
+theorem isDiscrete_iff_exists_iso_image [(constantSheaf J A).Full] [(constantSheaf J A).Faithful]
+    (F : Sheaf J A) : IsDiscrete J A ht F ↔
+    ∃ (X : A), Nonempty (F ≅ (constantSheaf J A).obj X) := by
+  constructor
+  · intro h
+    exact ⟨((sheafSections J A).obj (op t)).obj F,
+      ⟨(asIso ((constantSheafAdj _ _ ht).counit.app F)).symm⟩⟩
+  · rintro ⟨X, h⟩
+    rw [isDiscrete_iff_exists_iso_discrete]
+    exact ⟨(constantSheaf J A).obj X, inferInstance, h⟩
 
 instance (F : Sheaf J A) [IsIso <| ((constantSheafAdj _ _ ht).counit.app F).val] :
     IsDiscrete J A ht F where
@@ -45,9 +77,11 @@ variable {D : Type u} [Category.{v} D] (K : GrothendieckTopology D) [HasWeakShea
 variable [HasLimits A] (G : C ⥤ D) [G.Full] [G.Faithful]
   [G.IsCoverDense K] [G.IsContinuous J K] [G.IsCocontinuous J K] (ht' : IsTerminal (G.obj t))
 
+open Functor.IsCoverDense
+
 lemma isDiscrete_iff (F : Sheaf K A) :
     let e : Sheaf J A ≌ Sheaf K A :=
-      Functor.IsCoverDense.sheafEquivOfCoverPreservingCoverLifting G J K A
+      sheafEquivOfCoverPreservingCoverLifting G J K A
     IsDiscrete J A ht (e.inverse.obj F) ↔ IsDiscrete K A ht' F := by
   intro e
   have := ((constantSheafAdj K A ht').leftAdjointUniq_hom_counit
@@ -75,16 +109,16 @@ lemma isDiscrete_iff (F : Sheaf K A) :
 
 noncomputable example :
     let e : Sheaf J A ≌ Sheaf K A :=
-      Functor.IsCoverDense.sheafEquivOfCoverPreservingCoverLifting G J K A
+      sheafEquivOfCoverPreservingCoverLifting G J K A
     e.inverse ⋙ (sheafSections J A).obj (op t) ≅ (sheafSections K A).obj (op (G.obj t)) :=
   Iso.refl _
 
 noncomputable example :
     let e : Sheaf J A ≌ Sheaf K A :=
-      Functor.IsCoverDense.sheafEquivOfCoverPreservingCoverLifting G J K A
+      sheafEquivOfCoverPreservingCoverLifting G J K A
     constantSheaf J A ⋙ e.functor ≅ constantSheaf K A :=
   let e : Sheaf J A ≌ Sheaf K A :=
-      Functor.IsCoverDense.sheafEquivOfCoverPreservingCoverLifting G J K A
+      sheafEquivOfCoverPreservingCoverLifting G J K A
   (Adjunction.leftAdjointUniq ((constantSheafAdj J A ht).comp e.toAdjunction)
     (constantSheafAdj K A ht'))
 
