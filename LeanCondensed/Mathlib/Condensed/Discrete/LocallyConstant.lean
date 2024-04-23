@@ -383,28 +383,9 @@ theorem hom_apply_counitAppApp {X : CondensedSet.{u}} (g : Y ⟶ X)
   erw [← α.mem_iff_eq_image (f := g.val.app _ ∘ f)]
   exact (b.preimage).prop
 
--- TODO: change the following two defs in mathlib
-/--
-The underlying object of a condensed object in `C` is the condensed object evaluated at a point.
-This can be viewed as a sort of forgetful functor from `Condensed C` to `C`
--/
-@[simps!]
-noncomputable def _root_.Condensed.underlying'
-    (C : Type w) [Category.{u+1} C] [HasWeakSheafify (coherentTopology CompHaus) C] :
-    Condensed.{u} C ⥤ C := (sheafSections _ _).obj (op (CompHaus.of PUnit.{u+1}))
-
-/--
-Discreteness is left adjoint to the forgetful functor. When `C` is `Type*`, this is analogous to
-`TopCat.adj₁ : TopCat.discrete ⊣ forget TopCat`.  
--/
-noncomputable def _root_.Condensed.discrete_underlying_adj'
-    (C : Type w) [Category.{u+1} C] [HasWeakSheafify (coherentTopology CompHaus) C] :
-    discrete C ⊣ underlying' C :=
-  constantSheafAdj _ _ CompHaus.isTerminalPUnit
-
 /-- The counit is natural in both the compact Hausdorff space `S` and the condensed set `Y` -/
 @[simps]
-noncomputable def counit : underlying' (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
+noncomputable def counit : underlying (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
   app := counitApp
   naturality X Y g := by
     apply Sheaf.hom_ext
@@ -424,7 +405,7 @@ noncomputable def counit : underlying' (Type (u+1)) ⋙ functor ⟶ 𝟭 _ where
 The unit of the adjunciton is given by mapping each element to the corresponding constant map.
 -/
 @[simps]
-def unit : 𝟭 _ ⟶ functor ⋙ underlying' _ where
+def unit : 𝟭 _ ⟶ functor ⋙ underlying _ where
   app X x := LocallyConstant.const _ x
 
 theorem locallyConstantAdjunction_left_triangle (X : Type (u + 1)) :
@@ -444,7 +425,7 @@ theorem locallyConstantAdjunction_left_triangle (X : Type (u + 1)) :
   rfl
 
 /-- The unit of the adjunction is an iso. -/
-noncomputable def unitIso : 𝟭 (Type (u+1)) ≅ functor ⋙ underlying' _ where
+noncomputable def unitIso : 𝟭 (Type (u+1)) ≅ functor ⋙ underlying _ where
   hom := unit
   inv := { app := fun X f ↦ f.toFun PUnit.unit }
 
@@ -452,7 +433,7 @@ noncomputable def unitIso : 𝟭 (Type (u+1)) ≅ functor ⋙ underlying' _ wher
 `Condensed.LocallyConstant.functor` is left adjoint to the forgetful functor.
 -/
 @[simps! unit_app_apply counit_app_val_app]
-noncomputable def adjunction : functor ⊣ underlying' _ :=
+noncomputable def adjunction : functor ⊣ underlying _ :=
   Adjunction.mkOfUnitCounit {
     unit := unit
     counit := counit
@@ -488,7 +469,7 @@ end Adjunction
 adjoints).
 -/
 noncomputable def iso : functor ≅ discrete _ :=
-  adjunction.leftAdjointUniq (discrete_underlying_adj' _)
+  adjunction.leftAdjointUniq (discrete_underlying_adj _)
 
 instance : functor.Faithful := L_faithful_of_unit_isIso adjunction
 

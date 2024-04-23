@@ -1,4 +1,5 @@
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
+import LeanCondensed.Mathlib.CategoryTheory.Adjunction.FullyFaithful
 
 namespace CategoryTheory
 
@@ -19,10 +20,21 @@ instance : IsIso (constantSheafAdj J D hT).unit := by
     evaluation_obj_obj]
   refine @IsIso.comp_isIso _ _ _ _ _ (constantPresheafAdj D hT).unit _ inferInstance ?_
   refine @IsIso.comp_isIso _ _ _ _ _ _ _ ?_ inferInstance
+  -- intro X
+  -- simp only [Functor.comp_obj, evaluation_obj_obj, Functor.const_obj_obj, sheafToPresheaf_obj,
+  --   whiskerLeft_app, whiskerRight_app, Functor.id_obj, sheafificationAdjunction_unit_app,
+  --   evaluation_obj_map]
+  -- simp only [toSheafify]
+  apply (config := { allowSynthFailures := true }) isIso_whiskerLeft
   apply (config := { allowSynthFailures := true }) NatIso.isIso_of_isIso_app
-  intro X
-  simp only [Functor.comp_obj, evaluation_obj_obj, Functor.const_obj_obj, sheafToPresheaf_obj,
-    whiskerLeft_app, whiskerRight_app, Functor.id_obj, sheafificationAdjunction_unit_app,
-    evaluation_obj_map]
+  intro F
+  simp only [Functor.comp_obj, Functor.id_obj, evaluation_obj_obj, sheafToPresheaf_obj,
+    whiskerRight_app, sheafificationAdjunction_unit_app, evaluation_obj_map]
   simp only [toSheafify]
+
+  -- apply (config := { allowSynthFailures := true }) NatIso.isIso_app_of_isIso
+  -- apply (config := { allowSynthFailures := true }) NatIso.isIso_app_of_isIso
+
+  -- apply (config := { allowSynthFailures := true }) isIso_whiskerRight
+  --apply (sheafificationAdjunction J D).isIso_unit_of_iso
   sorry
