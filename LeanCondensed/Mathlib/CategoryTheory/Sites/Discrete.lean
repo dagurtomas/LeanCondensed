@@ -7,8 +7,8 @@ universe v u w
 
 open Limits Opposite
 
-variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
-  (A : Type w) [Category.{max u v} A]
+variable {C : Type*} [Category C] (J : GrothendieckTopology C)
+  (A : Type*) [Category A]
   [HasWeakSheafify J A]
   {t : C} (ht : IsTerminal t)
 
@@ -22,6 +22,10 @@ theorem isDiscrete_iff_isIso_counit [(constantSheaf J A).Full] [(constantSheaf J
   refine ⟨fun ⟨_⟩ ↦ ?_, fun _ ↦ ⟨?_⟩⟩
   · rwa [isIso_counit_app_iff_mem_essImage (constantSheafAdj _ _ ht)]
   · rwa [← isIso_counit_app_iff_mem_essImage (constantSheafAdj _ _ ht)]
+
+instance [(constantSheaf J A).Full] [(constantSheaf J A).Faithful] (F : Sheaf J A)
+    [IsDiscrete' J A F] : IsIso ((constantSheafAdj _ _ ht).counit.app F) := by
+  rwa [← isDiscrete_iff_isIso_counit]
 
 -- theorem isDiscrete_iff_exists_iso_discrete [(constantSheaf J A).Full] [(constantSheaf J A).Faithful]
 --     (F : Sheaf J A) : IsDiscrete J A ht F ↔
@@ -171,6 +175,13 @@ theorem isDiscrete_iff_isIso_counit_app_val (F : Sheaf J A) : IsDiscrete J A ht 
     (IsIso <| ((constantSheafAdj _ _ ht).counit.app F).val) :=
   ⟨fun _ ↦ inferInstance, fun _ ↦ inferInstance⟩
 
+section
+
+variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
+  (A : Type w) [Category.{max u v} A]
+  [HasWeakSheafify J A]
+  {t : C} (ht : IsTerminal t)
+
 variable {D : Type u} [Category.{v} D] (K : GrothendieckTopology D) [HasWeakSheafify K A]
 variable [HasLimits A] (G : C ⥤ D) [G.Full] [G.Faithful]
   [G.IsCoverDense K] [G.IsContinuous J K] [G.IsCocontinuous J K] (ht' : IsTerminal (G.obj t))
@@ -219,5 +230,7 @@ noncomputable example :
       sheafEquivOfCoverPreservingCoverLifting G J K A
   (Adjunction.leftAdjointUniq ((constantSheafAdj J A ht).comp e.toAdjunction)
     (constantSheafAdj K A ht'))
+
+end
 
 end CategoryTheory.Sheaf
