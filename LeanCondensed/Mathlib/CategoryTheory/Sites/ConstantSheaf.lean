@@ -1,5 +1,5 @@
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
-import LeanCondensed.Mathlib.CategoryTheory.Adjunction.FullyFaithful
+import Mathlib.CategoryTheory.Adjunction.FullyFaithful
 
 namespace CategoryTheory
 
