@@ -211,7 +211,7 @@ lemma isDiscrete_iff (F : Sheaf K A) :
       erw [Category.id_comp] at this
       refine @IsIso.of_isIso_comp_right _ _ _ _ _ _ _ ?_ this
       apply (config := { allowSynthFailures := true }) NatIso.isIso_app_of_isIso
-      exact (IsIso.of_iso _ : IsIso e.counitIso.hom)
+      exact IsIso.of_iso e.counitIso
     · apply (config := { allowSynthFailures := true }) NatIso.isIso_app_of_isIso
       apply (config := { allowSynthFailures := true }) isIso_whiskerLeft
       exact IsIso.of_iso _

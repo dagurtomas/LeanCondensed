@@ -1,33 +1,13 @@
 import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Sites.CoverPreserving
 import Mathlib.CategoryTheory.Sites.Sheafification
+import LeanCondensed.Mathlib.CategoryTheory.Adjunction.Restrict
+
+universe w
 
 noncomputable section
 
 namespace CategoryTheory
-
-@[simp]
-lemma Adjunction.restrictFullyFaithful_unit_app:
-      ∀ {C : Type*} [inst : CategoryTheory.Category C] {D : Type*}
-        [inst_1 : CategoryTheory.Category D] {C' : Type*} [inst_2 : CategoryTheory.Category C']
-        {D' : Type*} [inst_3 : CategoryTheory.Category D'] (iC : C ⥤ C') (iD : D ⥤ D') {L' : C' ⥤ D'}
-        {R' : D' ⥤ C'} (adj : L' ⊣ R') {L : C ⥤ D} {R : D ⥤ C} (comm1 : iC ⋙ L' ≅ L ⋙ iD) (comm2 : iD ⋙ R' ≅ R ⋙ iC)
-        [inst_4 : CategoryTheory.Functor.Full iC] [inst_5 : CategoryTheory.Functor.Faithful iC]
-        [inst_6 : CategoryTheory.Functor.Full iD] [inst_7 : CategoryTheory.Functor.Faithful iD] (X : C),
-        (CategoryTheory.Adjunction.restrictFullyFaithful iC iD adj comm1 comm2).unit.app X =
-          iC.preimage (adj.unit.app (iC.obj X) ≫ R'.map (comm1.hom.app X) ≫ comm2.hom.app (L.obj X)) := by simp [restrictFullyFaithful]
-
-
-@[simp]
-lemma Adjunction.restrictFullyFaithful_counit_app:
-      ∀ {C : Type*} [inst : CategoryTheory.Category C] {D : Type*}
-        [inst_1 : CategoryTheory.Category D] {C' : Type*} [inst_2 : CategoryTheory.Category C']
-        {D' : Type*} [inst_3 : CategoryTheory.Category D'] (iC : C ⥤ C') (iD : D ⥤ D') {L' : C' ⥤ D'} (iC : C ⥤ C') (iD : D ⥤ D') {L' : C' ⥤ D'}
-        {R' : D' ⥤ C'} (adj : L' ⊣ R') {L : C ⥤ D} {R : D ⥤ C} (comm1 : iC ⋙ L' ≅ L ⋙ iD) (comm2 : iD ⋙ R' ≅ R ⋙ iC)
-        [inst_4 : CategoryTheory.Functor.Full iC] [inst_5 : CategoryTheory.Functor.Faithful iC]
-        [inst_6 : CategoryTheory.Functor.Full iD] [inst_7 : CategoryTheory.Functor.Faithful iD] (Y : D),
-        (CategoryTheory.Adjunction.restrictFullyFaithful iC iD adj comm1 comm2).counit.app Y =
-          iD.preimage (comm1.inv.app (R.obj Y) ≫ L'.map (comm2.inv.app Y) ≫ adj.counit.app (iD.obj Y)) := sorry
 
 variable {C D : Type*} [Category C] [Category D]
 variable (J : GrothendieckTopology C) (K : GrothendieckTopology D)
@@ -43,16 +23,59 @@ def inverseDirectImageAdjunction :
   ((F.op.lanAdjunction A).comp (sheafificationAdjunction K A)).restrictFullyFaithful
       (sheafToPresheaf J A) (𝟭 _) (Iso.refl _) (Iso.refl _)
 
-lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
-    ((inverseDirectImageAdjunction J K A F).unit.app X).val.app ⟨Y⟩ =
-    (F.op.lanUnit.app X.val).app ⟨Y⟩ ≫ (toSheafify K (F.op.lan.obj X.val)).app ⟨(F.obj Y)⟩ := by
-  simp only [Functor.id_obj, Functor.comp_obj, sheafToPresheaf_obj, inverseDirectImageAdjunction,
+@[simp, reassoc]
+lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :
+    ((inverseDirectImageAdjunction J K A F).unit.app X).val =
+    F.op.lanUnit.app X.val ≫ whiskerLeft F.op (toSheafify K (F.op.lan.obj X.val)) := by
+  change ((sheafToPresheaf J A).map ((inverseDirectImageAdjunction J K A F).unit.app X)) = _
+  simp only [Functor.id_obj, sheafToPresheaf_obj, Functor.comp_obj, inverseDirectImageAdjunction,
     Adjunction.comp, whiskeringLeft_obj_obj, Functor.lanAdjunction_unit,
-    Adjunction.restrictFullyFaithful_unit_app, Functor.preimage, Functor.Full.preimage,
-    NatTrans.comp_app, whiskerLeft_app, whiskerRight_app, sheafificationAdjunction_unit_app,
-    whiskeringLeft_obj_map, Functor.associator_inv_app, Category.comp_id, Iso.refl_hom,
-    NatTrans.id_app, Functor.comp_map, sheafToPresheaf_map, Sheaf.instCategorySheaf_id_val,
-    whiskerLeft_id', Functor.op_obj]
-  rfl
+    Adjunction.map_restrictFullyFaithful_unit_app, NatTrans.comp_app, whiskerLeft_app,
+    whiskerRight_app, sheafificationAdjunction_unit_app, whiskeringLeft_obj_map,
+    Functor.associator_inv_app, Category.comp_id, Iso.refl_hom, NatTrans.id_app, Functor.comp_map,
+    Functor.map_id, whiskerLeft_id']
+
+@[simp, reassoc]
+lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
+    ((inverseDirectImageAdjunction J K A F).counit.app X) =
+    (presheafToSheaf K A).map ((F.op.lanAdjunction A).counit.app X.val) ≫
+      (sheafificationAdjunction K A).counit.app X := by
+  change (𝟭 (Sheaf K A)).map ((inverseDirectImageAdjunction J K A F).counit.app X) = _
+  simp only [Functor.comp_obj, sheafToPresheaf_obj, Functor.id_obj, inverseDirectImageAdjunction,
+    Adjunction.map_restrictFullyFaithful_counit_app, Iso.refl_inv, NatTrans.id_app,
+    whiskeringLeft_obj_obj, Functor.comp_map, Category.id_comp]
+  erw [Functor.map_id, Functor.map_id]
+  simp only [Adjunction.comp, Functor.comp_obj, sheafToPresheaf_obj, whiskeringLeft_obj_obj,
+    Functor.lanAdjunction_unit, NatTrans.comp_app, Functor.id_obj, Functor.associator_hom_app,
+    whiskerLeft_app, whiskerRight_app, Category.id_comp]
+
+def pointTopology : GrothendieckTopology PUnit := ⊥
+
+def equivPresheafUnderlying : PUnitᵒᵖ ⥤ A ≌ A where
+  functor := {
+    obj := fun F ↦ F.obj ⟨PUnit.unit⟩
+    map := fun f ↦ f.app _  }
+  inverse := Functor.const _
+  unitIso := by
+    refine NatIso.ofComponents (fun X ↦ NatIso.ofComponents (fun ⟨⟨⟩⟩ ↦ Iso.refl _) ?_) ?_
+    · intro ⟨⟨⟩⟩ ⟨⟨⟩⟩ _
+      simp only [Functor.id_obj, Functor.comp_obj, Functor.const_obj_obj, Iso.refl_hom,
+        Category.comp_id, Functor.const_obj_map]
+      simp only [← Functor.map_id]
+      congr
+    · aesop
+  counitIso := Iso.refl _
+  functor_unitIso_comp := by simp only [Functor.id_obj, Functor.comp_obj, Functor.const_obj_obj,
+    NatIso.ofComponents_hom_app, Iso.refl_hom, NatTrans.id_app, Category.comp_id, implies_true]
+
+def equivSheafPresheaf : Sheaf pointTopology A ≌ PUnitᵒᵖ ⥤ A where
+  functor := sheafToPresheaf _ _
+  inverse := {
+    obj := fun F ↦ ⟨F, fun _ ↦ Presieve.isSheaf_bot⟩
+    map := fun f ↦ ⟨f⟩ }
+  unitIso := Iso.refl _
+  counitIso := Iso.refl _
+
+
 
 end CategoryTheory
