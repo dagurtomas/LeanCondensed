@@ -119,16 +119,11 @@ def functor : Type (u+1) ⥤ CondensedSet.{u} where
 `topCatToCondensed` to discrete topological spaces.
 -/
 noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed := by
-  refine NatIso.ofComponents (fun X ↦ (isoEquivOfFullyFaithful (sheafToPresheaf _ _)).symm
-    (functorToPresheavesIsoTopCatToCondensed X)) sorry
-  -- isoEquivOfFullyFaithful
-  -- refine NatIso.ofComponents (fun X ↦ (sheafToPresheaf _ _).preimageIso
-  --   (functorToPresheavesIsoTopCatToCondensed X)) ?_
-  -- intros
-  -- apply Sheaf.hom_ext
-  -- ext
-  -- simp [functorToPresheavesIsoTopCatToCondensed, locallyConstantIsoContinuousMap]
-  -- sorry
+  exact @natIsoOfCompFullyFaithful _ _ _ _ _ _ _ _ (sheafToPresheaf _ _)
+    (instFullSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
+    (instFaithfulSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
+    (NatIso.ofComponents (fun X ↦ functorToPresheavesIsoTopCatToCondensed X))
+  -- why aren't these `Full` and `Faithful` instances found automatically??
 
 section
 
