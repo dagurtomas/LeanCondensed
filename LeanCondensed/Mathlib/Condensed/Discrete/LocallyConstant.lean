@@ -118,8 +118,8 @@ def functor : Type (u+1) ⥤ CondensedSet.{u} where
 `Condensed.LocallyConstant.functor` is naturally isomorphic to the restriction of
 `topCatToCondensed` to discrete topological spaces.
 -/
-noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed := by
-  exact @natIsoOfCompFullyFaithful _ _ _ _ _ _ _ _ (sheafToPresheaf _ _)
+noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed :=
+  @natIsoOfCompFullyFaithful _ _ _ _ _ _ _ _ (sheafToPresheaf _ _)
     (instFullSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
     (instFaithfulSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
     (NatIso.ofComponents (fun X ↦ functorToPresheavesIsoTopCatToCondensed X))
