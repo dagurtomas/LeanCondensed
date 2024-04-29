@@ -162,9 +162,11 @@ theorem isDiscrete_iff_exists_iso_image [(constantSheaf J A).Full] [(constantShe
 
 instance (F : Sheaf J A) [IsIso <| ((constantSheafAdj _ _ ht).counit.app F).val] :
     IsDiscrete J A ht F where
-  isIsoCounit :=
-    let i := asIso ((constantSheafAdj J A ht).counit.app F).val
-    (inferInstance : IsIso ((sheafToPresheaf J A).preimageIso i).hom)
+  isIsoCounit := by
+    apply (config := { allowSynthFailures := true }) isIso_of_fully_faithful (sheafToPresheaf _ _)
+    simp only [Functor.comp_obj, Functor.flip_obj_obj, sheafToPresheaf_obj, Functor.id_obj,
+      sheafToPresheaf_map]
+    infer_instance
 
 instance (F : Sheaf J A) [IsDiscrete J A ht F] :
     IsIso <| ((constantSheafAdj _ _ ht).counit.app F).val :=

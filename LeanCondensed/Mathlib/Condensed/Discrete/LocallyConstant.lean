@@ -5,6 +5,7 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Condensed.TopComparison
 import Mathlib.Condensed.Discrete
+set_option profiler.threshold 500
 /-!
 
 # The presheaf of locally constant maps as a condensed set
@@ -117,9 +118,17 @@ def functor : Type (u+1) ⥤ CondensedSet.{u} where
 `Condensed.LocallyConstant.functor` is naturally isomorphic to the restriction of
 `topCatToCondensed` to discrete topological spaces.
 -/
-noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed :=
-  NatIso.ofComponents (fun X ↦ (sheafToPresheaf _ _).preimageIso
-    (functorToPresheavesIsoTopCatToCondensed X))
+noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed := by
+  refine NatIso.ofComponents (fun X ↦ (isoEquivOfFullyFaithful (sheafToPresheaf _ _)).symm
+    (functorToPresheavesIsoTopCatToCondensed X)) sorry
+  -- isoEquivOfFullyFaithful
+  -- refine NatIso.ofComponents (fun X ↦ (sheafToPresheaf _ _).preimageIso
+  --   (functorToPresheavesIsoTopCatToCondensed X)) ?_
+  -- intros
+  -- apply Sheaf.hom_ext
+  -- ext
+  -- simp [functorToPresheavesIsoTopCatToCondensed, locallyConstantIsoContinuousMap]
+  -- sorry
 
 section
 
@@ -364,7 +373,7 @@ theorem hom_apply_counitAppApp {X : CondensedSet.{u}} (g : Y ⟶ X)
   simp only [counitAppAppImage]
   simp only [← FunctorToTypes.map_comp_apply, ← op_comp]
   simp only [CompHaus.coe_of, map_apply, IsTerminal.comp_from]
-  rw [← α.map_preimage_eq_image_map]
+  rw [← α.map_preimage_eq_image_map f (g.val.app (op (CompHaus.of PUnit.{u+1})))]
   change (_ ≫ X.val.map _) _ = (_ ≫ X.val.map _) _
   simp only [← g.val.naturality]
   rw [sigmaIncl_comp_sigmaIncl]
@@ -473,10 +482,10 @@ noncomputable def iso : functor ≅ discrete _ :=
 
 instance : functor.Faithful := L_faithful_of_unit_isIso adjunction
 
-noncomputable instance : functor.Full := lFullOfUnitIsIso adjunction
+instance : functor.Full := L_full_of_unit_isIso adjunction
 
 instance : (discrete (Type _)).Faithful := Functor.Faithful.of_iso iso
 
-noncomputable instance : (discrete (Type _)).Full := Functor.Full.ofIso iso
+instance : (discrete (Type _)).Full := Functor.Full.of_iso iso
 
 end Condensed.LocallyConstant
