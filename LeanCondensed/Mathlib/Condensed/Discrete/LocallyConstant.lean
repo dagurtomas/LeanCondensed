@@ -340,7 +340,8 @@ lemma incl_comap {S T : CompHausᵒᵖ} (f : LocallyConstant S.unop (Y.val.obj (
 
 /-- The counit is natural in the compact Hausdorff space `S` -/
 @[simps!]
-noncomputable def counitApp (Y : CondensedSet.{u}) : functor.obj (Y.val.obj (op (CompHaus.of PUnit.{u+1}))) ⟶ Y where
+noncomputable def counitApp (Y : CondensedSet.{u}) :
+    functor.obj (Y.val.obj (op (CompHaus.of PUnit.{u+1}))) ⟶ Y where
   val := {
     app := fun ⟨S⟩ ↦ counitAppApp S Y
     naturality := by
