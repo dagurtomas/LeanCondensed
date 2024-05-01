@@ -177,7 +177,7 @@ def finYonedaIso :
     }
   · aesop
 
-def mapOfElement {X : FintypeCat} (x : X) : of (PUnit.{u+1}) ⟶ X := fun _ ↦ x
+def mapOfElement {X : FintypeCat} (x : X) : FintypeCat.of (PUnit.{u+1}) ⟶ X := fun _ ↦ x
 
 def fintypeCatAsCofan (X : FintypeCat) :
     Cofan (fun (_ : X) ↦ toProfinite.obj (of (PUnit.{u+1}))) :=

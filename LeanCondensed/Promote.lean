@@ -88,7 +88,7 @@ def promote : CondensedMod.{u} R where
       map_add' := (h _ _ f.unop).map_add
       map_smul' := (h _ _ f.unop).map_smul } }
   cond := by
-    rw [Presheaf.isSheaf_iff_isSheaf_forget (s := forget _)]
+    rw [Presheaf.isSheaf_iff_isSheaf_forget (s := CategoryTheory.forget _)]
     exact X.cond
 
 variable {Y : CondensedSet.{u}}

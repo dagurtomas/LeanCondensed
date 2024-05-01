@@ -11,6 +11,8 @@ import LeanCondensed.Mathlib.CategoryTheory.Adjunction.KanExtension
 import LeanCondensed.Mathlib.CategoryTheory.Sites.ConstantSheaf
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
 import LeanCondensed.Mathlib.CategoryTheory.Sites.Discrete
+import LeanCondensed.Mathlib.Condensed.Adjunctions
+import LeanCondensed.Mathlib.Condensed.Discrete.General
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstantModule
 import LeanCondensed.Mathlib.Condensed.Light.Abelian
@@ -19,9 +21,11 @@ import LeanCondensed.Mathlib.Condensed.Light.Basic
 import LeanCondensed.Mathlib.Condensed.Light.Discrete
 import LeanCondensed.Mathlib.Condensed.Light.Explicit
 import LeanCondensed.Mathlib.Condensed.Light.Functors
+import LeanCondensed.Mathlib.Condensed.Light.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Basic
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.EffectiveEpi
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Limits
 import LeanCondensed.Mathlib.Topology.LocallyConstant.Algebra
 import LeanCondensed.Promote
+import LeanCondensed.SheafHomForget

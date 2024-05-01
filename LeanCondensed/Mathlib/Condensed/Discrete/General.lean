@@ -24,6 +24,8 @@ variable (R : Type (u+1)) [Ring R]
 theorem CondensedMod.isIso_unit : IsIso (discrete_underlying_adj (ModuleCat.{u+1} R)).unit := by
   apply (config := { allowSynthFailures := true }) NatIso.isIso_of_isIso_app
   intro X
-  apply (config := { allowSynthFailures := true }) Functor.ReflectsIsomorphisms.reflects (forget _)
-  have : IsIso ((discrete_underlying_adj (Type _)).unit.app ((forget _).obj X)) := inferInstance
+  apply (config := { allowSynthFailures := true }) Functor.ReflectsIsomorphisms.reflects
+    (CategoryTheory.forget _)
+  have : IsIso ((discrete_underlying_adj (Type _)).unit.app ((CategoryTheory.forget _).obj X)) :=
+    inferInstance
   sorry
