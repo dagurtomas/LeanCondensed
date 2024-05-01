@@ -3,8 +3,8 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Condensed.TopComparison
-import Mathlib.Condensed.Discrete
+import LeanCondensed.Mathlib.Condensed.Light.TopComparison
+import LeanCondensed.Mathlib.Condensed.Light.Discrete
 set_option profiler.threshold 500
 /-!
 
@@ -24,73 +24,30 @@ open CategoryTheory Limits Condensed LocallyConstant Opposite
 
 namespace Condensed
 
-namespace GeneralUniverse
-
-open CompHaus
-
-variable (X : Condensed.{u} (TypeMax.{u, w})) {α : Type u} [Finite α] (σ : α → Type u)
-  [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
-
-/--
-The comparison map from the value of a condensed set on a finite coproduct to the product of the
-values on the components.
--/
-def sigmaComparison : X.val.obj ⟨(of ((a : α) × σ a))⟩ ⟶ ((a : α) → X.val.obj ⟨of (σ a)⟩) :=
-  fun x a ↦ X.val.map ⟨Sigma.mk a, continuous_sigmaMk⟩ x
-
-noncomputable instance : PreservesLimitsOfShape (Discrete α) X.val :=
-  let α' := (Countable.toSmall.{0} α).equiv_small.choose
-  let e : α ≃ α' := (Countable.toSmall α).equiv_small.choose_spec.some
-  have : Fintype α := Fintype.ofFinite _
-  have : Fintype α' := Fintype.ofEquiv α e
-  have : PreservesFiniteProducts X.val := sorry
-  preservesLimitsOfShapeOfEquiv (Discrete.equivalence e.symm) X.val
-
-theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
-    (X.val.mapIso (opCoproductIsoProduct' (finiteCoproduct.isColimit.{u, u} fun a ↦ of (σ a))
-      (productIsProduct fun x ↦ Opposite.op (of (σ x))))).hom ≫
-    (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
-    (Types.productIso.{u} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
-  ext x a
-  simp only [finiteCoproduct.cocone_pt, Fan.mk_pt, Functor.mapIso_hom,
-    PreservesProduct.iso_hom, types_comp_apply, Types.productIso_hom_comp_eval_apply]
-  have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
-  simp only [types_comp_apply] at this
-  rw [this, ← FunctorToTypes.map_comp_apply]
-  simp only [sigmaComparison]
-  apply congrFun
-  congr 2
-  erw [← opCoproductIsoProduct_inv_comp_ι]
-  simp only [coe_of, Opposite.unop_op, unop_comp, Quiver.Hom.unop_op, Category.assoc]
-  change finiteCoproduct.ι.{u, u} (fun a ↦ of (σ a)) _ = _
-  rw [← Sigma.ι_comp_toFiniteCoproduct]
-  congr
-  simp only [opCoproductIsoProduct, ← unop_comp, coproductIsoCoproduct,
-    opCoproductIsoProduct'_comp_self]
-  rfl
-
-instance isIsoSigmaComparison : IsIso <| sigmaComparison X σ := by
-  rw [sigmaComparison_eq_comp_isos]
-  infer_instance
-
-end GeneralUniverse
-
 section SigmaComparison
 
-open CompHaus
+open Profinite LightProfinite
 
-variable (X : CondensedSet.{u}) {α : Type u} [Finite α] (σ : α → Type u)
+variable (X : LightCondSet.{u}) {α : Type u} [Finite α] (σ : α → Type u)
   [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
+  [∀ a, TotallyDisconnectedSpace (σ a)] [∀ a, IsLight (of (σ a))]
+
+-- instance : IsLight (Profinite.of ((a : α) × σ a)) := sorry
+
+#exit
 
 /--
 The comparison map from the value of a condensed set on a finite coproduct to the product of the
 values on the components.
 -/
-def sigmaComparison : X.val.obj ⟨(of ((a : α) × σ a))⟩ ⟶ ((a : α) → X.val.obj ⟨of (σ a)⟩) :=
+def sigmaComparison :
+    haveI : Fintype α := Fintype.ofFinite _
+    X.val.obj ⟨LightProfinite.finiteCoproduct (α := α) (fun (a : α) ↦ ofIsLight (of (σ a)))⟩ ⟶
+    ((a : α) → X.val.obj ⟨ofIsLight (of (σ a))⟩) :=
   fun x a ↦ X.val.map ⟨Sigma.mk a, continuous_sigmaMk⟩ x
 
 noncomputable instance : PreservesLimitsOfShape (Discrete α) X.val :=
-  let α' := (Countable.toSmall.{0} α).equiv_small.choose
+  let α' := (Countable.toSmall α).equiv_small.choose
   let e : α ≃ α' := (Countable.toSmall α).equiv_small.choose_spec.some
   have : Fintype α := Fintype.ofFinite _
   have : Fintype α' := Fintype.ofEquiv α e
