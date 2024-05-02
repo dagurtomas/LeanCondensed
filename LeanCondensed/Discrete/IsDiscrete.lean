@@ -16,9 +16,6 @@ variable {C : Type*} [Category C]
   -- condensed set is.
   -- I specifically have in mind the case when `C` is `ModuleCat R`.
 
-class IsDiscrete : Prop where
-  isoDiscrete : ∃ (X' : C), Nonempty (X ≅ (discrete C).obj X')
-
 end Condensed
 
 namespace CondensedSet
