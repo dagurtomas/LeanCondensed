@@ -1,4 +1,5 @@
 import LeanCondensed.Discrete.Colimit
+import LeanCondensed.Discrete.DiscreteObjects
 import LeanCondensed.Discrete.Extend
 import LeanCondensed.Discrete.IsDiscrete
 import LeanCondensed.LightProfinite.Maps
@@ -10,7 +11,6 @@ import LeanCondensed.LightProfinite.Surjective
 import LeanCondensed.Mathlib.CategoryTheory.Adjunction.KanExtension
 import LeanCondensed.Mathlib.CategoryTheory.Sites.ConstantSheaf
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
-import LeanCondensed.Mathlib.CategoryTheory.Sites.Discrete
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Discrete.General
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
