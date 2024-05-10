@@ -55,7 +55,7 @@ noncomputable def toSurj : LightProfinite ⥤ LightProfinite where
 noncomputable def toSurj_iso_id : toSurj ≅ 𝟭 _ := NatIso.ofComponents (fun X ↦ (iso X).symm)
 
 noncomputable instance :
-  toSurj.IsEquivalence := Functor.IsEquivalence.ofIso toSurj_iso_id.symm Functor.isEquivalenceRefl
+  toSurj.IsEquivalence := Functor.isEquivalence_of_iso toSurj_iso_id.symm
 
 lemma proj_surjective' (X : LightProfinite) (n : ℕ) :
     Function.Surjective <| (toSurj.obj X).proj n :=

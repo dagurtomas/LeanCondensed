@@ -3,8 +3,8 @@ Copyright (c) 2023 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Limits
 import Mathlib.CategoryTheory.Sites.Coherent.Comparison
+import Mathlib.Topology.Category.LightProfinite.Limits
 /-!
 
 # Effective epimorphisms in `LightProfinite`
@@ -69,8 +69,7 @@ theorem epi_iff_surjective {X Y : LightProfinite.{u}} (f : X ⟶ Y) :
         ext x
         apply ULift.ext
         dsimp [g, LocallyConstant.ofIsClopen]
-        erw [LightProfinite.instCategoryLightProfinite_comp_apply, ContinuousMap.coe_mk,
-          LightProfinite.instCategoryLightProfinite_comp_apply, ContinuousMap.coe_mk,
+        erw [comp_apply, ContinuousMap.coe_mk, comp_apply, ContinuousMap.coe_mk,
           Function.comp_apply, if_neg]
         refine' mt (fun α => hVU α) _
         simp only [U, C, concreteCategory_forget_obj, Set.mem_compl_iff, Set.mem_range, not_exists,

@@ -13,55 +13,6 @@ section IsRightAdjointProp
 
 namespace CategoryTheory.Functor
 
-/-- A class asserting the existence of a right adjoint. -/
-class IsLeftAdjoint (left : C ⥤ D) : Prop where
-  exists_rightAdjoint : ∃ (right : D ⥤ C), Nonempty (left ⊣ right)
-
-/-- A class asserting the existence of a left adjoint. -/
-class IsRightAdjoint (right : D ⥤ C) : Prop where
-  exists_leftAdjoint : ∃ (left : C ⥤ D), Nonempty (left ⊣ right)
-
-/-- A chosen left adjoint to a functor that is a right adjoint. -/
-noncomputable def leftAdjoint (R : D ⥤ C) [IsRightAdjoint R] : C ⥤ D :=
-  (IsRightAdjoint.exists_leftAdjoint (right := R)).choose
-
-/-- A chosen right adjoint to a functor that is a left adjoint. -/
-noncomputable def rightAdjoint (L : C ⥤ D) [IsLeftAdjoint L] : D ⥤ C :=
-  (IsLeftAdjoint.exists_rightAdjoint (left := L)).choose
-
-
-end Functor
-
-namespace Adjunction
-
-noncomputable def ofIsLeftAdjoint (left : C ⥤ D) [left.IsLeftAdjoint] :
-    left ⊣ left.rightAdjoint :=
-  Functor.IsLeftAdjoint.exists_rightAdjoint.choose_spec.some
-
-noncomputable def ofIsRightAdjoint (right : C ⥤ D) [right.IsRightAdjoint] :
-    right.leftAdjoint ⊣ right :=
-  Functor.IsRightAdjoint.exists_leftAdjoint.choose_spec.some
-
-variable {F : C ⥤ D} {G : D ⥤ C} (adj : F ⊣ G)
-
-lemma isLeftAdjoint : F.IsLeftAdjoint := ⟨_, ⟨adj⟩⟩
-
-lemma isRightAdjoint : G.IsRightAdjoint := ⟨_, ⟨adj⟩⟩
-
-end Adjunction
-
-namespace Functor
-
-/-- Transport being a right adjoint along a natural isomorphism. -/
-lemma isRightAdjoint_of_iso {F G : C ⥤ D} (h : F ≅ G) [F.IsRightAdjoint] :
-    IsRightAdjoint G where
-  exists_leftAdjoint := ⟨_, ⟨(Adjunction.ofIsRightAdjoint F).ofNatIsoRight h⟩⟩
-
-/-- Transport being a left adjoint along a natural isomorphism. -/
-lemma isLeftAdjoint_of_iso {F G : C ⥤ D} (h : F ≅ G) [IsLeftAdjoint F] :
-    IsLeftAdjoint G where
-  exists_rightAdjoint := ⟨_, ⟨(Adjunction.ofIsLeftAdjoint F).ofNatIsoLeft h⟩⟩
-
 noncomputable def leftAdjointCongr' {R : D ⥤ C} {L : C ⥤ D} (adj : L ⊣ R) :
     haveI : R.IsRightAdjoint := adj.isRightAdjoint
     L ≅ leftAdjoint R :=
@@ -114,6 +65,8 @@ class IsDiscrete [U.HasDiscreteObjects] (X : C) : Prop where
   isIso_counit : IsIso <| (Adjunction.ofIsRightAdjoint U).counit.app X := by infer_instance
 
 attribute [instance] IsDiscrete.isIso_counit
+
+open Adjunction
 
 theorem isDiscrete_of_iso [U.HasDiscreteObjects] {X : C} {Y : D}
     (i : X ≅ U.leftAdjoint.obj Y) : IsDiscrete U X where

@@ -52,8 +52,8 @@ theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
     (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
     (Types.productIso.{u} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
   ext x a
-  simp only [finiteCoproduct.cocone_pt, Fan.mk_pt, Functor.mapIso_hom,
-    PreservesProduct.iso_hom, types_comp_apply, Types.productIso_hom_comp_eval_apply]
+  simp only [Cofan.mk_pt, Fan.mk_pt, Functor.mapIso_hom, PreservesProduct.iso_hom, types_comp_apply,
+    Types.productIso_hom_comp_eval_apply]
   have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
   simp only [types_comp_apply] at this
   rw [this, ← FunctorToTypes.map_comp_apply]
@@ -102,8 +102,8 @@ theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
     (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
     (Types.productIso.{u, u + 1} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
   ext x a
-  simp only [finiteCoproduct.cocone_pt, Fan.mk_pt, Functor.mapIso_hom,
-    PreservesProduct.iso_hom, types_comp_apply, Types.productIso_hom_comp_eval_apply]
+  simp only [Cofan.mk_pt, Fan.mk_pt, Functor.mapIso_hom, PreservesProduct.iso_hom, types_comp_apply,
+    Types.productIso_hom_comp_eval_apply]
   have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
   simp only [types_comp_apply] at this
   rw [this, ← FunctorToTypes.map_comp_apply]
@@ -169,10 +169,10 @@ def functor : Type (u+1) ⥤ CondensedSet.{u} where
 `Condensed.LocallyConstant.functor` is naturally isomorphic to the restriction of
 `topCatToCondensed` to discrete topological spaces.
 -/
-noncomputable def functorIsoTopCatToCondensed : functor ≅ TopCat.discrete ⋙ topCatToCondensed :=
+noncomputable def functorIsoTopCatToCondensed : functor.{u} ≅ TopCat.discrete ⋙ topCatToCondensed :=
   @natIsoOfCompFullyFaithful _ _ _ _ _ _ _ _ (sheafToPresheaf _ _)
-    (instFullSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
-    (instFaithfulSheafInstCategorySheafFunctorOppositeOppositeCategorySheafToPresheaf _ _)
+    (instFullSheafFunctorOppositeSheafToPresheaf _ _)
+    (instFaithfulSheafFunctorOppositeSheafToPresheaf _ _)
     (NatIso.ofComponents (fun X ↦ functorToPresheavesIsoTopCatToCondensed X))
   -- why aren't these `Full` and `Faithful` instances found automatically??
 
@@ -527,9 +527,9 @@ adjoints).
 noncomputable def iso : functor ≅ discrete _ :=
   adjunction.leftAdjointUniq (discrete_underlying_adj _)
 
-instance : functor.Faithful := L_faithful_of_unit_isIso adjunction
+instance : functor.Faithful := adjunction.L_faithful_of_unit_isIso
 
-instance : functor.Full := L_full_of_unit_isIso adjunction
+instance : functor.Full := adjunction.L_full_of_unit_isIso
 
 instance : (discrete (Type _)).Faithful := Functor.Faithful.of_iso iso
 

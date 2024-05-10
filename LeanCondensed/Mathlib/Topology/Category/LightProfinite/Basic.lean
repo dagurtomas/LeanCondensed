@@ -50,8 +50,3 @@ def isoMk {X Y : LightProfinite} (i : X.toProfinite ≅ Y.toProfinite) : X ≅ Y
 noncomputable instance : ReflectsLimits lightToProfinite := inferInstance
 
 noncomputable instance : ReflectsColimits lightToProfinite := inferInstance
-
-/-- The fully faithful embedding of `LightProfinite` in `TopCat`. -/
-@[simps!]
-def toTopCat : LightProfinite ⥤ TopCat :=
-  lightToProfinite ⋙ Profinite.toTopCat

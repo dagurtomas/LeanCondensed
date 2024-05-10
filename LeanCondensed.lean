@@ -25,7 +25,6 @@ import LeanCondensed.Mathlib.Condensed.Light.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Basic
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.EffectiveEpi
-import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Limits
 import LeanCondensed.Mathlib.Topology.LocallyConstant.Algebra
 import LeanCondensed.Promote
 import LeanCondensed.SheafHomForget

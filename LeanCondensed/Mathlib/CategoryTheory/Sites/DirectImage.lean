@@ -42,7 +42,6 @@ lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
   simp only [Functor.id_obj, Functor.comp_obj, sheafToPresheaf_obj,
     inverseDirectImageAdjunction_unit_app_val, whiskeringLeft_obj_obj, NatTrans.comp_app,
     Functor.op_obj, whiskerLeft_app]
-  rfl
 
 @[simp, reassoc]
 lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
@@ -84,7 +83,5 @@ def equivSheafPresheaf : Sheaf pointTopology A ≌ PUnitᵒᵖ ⥤ A where
     map := fun f ↦ ⟨f⟩ }
   unitIso := Iso.refl _
   counitIso := Iso.refl _
-
-
 
 end CategoryTheory
