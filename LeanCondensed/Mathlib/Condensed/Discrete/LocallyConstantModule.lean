@@ -1,6 +1,6 @@
 import Mathlib.CategoryTheory.Sites.Adjunction
 import Mathlib.Condensed.Module
-import LeanCondensed.Mathlib.Topology.LocallyConstant.Algebra
+import Mathlib.Topology.LocallyConstant.Algebra
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.SheafHomForget

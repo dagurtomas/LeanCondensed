@@ -21,7 +21,7 @@ abbrev inverseImage : Sheaf J A ⥤ Sheaf K A :=
 def inverseDirectImageAdjunction :
     inverseImage J K A F ⊣ F.sheafPushforwardContinuous A J K :=
   ((F.op.lanAdjunction A).comp (sheafificationAdjunction K A)).restrictFullyFaithful
-      (sheafToPresheaf J A) (𝟭 _) (Iso.refl _) (Iso.refl _)
+    (fullyFaithfulSheafToPresheaf J A) (Functor.FullyFaithful.id _) (Iso.refl _) (Iso.refl _)
 
 @[simp, reassoc]
 lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :

@@ -1,174 +1,110 @@
+/-
+Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dagur Asgeirsson
+-/
 import Mathlib.Topology.Compactification.OnePoint
-import LeanCondensed.LightProfinite.Maps
+import Mathlib.Topology.Category.LightProfinite.Basic
+/-!
 
-open CategoryTheory Limits Opposite Option
+# The light profinite set classifying convergent sequences
 
-namespace Profinite
+This files defines the light profinite set `ℕ∪{∞}`, defined as the one point compactification of
+`ℕ`.
+-/
 
-instance : TotallySeparatedSpace (OnePoint ℕ) where
+open CategoryTheory TopologicalSpace OnePoint
+
+namespace OnePoint
+
+open Filter Topology Set
+
+protected lemma «forall» {X : Type*} {p : OnePoint X → Prop} :
+    (∀ (x : OnePoint X), p x) ↔ p ∞ ∧ ∀ (x : X), p (some x) :=
+  Option.forall
+
+lemma continuous_iff {X Y : Type*} [TopologicalSpace X]
+    [TopologicalSpace Y] (f : OnePoint X → Y) : Continuous f ↔
+    Tendsto (fun x : X ↦ f x) (coclosedCompact X) (𝓝 (f ∞)) ∧ Continuous (fun x : X ↦ f x) := by
+  simp_rw [continuous_iff_continuousAt, OnePoint.forall, continuousAt_coe, continuousAt_infty']
+  rfl
+
+lemma continuous_iff_of_discrete {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    [DiscreteTopology X] (f : OnePoint X → Y) :
+    Continuous f ↔ Tendsto (fun x : X ↦ f x) cofinite (𝓝 (f ∞)) := by
+  simp [continuous_iff, cocompact_eq_cofinite, continuous_of_discreteTopology]
+
+lemma continuous_iff_of_nat {Y : Type*} [TopologicalSpace Y] (f : OnePoint ℕ → Y) :
+    Continuous f ↔ Tendsto (fun x : ℕ ↦ f x) atTop (𝓝 (f ∞)) := by
+  rw [continuous_iff_of_discrete, Nat.cofinite_eq_atTop]
+
+instance (X : Type*) [TopologicalSpace X] [DiscreteTopology X] :
+    TotallySeparatedSpace (OnePoint X) where
   isTotallySeparated_univ x _ y _ hxy := by
     cases x with
     | none =>
-      cases y with
-      | none => tauto
-      | some val =>
-        refine ⟨{some val}ᶜ, {some val}, isOpen_compl_singleton, ?_, ?_, ?_, ?_, ?_⟩
-        · refine (OnePoint.isOpen_iff_of_not_mem ?_).mpr (isOpen_discrete _)
-          exact (some_ne_none val).symm
-        all_goals simp [Set.union_comm]
+      refine ⟨{y}ᶜ, {y}, isOpen_compl_singleton, ?_, hxy, rfl, (compl_union_self _).symm.subset,
+        disjoint_compl_left⟩
+      rw [OnePoint.isOpen_iff_of_not_mem]
+      exacts [isOpen_discrete _, hxy]
     | some val =>
-      cases y with
-      | none =>
-        refine ⟨{some val}, {some val}ᶜ, ?_, isOpen_compl_singleton, ?_, ?_, ?_, ?_⟩
-        · refine (OnePoint.isOpen_iff_of_not_mem ?_).mpr (isOpen_discrete _)
-          exact (some_ne_none val).symm
-        all_goals simp
-      | some val' =>
-        refine ⟨{some val}, {some val}ᶜ, ?_, isOpen_compl_singleton, ?_, ?_, ?_, ?_⟩
-        · refine (OnePoint.isOpen_iff_of_not_mem ?_).mpr (isOpen_discrete _)
-          exact (some_ne_none val).symm
-        all_goals aesop
+      refine ⟨{some val}, {some val}ᶜ, ?_, isOpen_compl_singleton, rfl, hxy.symm, by simp,
+        disjoint_compl_right⟩
+      rw [OnePoint.isOpen_iff_of_not_mem]
+      exacts [isOpen_discrete _, (Option.some_ne_none val).symm]
 
-def NatUnionInfty := of (OnePoint ℕ)
+instance (X : Type*) [TopologicalSpace X] [c : CompactSpace X] [MetrizableSpace X] :
+    SecondCountableTopology X := by
+  obtain ⟨_, h⟩ := MetrizableSpace.exists_metric (X := X)
+  rw [← h] at c ⊢
+  infer_instance
 
-end Profinite
+end OnePoint
 
 namespace LightProfinite
 
-def NatUnionInftyDiagram : ℕᵒᵖ ⥤ FintypeCat where
-  obj n := FintypeCat.of (Finset.range (unop n + 1))
-  map {_ m} _ k := if h : k.1 ∈ Finset.range (unop m + 1) then ⟨k.1, h⟩ else ⟨unop m, by simp⟩
-  map_comp := by
-    intro _ _ _ _ ⟨⟨⟨(h : _ ≤ _)⟩⟩⟩
-    ext x
-    simp only [Nat.zero_eq, Finset.mem_range, FintypeCat.comp_apply]
-    split_ifs with h₁ h₂ _ _ h₃
+/-- The continuous map from `ℕ∪{∞}` to `ℝ` sending `n` to `1/(n+1)` and `∞` to `0`. -/
+noncomputable def natUnionInftyEmbedding : C(OnePoint ℕ, ℝ) where
+  toFun
+    | ∞ => 0
+    | OnePoint.some n => 1 / (n+1 : ℝ)
+  continuous_toFun := OnePoint.continuous_iff_of_nat _ |>.mpr
+    tendsto_one_div_add_atTop_nhds_zero_nat
+
+/--
+The continuous map from `ℕ∪{∞}` to `ℝ` sending `n` to `1/(n+1)` and `∞` to `0` is a closed
+embedding.
+-/
+lemma closedEmbedding_natUnionInftyEmbedding : ClosedEmbedding natUnionInftyEmbedding := by
+  refine closedEmbedding_of_continuous_injective_closed
+    natUnionInftyEmbedding.continuous ?_ ?_
+  · rintro (_|n) (_|m) h
     · rfl
-    · exfalso
-      apply h₂
-      refine lt_of_lt_of_le h₁ ?_
-      simpa using h
-    · exfalso
-      apply h₂
-      refine lt_of_lt_of_le h₁ ?_
-      simpa using h
-    · rfl
-    · congr 1
-      exact (Nat.eq_of_le_of_lt_succ h h₃).symm
-    · rfl
+    · simp only [natUnionInftyEmbedding, one_div, ContinuousMap.coe_mk, zero_eq_inv] at h
+      rw [← Nat.cast_one, ← Nat.cast_add, eq_comm, Nat.cast_eq_zero] at h
+      simp at h
+    · simp only [natUnionInftyEmbedding, one_div, ContinuousMap.coe_mk, inv_eq_zero] at h
+      rw [← Nat.cast_one, ← Nat.cast_add, Nat.cast_eq_zero] at h
+      simp at h
+    · simp only [natUnionInftyEmbedding, one_div, ContinuousMap.coe_mk, inv_inj, add_left_inj,
+        Nat.cast_inj] at h
+      rw [h]
+  · exact fun _ hC => (hC.isCompact.image natUnionInftyEmbedding.continuous).isClosed
 
-noncomputable def NatUnionInfty := of NatUnionInftyDiagram
+instance : MetrizableSpace (OnePoint ℕ) := closedEmbedding_natUnionInftyEmbedding.metrizableSpace
 
-def extracted_1 (n : ℕ) : LocallyConstant Profinite.NatUnionInfty
-    (NatUnionInfty.diagram.obj ⟨n⟩) where
-  toFun a := by
-    cases a with
-    | none => exact ⟨n, Finset.self_mem_range_succ n⟩
-    | some val => exact if h : _ then ⟨val, h⟩ else ⟨n, Finset.self_mem_range_succ n⟩
-  isLocallyConstant := by
-    rw [IsLocallyConstant.iff_isOpen_fiber]
-    intro ⟨y, hy⟩
-    by_cases h : y = n
-    · rw [OnePoint.isOpen_iff_of_mem]
-      · simp only [Finset.mem_range, isClosed_discrete, true_and]
-        rw [isCompact_iff_finite, ← Set.preimage_compl]
-        subst h
-        refine Set.Finite.preimage (Function.Injective.injOn OnePoint.coe_injective _) ?_
-        rw [← Set.preimage_compl]
-        refine Set.Finite.preimage ?_ (inferInstance : Finite _)
-        intro a ha b hb h
-        cases a with
-        | none => simp [OnePoint.infty] at ha
-        | some a =>
-          cases b with
-          | none => simp [OnePoint.infty] at hb
-          | some b =>
-            simp only [Set.preimage_compl, Set.mem_compl_iff, Set.mem_preimage,
-              Set.mem_singleton_iff, dite_eq_right_iff, not_forall] at ha hb
-            obtain ⟨ha, _⟩ := ha
-            obtain ⟨hb, _⟩ := hb
-            rw [Subtype.ext_iff_val] at h
-            simp only [ha, reduceDite, hb] at h
-            rw [h]
-      · simp [OnePoint.infty, h]
-    · rw [OnePoint.isOpen_iff_of_not_mem]
-      · simp
-      · simp only [OnePoint.infty, Finset.mem_range, Set.mem_preimage, Set.mem_singleton_iff]
-        rw [Subtype.ext_iff_val]
-        aesop
+/-- The one point compactification of the natural numbers as a light profinite set. -/
+abbrev NatUnionInfty : LightProfinite := of (OnePoint ℕ)
 
-noncomputable def NatUnionInftyIso_hom :
-    Profinite.NatUnionInfty ⟶ NatUnionInfty.toProfinite := by
-  refine fromProfinite' extracted_1 ?_
-  · intro n
-    ext x
-    cases x with
-    | none =>
-      simp only [transitionMap, extracted_1, Finset.mem_range, LocallyConstant.coe_mk,
-        Function.comp_apply]
-      simp [NatUnionInfty, of, NatUnionInftyDiagram]
-    | some val =>
-      simp [transitionMap, extracted_1]
-      simp [NatUnionInfty, of, NatUnionInftyDiagram]
-      split_ifs with h₁ h₂ h₃ h₄
-      · rfl
-      · rfl
-      · simp at h₃
-      · simpa using lt_of_le_of_lt (not_lt.mp h₁) h₄
-      · rfl
+@[inherit_doc]
+scoped notation "ℕ∪{∞}" => NatUnionInfty
 
-theorem extracted_2 : Function.Bijective NatUnionInftyIso_hom := by
-  simp only [NatUnionInftyIso_hom, fromProfinite']
-  constructor
-  · apply homMk_injective _ _
-    intro a b h
-    cases a with
-    | none =>
-      cases b with
-      | none => rfl
-      | some b =>
-        have hh : extracted_1 (b + 1) none = extracted_1 (b + 1) (some b) := h (b + 1)
-        simp only [extracted_1, Finset.mem_range, LocallyConstant.coe_mk] at hh
-        split_ifs at hh with h'
-        · simpa using Subtype.ext_iff_val.mp hh
-        · simp [add_assoc] at h'
-    | some a =>
-      cases b with
-      | none =>
-        have hh : extracted_1 (a + 1) (some a) = extracted_1 (a + 1) none := h (a + 1)
-        simp only [extracted_1, Finset.mem_range, LocallyConstant.coe_mk, dite_eq_right_iff] at hh
-        specialize hh (by simp [add_assoc])
-        simpa using Subtype.ext_iff_val.mp hh
-      | some b =>
-        have hh : extracted_1 (a + b) (some a) = extracted_1 (a + b) (some b) := h (a + b)
-        simp only [extracted_1, Finset.mem_range, LocallyConstant.coe_mk] at hh
-        split_ifs at hh with h₁ h₂ h₂
-        · replace hh := Subtype.ext_iff_val.mp hh
-          dsimp at hh
-          rw [hh]
-        · simp [add_comm a b, add_assoc] at h₂
-        · simp [add_assoc] at h₁
-        · simp [add_comm a b, add_assoc] at h₂
-  · apply homMk_surjective _ _
-    intro a n
-    refine ⟨some (NatUnionInfty.proj n a).1, ?_⟩
-    change extracted_1 n (some (NatUnionInfty.proj n a).1) = _
-    simp [extracted_1]
-    intro h
-    rw [Subtype.ext_iff_val]
-    have := ((proj NatUnionInfty n) a).prop
-    simp only [concreteCategory_forget_obj, Finset.mem_range] at this
-    simpa using lt_of_le_of_lt h this
+instance : Coe ℕ ℕ∪{∞} := optionCoe
 
-instance : Mono NatUnionInftyIso_hom := by
-  rw [Profinite.mono_iff_injective]
-  exact extracted_2.1
+open Filter Topology
 
--- TODO: prove that in general, any countable profinite space is light.
-instance : Profinite.NatUnionInfty.IsLight :=
-  Profinite.isLight_of_mono NatUnionInftyIso_hom
-
-noncomputable def NatUnionInftyIso : ofIsLight Profinite.NatUnionInfty ≅ NatUnionInfty :=
-  isoMk (Profinite.isoOfBijective NatUnionInftyIso_hom extracted_2)
+lemma continuous_iff_convergent {Y : Type*} [TopologicalSpace Y] (f : ℕ∪{∞} → Y) :
+    Continuous f ↔ Tendsto (fun x : ℕ ↦ f x) atTop (𝓝 (f ∞)) :=
+  continuous_iff_of_nat f
 
 end LightProfinite

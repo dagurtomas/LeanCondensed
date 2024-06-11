@@ -7,7 +7,7 @@ noncomputable section
 
 open CategoryTheory Functor Limits Condensed FintypeCat StructuredArrow Condensed.LocallyConstant
 
-attribute [local instance] FintypeCat.discreteTopology
+attribute [local instance] FintypeCat.discreteTopology ConcreteCategory.instFunLike
 
 namespace Condensed
 

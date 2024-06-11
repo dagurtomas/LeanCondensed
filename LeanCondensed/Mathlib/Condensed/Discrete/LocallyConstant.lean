@@ -22,58 +22,60 @@ universe u w
 
 open CategoryTheory Limits Condensed LocallyConstant Opposite
 
+attribute [local instance] ConcreteCategory.instFunLike
+
 namespace Condensed
 
-namespace GeneralUniverse
+-- namespace GeneralUniverse
 
-open CompHaus
+-- open CompHaus
 
-variable (X : Condensed.{u} (TypeMax.{u, w})) {α : Type u} [Finite α] (σ : α → Type u)
-  [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
+-- variable (X : Condensed.{u} (TypeMax.{u, w})) {α : Type u} [Finite α] (σ : α → Type u)
+--   [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
 
-/--
-The comparison map from the value of a condensed set on a finite coproduct to the product of the
-values on the components.
--/
-def sigmaComparison : X.val.obj ⟨(of ((a : α) × σ a))⟩ ⟶ ((a : α) → X.val.obj ⟨of (σ a)⟩) :=
-  fun x a ↦ X.val.map ⟨Sigma.mk a, continuous_sigmaMk⟩ x
+-- /--
+-- The comparison map from the value of a condensed set on a finite coproduct to the product of the
+-- values on the components.
+-- -/
+-- def sigmaComparison : X.val.obj ⟨(of ((a : α) × σ a))⟩ ⟶ ((a : α) → X.val.obj ⟨of (σ a)⟩) :=
+--   fun x a ↦ X.val.map ⟨Sigma.mk a, continuous_sigmaMk⟩ x
 
-noncomputable instance : PreservesLimitsOfShape (Discrete α) X.val :=
-  let α' := (Countable.toSmall.{0} α).equiv_small.choose
-  let e : α ≃ α' := (Countable.toSmall α).equiv_small.choose_spec.some
-  have : Fintype α := Fintype.ofFinite _
-  have : Fintype α' := Fintype.ofEquiv α e
-  have : PreservesFiniteProducts X.val := sorry
-  preservesLimitsOfShapeOfEquiv (Discrete.equivalence e.symm) X.val
+-- noncomputable instance : PreservesLimitsOfShape (Discrete α) X.val :=
+--   let α' := (Countable.toSmall.{0} α).equiv_small.choose
+--   let e : α ≃ α' := (Countable.toSmall α).equiv_small.choose_spec.some
+--   have : Fintype α := Fintype.ofFinite _
+--   have : Fintype α' := Fintype.ofEquiv α e
+--   have : PreservesFiniteProducts X.val := sorry
+--   preservesLimitsOfShapeOfEquiv (Discrete.equivalence e.symm) X.val
 
-theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
-    (X.val.mapIso (opCoproductIsoProduct' (finiteCoproduct.isColimit.{u, u} fun a ↦ of (σ a))
-      (productIsProduct fun x ↦ Opposite.op (of (σ x))))).hom ≫
-    (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
-    (Types.productIso.{u} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
-  ext x a
-  simp only [Cofan.mk_pt, Fan.mk_pt, Functor.mapIso_hom, PreservesProduct.iso_hom, types_comp_apply,
-    Types.productIso_hom_comp_eval_apply]
-  have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
-  simp only [types_comp_apply] at this
-  rw [this, ← FunctorToTypes.map_comp_apply]
-  simp only [sigmaComparison]
-  apply congrFun
-  congr 2
-  erw [← opCoproductIsoProduct_inv_comp_ι]
-  simp only [coe_of, Opposite.unop_op, unop_comp, Quiver.Hom.unop_op, Category.assoc]
-  change finiteCoproduct.ι.{u, u} (fun a ↦ of (σ a)) _ = _
-  rw [← Sigma.ι_comp_toFiniteCoproduct]
-  congr
-  simp only [opCoproductIsoProduct, ← unop_comp, coproductIsoCoproduct,
-    opCoproductIsoProduct'_comp_self]
-  rfl
+-- theorem sigmaComparison_eq_comp_isos : sigmaComparison X σ =
+--     (X.val.mapIso (opCoproductIsoProduct' (finiteCoproduct.isColimit.{u, u} fun a ↦ of (σ a))
+--       (productIsProduct fun x ↦ Opposite.op (of (σ x))))).hom ≫
+--     (PreservesProduct.iso X.val fun a ↦ ⟨of (σ a)⟩).hom ≫
+--     (Types.productIso.{u} fun a ↦ X.val.obj ⟨of (σ a)⟩).hom := by
+--   ext x a
+--   simp only [Cofan.mk_pt, Fan.mk_pt, Functor.mapIso_hom, PreservesProduct.iso_hom, types_comp_apply,
+--     Types.productIso_hom_comp_eval_apply]
+--   have := congrFun (piComparison_comp_π X.val (fun a ↦ ⟨of (σ a)⟩) a)
+--   simp only [types_comp_apply] at this
+--   rw [this, ← FunctorToTypes.map_comp_apply]
+--   simp only [sigmaComparison]
+--   apply congrFun
+--   congr 2
+--   erw [← opCoproductIsoProduct_inv_comp_ι]
+--   simp only [coe_of, Opposite.unop_op, unop_comp, Quiver.Hom.unop_op, Category.assoc]
+--   change finiteCoproduct.ι.{u, u} (fun a ↦ of (σ a)) _ = _
+--   rw [← Sigma.ι_comp_toFiniteCoproduct]
+--   congr
+--   simp only [opCoproductIsoProduct, ← unop_comp, coproductIsoCoproduct,
+--     opCoproductIsoProduct'_comp_self]
+--   rfl
 
-instance isIsoSigmaComparison : IsIso <| sigmaComparison X σ := by
-  rw [sigmaComparison_eq_comp_isos]
-  infer_instance
+-- instance isIsoSigmaComparison : IsIso <| sigmaComparison X σ := by
+--   rw [sigmaComparison_eq_comp_isos]
+--   infer_instance
 
-end GeneralUniverse
+-- end GeneralUniverse
 
 section SigmaComparison
 
@@ -169,12 +171,10 @@ def functor : Type (u+1) ⥤ CondensedSet.{u} where
 `Condensed.LocallyConstant.functor` is naturally isomorphic to the restriction of
 `topCatToCondensed` to discrete topological spaces.
 -/
-noncomputable def functorIsoTopCatToCondensed : functor.{u} ≅ TopCat.discrete ⋙ topCatToCondensed :=
-  @natIsoOfCompFullyFaithful _ _ _ _ _ _ _ _ (sheafToPresheaf _ _)
-    (instFullSheafFunctorOppositeSheafToPresheaf _ _)
-    (instFaithfulSheafFunctorOppositeSheafToPresheaf _ _)
-    (NatIso.ofComponents (fun X ↦ functorToPresheavesIsoTopCatToCondensed X))
-  -- why aren't these `Full` and `Faithful` instances found automatically??
+noncomputable def functorIsoTopCatToCondensed :
+    functor.{u} ≅ TopCat.discrete ⋙ topCatToCondensed :=
+  NatIso.ofComponents (fun X ↦ (fullyFaithfulSheafToPresheaf _ _).preimageIso
+    (functorToPresheavesIsoTopCatToCondensed X))
 
 section
 
@@ -525,16 +525,19 @@ end Adjunction
 adjoints).
 -/
 noncomputable def iso : functor ≅ discrete _ :=
-  adjunction.leftAdjointUniq (discrete_underlying_adj _)
+  adjunction.leftAdjointUniq (discreteUnderlyingAdj _)
 
-instance : functor.Faithful := adjunction.L_faithful_of_unit_isIso
+noncomputable def functorFullyFaithful : functor.FullyFaithful :=
+  adjunction.fullyFaithfulLOfIsIsoUnit
 
-instance : functor.Full := adjunction.L_full_of_unit_isIso
+instance : functor.Faithful := functorFullyFaithful.faithful
+
+instance : functor.Full := functorFullyFaithful.full
 
 instance : (discrete (Type _)).Faithful := Functor.Faithful.of_iso iso
 
 instance : (discrete (Type _)).Full := Functor.Full.of_iso iso
 
-example : IsIso (discrete_underlying_adj (Type _)).unit := inferInstance
+example : IsIso (discreteUnderlyingAdj (Type _)).unit := inferInstance
 
 end Condensed.LocallyConstant

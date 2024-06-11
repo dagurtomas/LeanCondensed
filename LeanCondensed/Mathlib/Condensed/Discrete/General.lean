@@ -12,20 +12,20 @@ variable (C : Type w) [Category.{u+1} C] [HasWeakSheafify (coherentTopology Comp
 -- We need the API being developed in #12332 to be able to assume that `s` preserves sheafification
 -- Then the following should hold:
 
-theorem isIso_unit : IsIso (discrete_underlying_adj C).unit := by
+theorem isIso_unit : IsIso (discreteUnderlyingAdj C).unit := by
   apply (config := { allowSynthFailures := true }) NatIso.isIso_of_isIso_app
   intro X
   apply (config := { allowSynthFailures := true }) Functor.ReflectsIsomorphisms.reflects s
-  have : IsIso ((discrete_underlying_adj (Type _)).unit.app (s.obj X)) := inferInstance
+  have : IsIso ((discreteUnderlyingAdj (Type _)).unit.app (s.obj X)) := inferInstance
   sorry
 
 variable (R : Type (u+1)) [Ring R]
 
-theorem CondensedMod.isIso_unit : IsIso (discrete_underlying_adj (ModuleCat.{u+1} R)).unit := by
+theorem CondensedMod.isIso_unit : IsIso (discreteUnderlyingAdj (ModuleCat.{u+1} R)).unit := by
   apply (config := { allowSynthFailures := true }) NatIso.isIso_of_isIso_app
   intro X
   apply (config := { allowSynthFailures := true }) Functor.ReflectsIsomorphisms.reflects
     (CategoryTheory.forget _)
-  have : IsIso ((discrete_underlying_adj (Type _)).unit.app ((CategoryTheory.forget _).obj X)) :=
+  have : IsIso ((discreteUnderlyingAdj (Type _)).unit.app ((CategoryTheory.forget _).obj X)) :=
     inferInstance
   sorry

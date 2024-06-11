@@ -1,4 +1,4 @@
-import LeanCondensed.Mathlib.Topology.Category.LightProfinite.Basic
+import Mathlib.Topology.Category.LightProfinite.Basic
 import Mathlib.CategoryTheory.Filtered.Final
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
 

@@ -3,8 +3,8 @@ Copyright (c) 2023 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Mathlib.Condensed.Light.Explicit
-import Mathlib.Condensed.TopComparison -- Only difference is universes
+import Mathlib.Condensed.Light.Explicit
+import Mathlib.Condensed.TopComparison
 
 /-!
 

@@ -154,7 +154,8 @@ variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
   {t : C} (ht : IsTerminal t)
 
 variable {D : Type u} [Category.{v} D] (K : GrothendieckTopology D) [HasWeakSheafify K A]
-variable [HasLimits A] (G : C ⥤ D) [G.Full] [G.Faithful]
+variable (G : C ⥤ D) [G.Full] [G.Faithful]
+  [∀ (X : Dᵒᵖ), HasLimitsOfShape (StructuredArrow X G.op) A]
   [G.IsCoverDense K] [G.IsContinuous J K] [G.IsCocontinuous J K] (ht' : IsTerminal (G.obj t))
 
 variable [(constantSheaf J A).Faithful] [(constantSheaf J A).Full]

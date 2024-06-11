@@ -6,6 +6,8 @@ universe u
 
 open CategoryTheory Limits Functor FintypeCat
 
+attribute [local instance] ConcreteCategory.instFunLike
+
 namespace Condensed
 
 variable {C : Type*} [Category C]
@@ -96,7 +98,7 @@ open List in
 theorem isDiscrete_tfae :
     TFAE
     [ X.IsDiscrete
-    , IsIso ((Condensed.discrete_underlying_adj _).counit.app X)
+    , IsIso ((Condensed.discreteUnderlyingAdj _).counit.app X)
     , X ∈ (Condensed.discrete _).essImage
     , X ∈ Condensed.LocallyConstant.functor.essImage
     , IsIso (Condensed.LocallyConstant.adjunction.counit.app X)
@@ -106,7 +108,7 @@ theorem isDiscrete_tfae :
         (IsColimit <| (profiniteToCompHaus.op ⋙ X.val).mapCocone S.asLimitCone.op)
     ] := by
   tfae_have 1 ↔ 2
-  · exact isDiscrete_iff_isIso_counit_app _ (Condensed.discrete_underlying_adj _) _
+  · exact isDiscrete_iff_isIso_counit_app _ (Condensed.discreteUnderlyingAdj _) _
   tfae_have 1 ↔ 3
   · exact Sheaf.isDiscrete_iff_mem_essImage _ _ _ _
   tfae_have 1 ↔ 4

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
-import LeanCondensed.Mathlib.Condensed.Light.Discrete
+import Mathlib.Condensed.Light.Discrete
 set_option profiler.threshold 500
 /-!
 
@@ -30,7 +30,7 @@ open Profinite LightProfinite
 
 variable (X : LightCondSet.{u}) {α : Type u} [Finite α] (σ : α → Type u)
   [∀ a, TopologicalSpace (σ a)] [∀ a, CompactSpace (σ a)] [∀ a, T2Space (σ a)]
-  [∀ a, TotallyDisconnectedSpace (σ a)] [∀ a, IsLight (of (σ a))]
+  [∀ a, TotallyDisconnectedSpace (σ a)] [∀ a, SecondCountableTopology (of (σ a))]
 
 -- instance : IsLight (Profinite.of ((a : α) × σ a)) := sorry
 
