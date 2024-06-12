@@ -34,9 +34,33 @@ class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
   exact_limit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (limit F).ShortExact
 
+attribute [instance] HasExactLimitsOfShape.hasLimitsOfShape
+
+instance [HasLimitsOfShape I A] [PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)] :
+    HasExactLimitsOfShape I A where
+  exact_limit := sorry
+
+instance [HasExactLimitsOfShape I A] : PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A) := sorry
+
+lemma hasExactLimitsOfShape_iff_lim_rightExact [HasLimitsOfShape I A] :
+    HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
+  ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
+
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
   exact_colimit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimit F).ShortExact
+
+attribute [instance] HasExactColimitsOfShape.hasColimitsOfShape
+
+instance [HasColimitsOfShape I A] [PreservesFiniteLimits (colim : (I ⥤ A) ⥤ A)] :
+    HasExactColimitsOfShape I A where
+  exact_colimit := sorry
+
+instance [HasExactColimitsOfShape I A] : PreservesFiniteLimits (colim : (I ⥤ A) ⥤ A) := sorry
+
+lemma hasExactColimitsOfShape_iff_colim_leftExact [HasLimitsOfShape I A] :
+    HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
+  ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
 end
 
