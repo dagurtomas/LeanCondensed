@@ -5,7 +5,7 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.CategoryTheory.Limits.ConcreteCategory
 import Mathlib.Topology.Category.LightProfinite.Basic
-import LeanCondensed.NatFunctor
+import LeanCondensed.Misc.NatFunctor
 /-!
 # Light profinite sets as limits of finite sets.
 

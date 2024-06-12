@@ -14,9 +14,9 @@ import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstantModule
 import LeanCondensed.Mathlib.Condensed.Light.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
-import LeanCondensed.NatFunctor
+import LeanCondensed.Misc.NatFunctor
+import LeanCondensed.Misc.Promote
+import LeanCondensed.Misc.SheafHomForget
 import LeanCondensed.Projects.AB
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.LightSolid
-import LeanCondensed.Promote
-import LeanCondensed.SheafHomForget

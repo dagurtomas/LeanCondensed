@@ -8,7 +8,7 @@ import Mathlib.Condensed.Module
 import Mathlib.Topology.LocallyConstant.Algebra
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
-import LeanCondensed.SheafHomForget
+import LeanCondensed.Misc.SheafHomForget
 
 universe u
 
