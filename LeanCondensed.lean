@@ -2,6 +2,11 @@ import LeanCondensed.Discrete.Colimit
 import LeanCondensed.Discrete.DiscreteObjects
 import LeanCondensed.Discrete.Extend
 import LeanCondensed.Discrete.IsDiscrete
+import LeanCondensed.Epi.Coherent
+import LeanCondensed.Epi.Condensed
+import LeanCondensed.Epi.EssentiallySmall
+import LeanCondensed.Epi.ExtensiveTopology
+import LeanCondensed.Epi.LightCondensed
 import LeanCondensed.LightProfinite.AsLimit
 import LeanCondensed.LightProfinite.Sequences
 import LeanCondensed.LightProfinite.SequentialLimit
