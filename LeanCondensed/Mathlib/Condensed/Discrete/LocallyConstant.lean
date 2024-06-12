@@ -5,7 +5,6 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Condensed.TopComparison
 import Mathlib.Condensed.Discrete
-set_option profiler true
 /-!
 
 # The presheaf of locally constant maps as a condensed set
