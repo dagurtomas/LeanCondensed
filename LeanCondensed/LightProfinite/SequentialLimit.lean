@@ -3,7 +3,8 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.LightProfinite.AsLimit
+import LeanCondensed.LightProfinite.AsLimit /- Actually only needs
+`LeanCondensed.LightProfinite.Basic` together with the fact that `ℕ` is a countable category... -/
 /-!
 
 # Limits of surjections in `LightProfinite`

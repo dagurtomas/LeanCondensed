@@ -3,8 +3,6 @@ import LeanCondensed.Discrete.DiscreteObjects
 import LeanCondensed.Discrete.Extend
 import LeanCondensed.Discrete.IsDiscrete
 import LeanCondensed.LightProfinite.AsLimit
-import LeanCondensed.LightProfinite.Maps
-import LeanCondensed.LightProfinite.Reindex
 import LeanCondensed.LightProfinite.Sequences
 import LeanCondensed.LightProfinite.SequentialLimit
 import LeanCondensed.Mathlib.CategoryTheory.Adjunction.KanExtension
@@ -16,5 +14,9 @@ import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstantModule
 import LeanCondensed.Mathlib.Condensed.Light.LocallyConstant
 import LeanCondensed.Mathlib.Condensed.Light.TopComparison
+import LeanCondensed.NatFunctor
+import LeanCondensed.Projects.AB
+import LeanCondensed.Projects.InternallyProjective
+import LeanCondensed.Projects.LightSolid
 import LeanCondensed.Promote
 import LeanCondensed.SheafHomForget

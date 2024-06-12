@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dagur Asgeirsson
+-/
 import LeanCondensed.Discrete.Colimit
 import LeanCondensed.Discrete.DiscreteObjects
 import LeanCondensed.Mathlib.Condensed.Discrete.LocallyConstant

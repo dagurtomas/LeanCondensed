@@ -1,6 +1,18 @@
+/-
+Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dagur Asgeirsson
+-/
 import Mathlib.Topology.Category.LightProfinite.Basic
 import Mathlib.CategoryTheory.Filtered.Final
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
+/-!
+
+This file contains some constructions for functors from `ℕ` and `ℕᵒᵖ`, and natural transformations
+between such functors.
+
+Some similar material due to Joël Riou is already in mathlib somewhere.
+-/
 
 universe u
 
@@ -76,11 +88,6 @@ def Nat.functor_mk' (f : ℕ → C) (h : (n : ℕ) → f n ⟶ f (n + 1)) :
   map_id _ := compose_n_id' _ _ _
   map_comp _ _ := compose_n_trans' _ _ _ _
 
--- variable {J D : Type*} [Category J] [Category D] (F : J ⥤ C) (G : C ⥤ D) [ReflectsLimit F G]
---     [HasLimit (F ⋙ G)]
-
--- instance : HasLimit F := sorry
-
 @[simps]
 def natTrans_nat_mk {F G : ℕ ⥤ C} (f : (n : ℕ) → F.obj n ⟶ G.obj n)
     (w : ∀ n, F.map (homOfLE (Nat.le_succ _)) ≫ f (n + 1) = f n ≫ G.map (homOfLE (Nat.le_succ _))) :
@@ -144,7 +151,6 @@ lemma initial : (Nat.functor g hg).op.Initial :=
   have := final g hg hg'
   Functor.initial_op_of_final _
 
-
 @[simps!]
 noncomputable
 def Functor.nat_op_cone_mk' (F : ℕᵒᵖ ⥤ C) (X : C) (f : (n : ℕ) → (X ⟶ F.obj ⟨g n⟩))
@@ -155,34 +161,7 @@ def Functor.nat_op_cone_mk' (F : ℕᵒᵖ ⥤ C) (X : C) (f : (n : ℕ) → (X 
 
 def f_initial (F : ℕᵒᵖ ⥤ C) (X : C) (m : ℕ) (f : (n : ℕ) → m ≤ n → (X ⟶ F.obj ⟨n⟩)) :
     let g := fun n : ℕ ↦ max m n
-    -- have hg : Monotone g := fun _ _ h ↦ max_le_max_left _ h
-    -- have hg' : ∀ n, ∃ a, n ≤ g a := fun n ↦ ⟨n, le_max_right _ _⟩
-    (n : ℕ) → X ⟶ F.obj ⟨g n⟩ := fun n ↦ f (max m n) (le_max_left _ _)
-
--- lemma h_initial (F : ℕᵒᵖ ⥤ C) (X : C) (m : ℕ) (f : (n : ℕ) → m ≤ n → (X ⟶ F.obj ⟨n⟩))
---     (h : ∀ n (h : m ≤ n), f (n+1) (h.trans (Nat.le_succ n)) ≫
---       F.map (homOfLE (Nat.le_succ n)).op = f n h) :
---     let g := fun n : ℕ ↦ max m n
---     have hg : Monotone g := fun _ _ h ↦ max_le_max_left _ h
---     have hg' : ∀ n, ∃ a, n ≤ g a := fun n ↦ ⟨n, le_max_right _ _⟩
---     ∀ n, f_initial F X m f (n+1) ≫ F.map (homOfLE (hg (Nat.le_succ n))).op =
---       f_initial F X m f n := by
---   intro g hg hg' n
---   simp [f_initial]
---   induction m with
---   | zero =>
---     have hh : ∀ k, max 0 k = k := by simp
---     change _ ≫ F.map ((eqToHom (hh (n+1))).op ≫
---       (homOfLE (Nat.le_succ n)).op ≫ (eqToHom (hh n)).op) = _
---     simp only [Nat.zero_eq, op_id, eqToHom_op, Functor.map_comp, eqToHom_map, ← Category.assoc]
---     simp only [Nat.zero_eq, ge_iff_le, zero_le, max_eq_right, eqToHom_naturality, Category.assoc]
---     -- have : f (n + 1) (zero_le (n+1)) = eqToHom _ ≫ f _ _ := sorry
---     have : F.obj ⟨n⟩ = F.obj ⟨max 0 n⟩ := by simp
---     have : f (max 0 n) (zero_le _) = f n (zero_le _) ≫ eqToHom this := by
---       simp only [ge_iff_le, zero_le, max_eq_right, ← eqToHom_map]
---       rw [← h n, ← h (max 0 n)]
---       sorry
---     sorry
---   | succ n ih => sorry
+    (n : ℕ) → X ⟶ F.obj ⟨g n⟩ :=
+  fun n ↦ f (max m n) (le_max_left _ _)
 
 end CategoryTheory

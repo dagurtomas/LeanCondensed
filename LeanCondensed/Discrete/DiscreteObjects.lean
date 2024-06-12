@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dagur Asgeirsson
+-/
 import Mathlib.CategoryTheory.Adjunction.FullyFaithful
 -- TODO: Move the stuff that depends on the following imports to separate files
 import Mathlib.Topology.Category.TopCat.EpiMono
