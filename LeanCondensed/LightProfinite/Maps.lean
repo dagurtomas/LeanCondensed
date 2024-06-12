@@ -69,9 +69,15 @@ lemma homMk_injective {X Y : LightProfinite}
   simp only [Function.comp_apply]
   erw [hab]
 
+universe u
+
+-- TODO: PR to `Basic`
+instance {J : Type} [Category J] [CountableCategory J] :
+    PreservesLimitsOfShape J (forget LightProfinite.{u}) :=
+  have : PreservesLimitsOfSize.{0} (forget Profinite) := preservesLimitsOfSizeShrink _
+  show PreservesLimitsOfShape J (lightToProfinite.{u} ⋙ forget Profinite) from inferInstance
+
 theorem ext {Y : LightProfinite} {a b : Y} (h : ∀ n, Y.proj n a = Y.proj n b) : a = b := by
-  have : PreservesLimitsOfShape ℕᵒᵖ (forget LightProfinite) :=
-    sorry -- this is just a question of putting together some pieces that are already there.
   exact Concrete.isLimit_ext _ Y.asLimit _ _ fun n ↦ h n.unop
 
 lemma homMk_surjective {X Y : LightProfinite}
@@ -127,8 +133,6 @@ lemma eq_homMk {X Y : LightProfinite} (f : X ⟶ Y) :
   simp only [Functor.comp_obj, CategoryTheory.comp_apply, homMk,
     locallyConstant_of_hom, LocallyConstant.coe_mk, IsLimit.fac]
   rfl
-
-universe u
 
 variable (X : LightProfinite.{u}) (f : ℕ → ℕ) (hf : Monotone f) (hf' : ∀ n, (∃ m, n ≤ f m))
 

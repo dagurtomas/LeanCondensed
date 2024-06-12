@@ -49,12 +49,14 @@ A cone over `X.diagram` whose cone point is isomorphic to `X`.
 -/
 def asLimitConeAux : Cone X.diagram :=
   let c : Cone (X.diagram ⋙ lightToProfinite) := X.toLightDiagram.cone
-  (CreatesLimit.lifts c X.toLightDiagram.isLimit).liftedCone
+  let hc : IsLimit c := X.toLightDiagram.isLimit
+  liftLimit hc
 
 /-- An auxiliary isomorphism of cones used to prove that `X.asLimitConeAux` is a limit cone. -/
 def isoMapCone : lightToProfinite.mapCone X.asLimitConeAux ≅ X.toLightDiagram.cone :=
   let c : Cone (X.diagram ⋙ lightToProfinite) := X.toLightDiagram.cone
-  (CreatesLimit.lifts c X.toLightDiagram.isLimit).validLift
+  let hc : IsLimit c := X.toLightDiagram.isLimit
+  liftedLimitMapsToOriginal hc
 
 /--
 `X.asLimitConeAux` is indeed a limit cone.
@@ -83,9 +85,22 @@ def lim : Limits.LimitCone X.diagram := ⟨X.asLimitCone, X.asLimit⟩
 
 abbrev proj (n : ℕ) : X ⟶ X.diagram.obj ⟨n⟩ := X.asLimitCone.π.app ⟨n⟩
 
+lemma map_liftedLimit {C D J : Type*} [Category C] [Category D] [Category J] {K : J ⥤ C}
+    {F : C ⥤ D} [CreatesLimit K F] {c : Cone (K ⋙ F)} (t : IsLimit c) (n : J) :
+    (liftedLimitMapsToOriginal t).inv.hom ≫ F.map ((liftLimit t).π.app n) = c.π.app n := by
+  have : (liftedLimitMapsToOriginal t).hom.hom ≫ c.π.app n = F.map ((liftLimit t).π.app n) := by
+    simp
+  rw [← this, ← Category.assoc, ← Cone.category_comp_hom]
+  simp
+
 lemma lightToProfinite_map_proj_eq (n : ℕ) : lightToProfinite.map (X.proj n) =
     (lightToProfinite.obj X).asLimitCone.π.app _ := by
-  sorry
+  simp only [Functor.comp_obj, proj, asLimitCone, Functor.const_obj_obj, asLimitConeAux, isoMapCone,
+    Functor.FullyFaithful.preimageIso_inv, Cones.ptIsoOfIso_inv, Functor.map_comp,
+    Functor.FullyFaithful.map_preimage]
+  let c : Cone (X.diagram ⋙ lightToProfinite) := X.toLightDiagram.cone
+  let hc : IsLimit c := X.toLightDiagram.isLimit
+  exact map_liftedLimit hc _
 
 lemma proj_surjective (n : ℕ) : Function.Surjective (X.proj n) := by
   change Function.Surjective (lightToProfinite.map (X.proj n))
