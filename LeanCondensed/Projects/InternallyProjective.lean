@@ -32,12 +32,12 @@ section MonoidalClosed
 
 variable (R : Type u) [Ring R] -- might need some more assumptions
 
-/- this should be done in much greater generality for sheaf categories, or even general reflective
-subcategories -/
+/- This should be done in much greater generality for sheaf categories, or even reflective
+subcategories satisfying some extra properties. -/
 instance : MonoidalCategory (LightCondMod.{u} R) := sorry
 
-/- this should be done in much greater generality for sheaf categories, or even general reflective
-subcategories -/
+/- This should be done in much greater generality for sheaf categories, or even reflective
+subcategories satisfying some extra properties. -/
 instance : MonoidalClosed (LightCondMod.{u} R) := sorry
 
 end MonoidalClosed

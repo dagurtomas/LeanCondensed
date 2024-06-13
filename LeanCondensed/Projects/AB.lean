@@ -11,7 +11,6 @@ import Mathlib.Condensed.Light.Module
 
 # Project: AB axioms, light condensed abelian groups has countable AB4*, etc.
 
-
 -/
 
 open CategoryTheory Limits ShortComplex
@@ -24,8 +23,6 @@ section
 
 variable (I : Type*) [Category I]
 variable (A : Type*) [Category A] [Abelian A]
--- In the application, `A` is abelian, but `HasZeroMorphisms A` is the minimal condition
--- to state the AB axioms.
 
 example (S : ShortComplex A) (h : S.Exact) : Exact S.f S.g := by
   rwa [exact_iff_shortComplex_exact S]
@@ -53,6 +50,11 @@ lemma hasExactLimitsOfShape_iff_lim_rightExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
+lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
+    HasExactLimitsOfShape I A ↔
+       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (limitCone F).pt.ShortExact) :=
+  sorry
+
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
   exact_colimit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimit F).ShortExact
@@ -68,6 +70,11 @@ instance [HasExactColimitsOfShape I A] : PreservesFiniteLimits (colim : (I ⥤ A
 lemma hasExactColimitsOfShape_iff_colim_leftExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
+
+lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [HasColimitsOfShape I A] :
+    HasExactColimitsOfShape I A ↔
+       ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimitCocone F).pt.ShortExact :=
+  sorry
 
 end
 
@@ -88,9 +95,9 @@ end
 section
 
 variable (A : Type*) [Category A] [Abelian A]
-variable (I : Type*) [Category I] (F : I ⥤ ShortComplex A)
+variable (I : Type*) [Category I] --
 
-lemma mono_of_mono [HasLimitsOfShape I A] (h : ∀ i, Mono (F.obj i).f) :
+lemma mono_of_mono [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i, Mono (F.obj i).f) :
     Mono (ShortComplex.limitCone F).pt.f := by
   simp only [ShortComplex.limitCone, Functor.const_obj_obj]
   have : Mono (whiskerLeft F ShortComplex.π₁Toπ₂) := by
@@ -98,12 +105,12 @@ lemma mono_of_mono [HasLimitsOfShape I A] (h : ∀ i, Mono (F.obj i).f) :
     exact h
   infer_instance
 
-lemma left_exact_of_left_exact [HasLimitsOfShape I A]
+lemma left_exact_of_left_exact [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A)
     (h : ∀ i, Mono (F.obj i).f ∧ (F.obj i).Exact) :
     Mono (ShortComplex.limitCone F).pt.f ∧ (ShortComplex.limitCone F).pt.Exact := by
   sorry
 
-lemma epi_of_epi [HasColimitsOfShape I A] (h : ∀ i, Epi (F.obj i).g) :
+lemma epi_of_epi [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i, Epi (F.obj i).g) :
     Epi (ShortComplex.colimitCocone F).pt.g := by
   simp only [ShortComplex.colimitCocone, Functor.const_obj_obj]
   have : Epi (whiskerLeft F ShortComplex.π₂Toπ₃) := by
@@ -111,13 +118,30 @@ lemma epi_of_epi [HasColimitsOfShape I A] (h : ∀ i, Epi (F.obj i).g) :
     exact h
   infer_instance
 
--- Stating and proving the converse of this lemma should be easy
-lemma abStar_of_preserves_epi [HasLimitsOfShape I A] (h : (∀ i, Epi (F.obj i).g) →
-  Epi (ShortComplex.limitCone F).pt.g) : HasExactLimitsOfShape I A := sorry
+lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
+    ((∀ (F : I ⥤ ShortComplex A),
+      (∀ i, Epi (F.obj i).g) → Epi (ShortComplex.limitCone F).pt.g)) ↔
+    HasExactLimitsOfShape I A := by
+  rw [hasExactLimitsOfShape_iff_limitCone_shortExact]
+  constructor
+  · intro h F hh
+    have := ShortExact.mk' (S := (limitCone F).pt)
+    rw [← and_imp] at this
+    apply this
+    · rw [and_comm]
+      apply left_exact_of_left_exact
+      exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
+    · exact h F (fun i ↦ (hh i).epi_g)
+  · sorry -- easy
 
 -- Stating and proving the converse of this lemma should be easy
-lemma ab_of_preserves_mono [HasColimitsOfShape I A] (h : (∀ i, Mono (F.obj i).f) →
-  Epi (ShortComplex.colimitCocone F).pt.f) : HasExactColimitsOfShape I A := sorry
+lemma ab_of_preserves_mono [HasColimitsOfShape I A] : ((∀ (F : I ⥤ ShortComplex A),
+    (∀ i, Mono (F.obj i).f) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
+      HasExactColimitsOfShape I A := by
+  rw [hasExactColimitsOfShape_iff_colimitCocone_shortExact]
+  constructor
+  · sorry -- analogous to above, need `right_exact_of_right_exact` 
+  · sorry -- easy
 
 lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := sorry
 
