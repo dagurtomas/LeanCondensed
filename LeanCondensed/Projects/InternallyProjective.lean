@@ -123,9 +123,11 @@ def P : LightCondMod R := cokernel (P_map R)
 
 def P_proj : (free R).obj (ℕ∪{∞}).toCondensed ⟶ P R := cokernel.π _
 
-instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
+instance : InternallyProjective (P R) := by
   rw [internallyProjective_iff_tensor_condition]
   intro A B e he S g
   sorry
+
+instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := sorry
 
 end LightCondensed
