@@ -36,7 +36,7 @@ lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (�
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
-  exact_limit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
+  exact_limit (F : I ⥤ ShortComplex A) : (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
 
 attribute [instance] HasExactLimitsOfShape.hasLimitsOfShape
 
@@ -57,7 +57,7 @@ lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
 
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
-  exact_colimit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact
+  exact_colimit (F : I ⥤ ShortComplex A) : (∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact
 
 attribute [instance] HasExactColimitsOfShape.hasColimitsOfShape
 
@@ -71,7 +71,6 @@ lemma hasExactColimitsOfShape_iff_colim_leftExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
--- NR: I think the bracketing on this one was off.
 lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [HasColimitsOfShape I A] :
     HasExactColimitsOfShape I A ↔
        ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (colimitCocone F).pt.ShortExact) :=
@@ -100,7 +99,7 @@ end
 section
 
 variable (A : Type*) [Category A] [Abelian A]
-variable (I : Type*) [Category I] --
+variable (I : Type*) [Category I]
 
 lemma mono_of_mono [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i, Mono (F.obj i).f) :
     Mono (ShortComplex.limitCone F).pt.f := by
@@ -115,7 +114,6 @@ lemma left_exact_of_left_exact [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A)
     Mono (ShortComplex.limitCone F).pt.f ∧ (ShortComplex.limitCone F).pt.Exact := by
   sorry
 
--- NR: Made this one up, think it should be what we want.
 lemma right_exact_of_right_exact [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A)
     (h : ∀ i, Epi (F.obj i).g ∧ (F.obj i).Exact) :
     Epi (ShortComplex.colimitCocone F).pt.g ∧ (ShortComplex.colimitCocone F).pt.Exact := by
