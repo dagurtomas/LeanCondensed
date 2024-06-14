@@ -32,11 +32,11 @@ example : I ⥤ ShortComplex A ≌ ShortComplex (I ⥤ A) :=
 
 lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (∀ i, (F.obj i).Exact) ↔
     ((functorEquivalence I A).inverse.obj F).Exact := by
-  sorry
+    sorry
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
-  exact_limit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (limit F).ShortExact
+  exact_limit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
 
 attribute [instance] HasExactLimitsOfShape.hasLimitsOfShape
 
@@ -50,14 +50,27 @@ lemma hasExactLimitsOfShape_iff_lim_rightExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
-lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
+lemma hasExactLimitsOfShape_iff_limitCone_shortExact [B: HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔
-       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (limitCone F).pt.ShortExact) :=
-  sorry
+       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (limitCone F).pt.ShortExact) := by
+       constructor
+       · intro h F hh
+         obtain ⟨h1,h2⟩ := h
+         have eq := IsLimit.conePointUniqueUpToIso (limit.isLimit F) (isLimitLimitCone F)
+         apply shortExact_of_iso eq
+         exact (h2 F) hh
+       · intro h
+         constructor
+         ·intro F hh
+          have eq := IsLimit.conePointUniqueUpToIso (isLimitLimitCone F) (limit.isLimit F)
+          apply shortExact_of_iso eq
+          exact (h F hh)
+         · exact B
+
 
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
-  exact_colimit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimit F).ShortExact
+  exact_colimit : ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact)
 
 attribute [instance] HasExactColimitsOfShape.hasColimitsOfShape
 
@@ -71,10 +84,22 @@ lemma hasExactColimitsOfShape_iff_colim_leftExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
-lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [HasColimitsOfShape I A] :
+lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [B: HasColimitsOfShape I A] :
     HasExactColimitsOfShape I A ↔
-       ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimitCocone F).pt.ShortExact :=
-  sorry
+       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (colimitCocone F).pt.ShortExact) := by
+       constructor
+       · intro h F hh
+         obtain ⟨h1, h2⟩ := h
+         have eq := IsColimit.coconePointUniqueUpToIso (colimit.isColimit F) (isColimitColimitCocone F)
+         apply shortExact_of_iso eq
+         exact (h2 F) hh
+       · intro h
+         constructor
+         · intro F hh
+           have eq := IsColimit.coconePointUniqueUpToIso (isColimitColimitCocone F) (colimit.isColimit F)
+           apply shortExact_of_iso eq
+           exact (h F hh)
+         · exact B
 
 end
 
@@ -110,6 +135,12 @@ lemma left_exact_of_left_exact [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A)
     Mono (ShortComplex.limitCone F).pt.f ∧ (ShortComplex.limitCone F).pt.Exact := by
   sorry
 
+-- NR: Made this one up, think it should be what we want.
+lemma right_exact_of_right_exact [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A)
+    (h : ∀ i, Epi (F.obj i).g ∧ (F.obj i).Exact) :
+    Epi (ShortComplex.colimitCocone F).pt.g ∧ (ShortComplex.colimitCocone F).pt.Exact := by
+  sorry
+
 lemma epi_of_epi [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i, Epi (F.obj i).g) :
     Epi (ShortComplex.colimitCocone F).pt.g := by
   simp only [ShortComplex.colimitCocone, Functor.const_obj_obj]
@@ -120,7 +151,7 @@ lemma epi_of_epi [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i,
 
 lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
-      (∀ i, Epi (F.obj i).g) → Epi (ShortComplex.limitCone F).pt.g)) ↔
+      (∀ i, (F.obj i).ShortExact) → Epi (ShortComplex.limitCone F).pt.g)) ↔
     HasExactLimitsOfShape I A := by
   rw [hasExactLimitsOfShape_iff_limitCone_shortExact]
   constructor
@@ -131,19 +162,33 @@ lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     · rw [and_comm]
       apply left_exact_of_left_exact
       exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
-    · exact h F (fun i ↦ (hh i).epi_g)
-  · sorry -- easy
+    · exact h _ hh
+  · intro h F hh
+    have := h F hh
+    exact this.epi_g
 
 -- Stating and proving the converse of this lemma should be easy
-lemma ab_of_preserves_mono [HasColimitsOfShape I A] : ((∀ (F : I ⥤ ShortComplex A),
-    (∀ i, Mono (F.obj i).f) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
+lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
+    ((∀ (F : I ⥤ ShortComplex A),
+    (∀ i, (F.obj i).ShortExact) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
       HasExactColimitsOfShape I A := by
   rw [hasExactColimitsOfShape_iff_colimitCocone_shortExact]
   constructor
-  · sorry -- analogous to above, need `right_exact_of_right_exact` 
-  · sorry -- easy
+  · intro h F hh
+    have := ShortExact.mk' (S := (colimitCocone F).pt)
+    rw [Imp.swap (a := Mono (colimitCocone F).pt.f) ] at this
+    rw [← and_imp] at this
+    apply this
+    · rw [and_comm]
+      apply right_exact_of_right_exact
+      exact fun i ↦ ⟨(hh i).epi_g, (hh i).1⟩
+    · exact h _ hh
+  · intro h F hh
+    have := h F hh
+    exact this.mono_f
 
-lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := sorry
+lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := by sorry
+
 
 lemma finite_ab (I : Type) [Finite I] : HasExactColimitsOfShape (Discrete I) A := sorry
 
