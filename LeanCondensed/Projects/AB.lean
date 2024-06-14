@@ -36,7 +36,7 @@ lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (�
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
-  exact_limit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
+  exact_limit (F : I ⥤ ShortComplex A) :  (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
 
 attribute [instance] HasExactLimitsOfShape.hasLimitsOfShape
 
@@ -70,7 +70,7 @@ lemma hasExactLimitsOfShape_iff_limitCone_shortExact [B: HasLimitsOfShape I A] :
 
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
-  exact_colimit : ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact)
+  exact_colimit (F : I ⥤ ShortComplex A) : ((∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact)
 
 attribute [instance] HasExactColimitsOfShape.hasColimitsOfShape
 
@@ -139,7 +139,6 @@ lemma left_exact_of_left_exact [HasLimitsOfShape I A] (F : I ⥤ ShortComplex A)
     Mono (ShortComplex.limitCone F).pt.f ∧ (ShortComplex.limitCone F).pt.Exact := by
   sorry
 
--- NR: Made this one up, think it should be what we want.
 lemma right_exact_of_right_exact [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A)
     (h : ∀ i, Epi (F.obj i).g ∧ (F.obj i).Exact) :
     Epi (ShortComplex.colimitCocone F).pt.g ∧ (ShortComplex.colimitCocone F).pt.Exact := by
@@ -176,8 +175,7 @@ lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     have := h F hh
     exact this.epi_g
 
--- Stating and proving the converse of this lemma should be easy
-lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
+lemma ab_iff_preserves_mono [HasColimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
     (∀ i, (F.obj i).ShortExact) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
       HasExactColimitsOfShape I A := by
@@ -213,7 +211,10 @@ namespace LightCondensed
 
 variable (R : Type u) [Ring R]
 
-instance : sequentialAB4star (LightCondMod.{u} R) := by sorry
+instance : sequentialAB4star (LightCondMod.{u} R) := by
+  apply sequentialAB4star_of_epi_limit_of_epi
+  intros
+  exact LightCondensed.epi_limit_of_epi _
 
 -- the goal:
 instance : countableAB4star (LightCondMod.{u} R) := countableAB4star_of_sequentialAB4star _
