@@ -10,6 +10,7 @@ import Mathlib.CategoryTheory.Preadditive.Injective
 import Mathlib.CategoryTheory.Preadditive.Projective
 import Mathlib.Condensed.Light.Functors
 import Mathlib.Condensed.Light.Module
+import LeanCondensed.LightCondensed.Yoneda
 import LeanCondensed.LightProfinite.Sequences
 /-!
 
@@ -98,12 +99,6 @@ end LightProfinite
 namespace LightCondensed
 
 variable (R : Type _) [CommRing R] -- might need some more assumptions
-
-def freeYoneda (S : LightProfinite) (A : LightCondMod R) :
-    ((free R).obj S.toCondensed ⟶ A) ≃ A.val.obj ⟨S⟩ := by
-  refine ((freeForgetAdjunction R).homEquiv _ _).trans ?_
-  sorry -- yoneda, essentially
--- This probably needs some naturality lemmas
 
 lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : InternallyProjective P ↔
     ∀ {A B : LightCondMod R} (e : A ⟶ B) [Epi e],

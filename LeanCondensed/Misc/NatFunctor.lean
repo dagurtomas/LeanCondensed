@@ -26,10 +26,12 @@ def compose_n (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) {n m : ℕ}
     (hh : n ≤ m) : f m ⟶ f n :=
   Nat.leRecOn hh (fun g ↦ h _ ≫ g) (𝟙 _)
 
+@[simp]
 lemma compose_n_id (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) (n : ℕ) :
     compose_n f h (le_refl n) = 𝟙 _ :=
   Nat.leRecOn_self _
 
+@[simp]
 lemma compose_n_succ (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) (n : ℕ) :
     compose_n f h (Nat.le_succ n) = h n := by
   simp [compose_n, Nat.leRecOn_succ, Nat.leRecOn_self]
@@ -47,13 +49,17 @@ lemma compose_n_trans (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) {n m
     congr
     exact (Nat.leRecOn_succ _ _).symm
 
-@[simps!]
+@[simps! obj]
 def Nat.functor_mk (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) :
     ℕᵒᵖ ⥤ C where
   obj n := f n.unop
   map := @fun ⟨_⟩ ⟨_⟩ ⟨⟨⟨hh⟩⟩⟩ ↦ compose_n f h hh
   map_id _ := compose_n_id _ _ _
   map_comp _ _ := compose_n_trans _ _ _ _
+
+@[simp]
+lemma Nat.functor_mk_map_step (f : ℕ → C) (h : (n : ℕ) → f (n + 1) ⟶ f n) (n : ℕ) :
+    (Nat.functor_mk f h).map (homOfLE n.le_succ).op = h n := by simp [Nat.functor_mk]
 
 def compose_n' (f : ℕ → C) (h : (n : ℕ) → f n ⟶ f (n + 1)) {n m : ℕ}
     (hh : n ≤ m) : f n ⟶ f m :=
