@@ -43,14 +43,6 @@ private noncomputable def preimage_transitionMap
     (preimage R c hF S g n).1 (preimage R c hF S g n).2
   this.choose_spec.choose
 
--- private def preimage_preimage (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
---   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
---     (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
---     (F.obj ⟨n⟩).val.obj ⟨(preimage R c hF S g n).1⟩ :=
---   have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
---     (preimage R c hF S g n).1 (preimage R c hF S g n).2
---   this.choose_spec.choose_spec.choose_spec.choose
-
 private lemma preimage_transitionMap_surj
   (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
@@ -60,15 +52,17 @@ private lemma preimage_transitionMap_surj
     (preimage R c hF S g n).1 (preimage R c hF S g n).2
   this.choose_spec.choose_spec.choose
 
--- private lemma preimage_w
---   (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
---   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
---     (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) : _ =
---       ((F.obj ⟨n⟩).val.map (preimage_transitionMap R c hF S g n).op)
---         (LightCondensed.preimage R c hF S g n).2 := by
---   have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
---     (preimage R c hF S g n).1 (preimage R c hF S g n).2
---   have := this.choose_spec.choose_spec.choose_spec.choose_spec
+private lemma preimage_w
+  (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
+  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
+    (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
+      (F.map (homOfLE n.le_succ).op).val.app ⟨(LightCondensed.preimage R c hF S g (n+1)).1⟩
+        (LightCondensed.preimage R c hF S g (n+1)).2 =
+      ((F.obj ⟨n⟩).val.map (preimage_transitionMap R c hF S g n).op)
+        (LightCondensed.preimage R c hF S g n).2 := by
+  have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
+    (preimage R c hF S g n).1 (preimage R c hF S g n).2
+  exact this.choose_spec.choose_spec.choose_spec.choose_spec
 
 private noncomputable def preimage_diagram
     (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
@@ -93,7 +87,25 @@ lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
   let g' := (LightCondensed.yoneda S ((forget R).obj (F.obj ⟨0⟩))).symm g
   let x : lightProfiniteToLightCondSet.obj (limit (preimage_diagram R c hF S g)) ⟶
       (forget R).obj c.pt := by
-    let d' : Cone (preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⋙ free R) :=
+    let d : Cone F := by
+      refine F.nat_op_cone_mk ((lightProfiniteToLightCondSet ⋙ free R).obj
+        (limit (LightCondensed.preimage_diagram R c hF S g))) ?_ ?_
+      · exact fun n ↦ (lightProfiniteToLightCondSet ⋙ free R).map
+          (limit.π _ ⟨n⟩) ≫ (freeYoneda R _ _).symm (preimage R c hF S g n).2
+      · intro n
+        simp only [Functor.comp_obj, Functor.comp_map, Equiv.symm_trans_apply,
+          Adjunction.homEquiv_counit, Functor.id_obj, Nat.succ_eq_add_one, Category.assoc]
+        simp only [← Category.assoc, ← Functor.map_comp]
+        sorry
+    exact (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
+  refine ⟨LightCondensed.yoneda _ _ x, ?_⟩
+  simp only [Functor.const_obj_obj, yoneda_apply]
+  erw [yonedaEquiv_apply]
+  sorry
+
+#exit
+
+let d' : Cone (preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⋙ free R) :=
       (lightProfiniteToLightCondSet ⋙ free R).mapCone (limit.cone _)
     let α' : preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⟶ F ⋙ forget R := by
       fapply natTrans_nat_op_mk
@@ -160,15 +172,3 @@ lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
         -- -- simp only [Opposite.op_unop]
         -- -- sorry
     let d : Cone F := (Cones.postcompose α).obj d'
-    exact (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
-    -- ⟨(free R).obj (limit (preimage_diagram R c hF S g)).toCondensed, ?_⟩
-    -- refine (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
-    -- fapply natTrans_nat_op_mk
-    -- · intro n
-    --   refine ((freeForgetAdjunction R).homEquiv _ _).symm ?_
-    --   refine (lightProfiniteToLightCondSet.map (limit.π _ ⟨n⟩) ≫ ?_)
-    --   refine (yoneda _ _).symm ?_
-    --   sorry
-    -- · sorry
-  refine ⟨LightCondensed.yoneda _ _ x, ?_⟩
-  sorry

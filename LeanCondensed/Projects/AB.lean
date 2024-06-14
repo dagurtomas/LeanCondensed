@@ -59,8 +59,6 @@ lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
   · exact fun h ↦ ⟨inferInstance, fun F hh ↦ shortExact_of_iso
       ((isLimitLimitCone F).conePointUniqueUpToIso (limit.isLimit F)) (h F hh)⟩
 
-
-
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
   exact_colimit (F : I ⥤ ShortComplex A) : ((∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact)
