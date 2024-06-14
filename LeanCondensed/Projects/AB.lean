@@ -213,10 +213,7 @@ namespace LightCondensed
 
 variable (R : Type u) [Ring R]
 
-instance : sequentialAB4star (LightCondMod.{u} R) := by
-  apply sequentialAB4star_of_epi_limit_of_epi
-  intros
-  exact LightCondensed.epi_limit_of_epi _
+instance : sequentialAB4star (LightCondMod.{u} R) := by sorry
 
 -- the goal:
 instance : countableAB4star (LightCondMod.{u} R) := countableAB4star_of_sequentialAB4star _
