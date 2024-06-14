@@ -148,23 +148,6 @@ lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     have := h F hh
     exact this.epi_g
 
-lemma abStar_iff_preserves_epi' [HasLimitsOfShape I A] :
-    ((∀ (F : I ⥤ ShortComplex A),
-      (∀ i, (F.obj i).ShortExact) → Epi (ShortComplex.limitCone F).pt.g)) ↔
-    HasExactLimitsOfShape I A := by
-  rw [hasExactLimitsOfShape_iff_limitCone_shortExact]
-  constructor
-  · intro h F hh
-    have := ShortExact.mk' (S := (limitCone F).pt)
-    rw [← and_imp] at this
-    apply this
-    · rw [and_comm]
-      apply left_exact_of_left_exact
-      exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
-    · exact h _ hh
-  · intro h F hh
-    sorry
-
 -- Stating and proving the converse of this lemma should be easy
 lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
