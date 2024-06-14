@@ -42,17 +42,17 @@ jobs:
       - name: Build project
         run: ~/.elan/bin/lake build LeanCondensed
 
-      - name: Cache mathlib docs
-        uses: actions/cache@v3
-        with:
-          path: |
-            .lake/build/doc/Init
-            .lake/build/doc/Lake
-            .lake/build/doc/Lean
-            .lake/build/doc/Std
-            .lake/build/doc/Mathlib
-            .lake/build/doc/declarations
-            !.lake/build/doc/declarations/declaration-data-LeanCondensed*
-          key: MathlibDoc-${{ hashFiles('lake-manifest.json') }}
-          restore-keys: |
-            MathlibDoc-
+      # - name: Cache mathlib docs
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       .lake/build/doc/Init
+      #       .lake/build/doc/Lake
+      #       .lake/build/doc/Lean
+      #       .lake/build/doc/Std
+      #       .lake/build/doc/Mathlib
+      #       .lake/build/doc/declarations
+      #       !.lake/build/doc/declarations/declaration-data-LeanCondensed*
+      #     key: MathlibDoc-${{ hashFiles('lake-manifest.json') }}
+      #     restore-keys: |
+      #       MathlibDoc-
