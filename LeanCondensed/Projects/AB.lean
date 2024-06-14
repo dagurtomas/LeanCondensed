@@ -32,7 +32,7 @@ example : I ⥤ ShortComplex A ≌ ShortComplex (I ⥤ A) :=
 
 lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (∀ i, (F.obj i).Exact) ↔
     ((functorEquivalence I A).inverse.obj F).Exact := by
-    sorry 
+    sorry
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
@@ -127,40 +127,41 @@ lemma epi_of_epi [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i,
 
 lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
-      (∀ i, Epi (F.obj i).g) → Epi (ShortComplex.limitCone F).pt.g)) ↔
+      (∀ i, (F.obj i).ShortExact) → Epi (ShortComplex.limitCone F).pt.g)) ↔
     HasExactLimitsOfShape I A := by
   rw [hasExactLimitsOfShape_iff_limitCone_shortExact]
   constructor
   · intro h F hh
-    have := ShortExact.mk' (S := (limitCone F).pt) 
+    have := ShortExact.mk' (S := (limitCone F).pt)
     rw [← and_imp] at this
     apply this
-    · rw [and_comm] 
+    · rw [and_comm]
       apply left_exact_of_left_exact
       exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
-    · exact h F (fun i ↦ (hh i).epi_g)
+    · exact h _ hh
   · intro h F hh
-    -- NR: I know that exactness is limit stable but only have a point-wise epi diagram
-    have := ShortExact.mk' (S := (limitCone F).pt)
-    sorry -- easy
+    have := h F hh
+    exact this.epi_g
 
 -- Stating and proving the converse of this lemma should be easy
-lemma ab_of_preserves_mono [HasColimitsOfShape I A] : ((∀ (F : I ⥤ ShortComplex A),
-    (∀ i, Mono (F.obj i).f) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
+lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
+    ((∀ (F : I ⥤ ShortComplex A),
+    (∀ i, (F.obj i).ShortExact) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
       HasExactColimitsOfShape I A := by
-  rw [hasExactColimitsOfShape_iff_colimitCocone_shortExact] 
-  constructor 
+  rw [hasExactColimitsOfShape_iff_colimitCocone_shortExact]
+  constructor
   · intro h F hh
-    have := ShortExact.mk' (S := (colimitCocone F).pt)  
-    rw [← and_imp] at this 
-    apply this 
-    -- NR: why can I not split the assumption?
-    · rw [and_comm] 
-      apply right_exact_of_right_exact 
-      exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
-    · exact h F (fun i ↦ (hh i).mono_f)
-   sorry -- analogous to above, need `right_exact_of_right_exact` 
-  · sorry -- easy
+    have := ShortExact.mk' (S := (colimitCocone F).pt)
+    rw [Imp.swap (a := Mono (colimitCocone F).pt.f) ] at this
+    rw [← and_imp] at this
+    apply this
+    · rw [and_comm]
+      apply right_exact_of_right_exact
+      exact fun i ↦ ⟨(hh i).epi_g, (hh i).1⟩
+    · exact h _ hh
+  · intro h F hh
+    have := h F hh
+    exact this.mono_f
 
 lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := by sorry
 
