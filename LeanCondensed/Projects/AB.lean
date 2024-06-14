@@ -32,7 +32,7 @@ example : I ⥤ ShortComplex A ≌ ShortComplex (I ⥤ A) :=
 
 lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (∀ i, (F.obj i).Exact) ↔
     ((functorEquivalence I A).inverse.obj F).Exact := by
-    sorry
+  sorry
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
