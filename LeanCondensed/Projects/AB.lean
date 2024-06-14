@@ -50,22 +50,15 @@ lemma hasExactLimitsOfShape_iff_lim_rightExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
-lemma hasExactLimitsOfShape_iff_limitCone_shortExact [B: HasLimitsOfShape I A] :
+lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔
-       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (limitCone F).pt.ShortExact) := by
-       constructor
-       · intro h F hh
-         obtain ⟨h1,h2⟩ := h
-         have eq := IsLimit.conePointUniqueUpToIso (limit.isLimit F) (isLimitLimitCone F)
-         apply shortExact_of_iso eq
-         exact (h2 F) hh
-       · intro h
-         constructor
-         ·intro F hh
-          have eq := IsLimit.conePointUniqueUpToIso (isLimitLimitCone F) (limit.isLimit F)
-          apply shortExact_of_iso eq
-          exact (h F hh)
-         · exact B
+      ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (limitCone F).pt.ShortExact) := by
+  constructor
+  · exact fun ⟨_, h₁⟩ F h₂ ↦ shortExact_of_iso
+      ((limit.isLimit F).conePointUniqueUpToIso (isLimitLimitCone F)) ((h₁ F) h₂)
+  · exact fun h ↦ ⟨inferInstance, fun F hh ↦ shortExact_of_iso
+      ((isLimitLimitCone F).conePointUniqueUpToIso (limit.isLimit F)) (h F hh)⟩
+
 
 
 class HasExactColimitsOfShape : Prop where
@@ -84,22 +77,14 @@ lemma hasExactColimitsOfShape_iff_colim_leftExact [HasLimitsOfShape I A] :
     HasExactLimitsOfShape I A ↔ Nonempty (PreservesFiniteColimits (lim : (I ⥤ A) ⥤ A)) :=
   ⟨fun _ ↦ ⟨inferInstance⟩, fun ⟨_⟩ ↦ inferInstance⟩
 
-lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [B: HasColimitsOfShape I A] :
-    HasExactColimitsOfShape I A ↔
-       ∀ (F : I ⥤ ShortComplex A), ((∀ i, (F.obj i).ShortExact) → (colimitCocone F).pt.ShortExact) := by
-       constructor
-       · intro h F hh
-         obtain ⟨h1, h2⟩ := h
-         have eq := IsColimit.coconePointUniqueUpToIso (colimit.isColimit F) (isColimitColimitCocone F)
-         apply shortExact_of_iso eq
-         exact (h2 F) hh
-       · intro h
-         constructor
-         · intro F hh
-           have eq := IsColimit.coconePointUniqueUpToIso (isColimitColimitCocone F) (colimit.isColimit F)
-           apply shortExact_of_iso eq
-           exact (h F hh)
-         · exact B
+lemma hasExactColimitsOfShape_iff_colimitCocone_shortExact [HasColimitsOfShape I A] :
+    HasExactColimitsOfShape I A ↔ ∀ (F : I ⥤ ShortComplex A),
+      ((∀ i, (F.obj i).ShortExact) → (colimitCocone F).pt.ShortExact) := by
+  constructor
+  · exact fun ⟨_, h₁⟩ F h₂ ↦ shortExact_of_iso
+      ((colimit.isColimit F).coconePointUniqueUpToIso (isColimitColimitCocone F)) ((h₁ F) h₂)
+  · exact fun h ↦ ⟨inferInstance, fun F hh ↦ shortExact_of_iso
+      ((isColimitColimitCocone F).coconePointUniqueUpToIso (colimit.isColimit F)) (h F hh)⟩
 
 end
 
