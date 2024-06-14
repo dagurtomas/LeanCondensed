@@ -6,7 +6,7 @@ Authors: Dagur Asgeirsson
 import Mathlib.Algebra.Homology.ShortComplex.FunctorEquivalence
 import Mathlib.Algebra.Homology.ShortComplex.Limits
 import Mathlib.Algebra.Homology.ShortComplex.ShortExact
-import Mathlib.Condensed.Light.Module
+import LeanCondensed.LightCondensed.SequentialLimit
 /-!
 
 # Project: AB axioms, light condensed abelian groups has countable AB4*, etc.
@@ -36,7 +36,7 @@ lemma forall_exact_iff_functorEquivalence_exact (F : I ⥤ ShortComplex A) : (�
 
 class HasExactLimitsOfShape : Prop where
   hasLimitsOfShape : HasLimitsOfShape I A := by infer_instance
-  exact_limit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (limit F).ShortExact
+  exact_limit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (limit F).ShortExact
 
 attribute [instance] HasExactLimitsOfShape.hasLimitsOfShape
 
@@ -57,7 +57,7 @@ lemma hasExactLimitsOfShape_iff_limitCone_shortExact [HasLimitsOfShape I A] :
 
 class HasExactColimitsOfShape : Prop where
   hasColimitsOfShape : HasColimitsOfShape I A := by infer_instance
-  exact_colimit : ∀ (F : I ⥤ ShortComplex A), ∀ i, (F.obj i).ShortExact → (colimit F).ShortExact
+  exact_colimit : ∀ (F : I ⥤ ShortComplex A), (∀ i, (F.obj i).ShortExact) → (colimit F).ShortExact
 
 attribute [instance] HasExactColimitsOfShape.hasColimitsOfShape
 
@@ -88,6 +88,10 @@ abbrev AB4 : Prop := ∀ (I : Type w), HasExactColimitsOfShape (Discrete I) A
 abbrev AB4star : Prop := ∀ (I : Type w), HasExactLimitsOfShape (Discrete I) A
 
 abbrev countableAB4star : Prop := ∀ (I : Type) [Countable I], HasExactLimitsOfShape (Discrete I) A
+
+abbrev sequentialAB4star : Prop := HasExactLimitsOfShape ℕᵒᵖ A
+
+lemma countableAB4star_of_sequentialAB4star [sequentialAB4star A] : countableAB4star A := sorry
 
 abbrev AB5 : Prop := ∀ (I : Type v) [SmallCategory I] [IsFiltered I], HasExactColimitsOfShape I A
 
@@ -170,8 +174,12 @@ lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
 
 lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := by sorry
 
-
 lemma finite_ab (I : Type) [Finite I] : HasExactColimitsOfShape (Discrete I) A := sorry
+
+lemma sequentialAB4star_of_limit_of_surjections_surjective
+  (h : ∀ (F : ℕᵒᵖ ⥤ A) (c : Cone F) (hc : IsLimit c)
+  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op)), Epi (c.π.app ⟨0⟩)) :
+    sequentialAB4star A := sorry
 
 end
 
@@ -181,7 +189,12 @@ namespace LightCondensed
 
 variable (R : Type u) [Ring R]
 
--- the goal (maybe we need some conditions on `R`):
-instance : countableAB4star (LightCondMod.{u} R) := sorry
+instance : sequentialAB4star (LightCondMod.{u} R) := by
+  apply sequentialAB4star_of_limit_of_surjections_surjective
+  intros
+  exact LightCondensed.epi_limit_of_epi _
+
+-- the goal:
+instance : countableAB4star (LightCondMod.{u} R) := countableAB4star_of_sequentialAB4star _
 
 end LightCondensed
