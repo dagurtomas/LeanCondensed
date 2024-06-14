@@ -152,8 +152,7 @@ lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     have := h F hh
     exact this.epi_g
 
--- Stating and proving the converse of this lemma should be easy
-lemma ab_of_preserves_mono [HasColimitsOfShape I A] :
+lemma ab_iff_preserves_mono [HasColimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
     (∀ i, (F.obj i).ShortExact) → Mono (ShortComplex.colimitCocone F).pt.f)) ↔
       HasExactColimitsOfShape I A := by
