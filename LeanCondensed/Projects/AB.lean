@@ -176,7 +176,7 @@ lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A
 
 lemma finite_ab (I : Type) [Finite I] : HasExactColimitsOfShape (Discrete I) A := sorry
 
-lemma sequentialAB4star_of_limit_of_surjections_surjective
+lemma sequentialAB4star_of_epi_limit_of_epi
   (h : ∀ (F : ℕᵒᵖ ⥤ A) (c : Cone F) (hc : IsLimit c)
   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op)), Epi (c.π.app ⟨0⟩)) :
     sequentialAB4star A := sorry
@@ -190,7 +190,7 @@ namespace LightCondensed
 variable (R : Type u) [Ring R]
 
 instance : sequentialAB4star (LightCondMod.{u} R) := by
-  apply sequentialAB4star_of_limit_of_surjections_surjective
+  apply sequentialAB4star_of_epi_limit_of_epi
   intros
   exact LightCondensed.epi_limit_of_epi _
 
