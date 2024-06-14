@@ -118,10 +118,10 @@ lemma epi_of_epi [HasColimitsOfShape I A] (F : I ⥤ ShortComplex A) (h : ∀ i,
     exact h
   infer_instance
 
--- lemma abStar_iff_preserves_epi'' [HasLimitsOfShape I A] :
---     ((∀ (F : I ⥤ A), [∀ f, ]
---       (∀ i, Epi (F.obj i).g) → Epi (ShortComplex.limitCone F).pt.g)) ↔
---     HasExactLimitsOfShape I A := sorry
+lemma abStar_iff_preserves_epi'' [HasLimitsOfShape I A] :
+    (∀ (F G : I ⥤ A) (α : F ⟶ G), (∀ i, Epi (α.app i)) → Epi (limMap α)) ↔
+    HasExactLimitsOfShape I A := by
+  sorry
 
 lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
