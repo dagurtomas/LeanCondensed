@@ -17,3 +17,7 @@ import LeanCondensed.Projects.InternallyProjective
   natural map of internal homs from `P` to `A` induced by `1 - shift` is an iso.
 
 -/
+
+open CategoryTheory
+
+namespace LightCondensed
