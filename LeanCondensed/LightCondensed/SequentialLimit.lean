@@ -93,82 +93,16 @@ lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
       · exact fun n ↦ (lightProfiniteToLightCondSet ⋙ free R).map
           (limit.π _ ⟨n⟩) ≫ (freeYoneda R _ _).symm (preimage R c hF S g n).2
       · intro n
-        simp only [Functor.comp_obj, Functor.comp_map, Equiv.symm_trans_apply,
-          Adjunction.homEquiv_counit, Functor.id_obj, Nat.succ_eq_add_one, Category.assoc]
-        simp only [← Category.assoc, ← Functor.map_comp]
-        sorry
+        rw [← limit.w (LightCondensed.preimage_diagram R c hF S g) (homOfLE n.le_succ).op]
+        simp only [Functor.comp_obj, Functor.comp_map, Nat.succ_eq_add_one, Category.assoc,
+          Functor.map_comp]
+        congr 1
+        erw [freeYoneda_symm_naturality, freeYoneda_symm_conaturality]
+        congr 1
+        erw [preimage_w R c hF S g n]
+        simp only [preimage_diagram, Nat.functor_mk_obj, Nat.functor_mk_map_step]
     exact (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
   refine ⟨LightCondensed.yoneda _ _ x, ?_⟩
   simp only [Functor.const_obj_obj, yoneda_apply]
   erw [yonedaEquiv_apply]
   sorry
-
-#exit
-
-let d' : Cone (preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⋙ free R) :=
-      (lightProfiniteToLightCondSet ⋙ free R).mapCone (limit.cone _)
-    let α' : preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⟶ F ⋙ forget R := by
-      fapply natTrans_nat_op_mk
-      · exact fun n ↦ (yoneda _ _).symm (preimage R c hF S g n).2
-      · intro n
-        simp only [Nat.succ_eq_add_one, Functor.comp_obj, Functor.comp_map]
-        apply Sheaf.hom_ext
-        erw [Sheaf.instCategorySheaf_comp_val, Sheaf.instCategorySheaf_comp_val]
-        ext T : 2
-        simp only [NatTrans.comp_app]
-
-        -- erw [yoneda_symm_apply_val_app]
-        -- simp only [Nat.succ_eq_add_one, Functor.comp_obj, Functor.comp_map, Equiv.symm_trans_apply,
-        --   sheafToPresheaf_obj]
-        -- erw [Functor.FullyFaithful.homEquiv_symm_apply,
-        --   Functor.FullyFaithful.homEquiv_symm_apply]
-        -- apply (sheafToPresheaf _ _).map_injective
-        -- simp [-sheafToPresheaf_obj, -sheafToPresheaf_map]
-        -- simp
-        -- ext T x
-        -- simp only [FunctorToTypes.comp]
-        -- erw [yonedaEquiv_symm_app_apply, yonedaEquiv_symm_app_apply, yonedaEquiv_symm_app_apply]
-        sorry
-
-    let α : preimage_diagram R c hF S g ⋙ lightProfiniteToLightCondSet ⋙ free R ⟶ F := by
-      fapply natTrans_nat_op_mk
-      · exact fun n ↦ (freeYoneda R _ _).symm (preimage R c hF S g n).2
-      · intro n
-        apply Sheaf.hom_ext
-        ext T : 2
-        -- erw [← ((freeYoneda _ _ _).symm _).val.naturality]
-        simp only [Nat.succ_eq_add_one, Functor.comp_obj, Functor.comp_map, Equiv.symm_trans_apply,
-          sheafToPresheaf_obj, Adjunction.homEquiv_counit, Functor.id_obj, Category.assoc]
-        sorry
-        -- rw [← Adjunction.counit_naturality]
-        -- simp only [Functor.id_obj, ← Category.assoc]
-        -- congr 1
-        -- simp only [← Functor.map_comp]
-        -- congr 1
-        -- apply (sheafToPresheaf _ _).map_injective
-        -- erw [Functor.FullyFaithful.homEquiv_symm_apply,
-        --   Functor.FullyFaithful.homEquiv_symm_apply]
-        -- simp only [Functor.map_comp, Functor.FullyFaithful.map_preimage]
-        -- simp only [sheafToPresheaf_obj, sheafToPresheaf_map]
-        -- -- ext T : 2
-        -- -- simp only [NatTrans.comp_app]
-        -- -- let xx := ((yonedaEquiv (F := preimage_diagram _ _ _ _ _)).symm (LightCondensed.preimage R c hF S g (n + 1)).snd)
-        -- -- erw [← (yonedaEquiv.symm _).naturality]
-        -- ext T x
-        -- simp only [FunctorToTypes.comp]
-        -- -- ext T : 2
-        -- -- simp only [yonedaEquiv, yoneda_obj_obj, Opposite.op_unop, Equiv.coe_fn_symm_mk,
-        -- --   NatTrans.comp_app]
-        -- -- ext x
-        -- -- simp?
-        -- erw [yonedaEquiv_symm_app_apply, yonedaEquiv_symm_app_apply]
-        -- have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF (n + 1))
-        --   (preimage R c hF S g (n + 1)).1 (preimage R c hF S g (n + 1)).2
-        -- have := this.choose_spec.choose_spec.choose_spec.choose_spec
-        -- sorry
-        -- -- change _ = ((F.obj ⟨n+1⟩).val.map (preimage_transitionMap R c hF S g (n + 1)).op)
-        -- --     (LightCondensed.preimage R c hF S g (n + 1)).2 at this
-        -- -- erw [this]
-        -- -- simp only [Opposite.op_unop]
-        -- -- sorry
-    let d : Cone F := (Cones.postcompose α).obj d'
