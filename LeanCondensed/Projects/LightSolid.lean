@@ -3,6 +3,7 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
+import Mathlib.CategoryTheory.Sites.Limits
 import Mathlib.Condensed.Light.Discrete
 import LeanCondensed.Projects.InternallyProjective
 /-!
@@ -88,7 +89,12 @@ def _root_.LightCondMod.solidify (A : LightCondMod R) : Solid R := (solidificati
 
 def val (A : Solid R) : LightCondMod R := A.toLightCondMod -- maybe unnecessary, `A.1` is fine.
 
+variable (R) in
 def solidificationAdjunction : solidification R ⊣ solidToCondensed R := sorry
+
+instance : (solidification R).IsLeftAdjoint := (solidificationAdjunction R).isLeftAdjoint
+
+instance : (solidToCondensed R).IsRightAdjoint := (solidificationAdjunction R).isRightAdjoint
 
 open MonoidalCategory
 
@@ -114,6 +120,32 @@ instance : MonoidalCategory (Solid R) where
   rightUnitor_naturality := sorry
   pentagon := sorry
   triangle := sorry
+
+instance : HasLimitsOfSize.{u, 0} Type := inferInstance
+
+instance : Category.{0, 1} (ModuleCat R) := inferInstance
+
+instance : SmallCategory.{1} (LightCondMod R) := inferInstance
+
+variable (A : LightCondMod R)
+
+#check A ⟶ A
+
+instance : HasLimitsOfSize.{0, 0} (ModuleCat R) := inferInstance
+
+instance : HasLimitsOfSize.{0, 0} (LightCondMod R) :=
+  show (HasLimitsOfSize (Sheaf _ _)) from inferInstance
+
+instance : HasLimitsOfSize.{0, 0} (Solid R) := sorry
+
+instance : HasColimits (Solid R) := sorry
+
+example : PreservesLimits (solidToCondensed R) := inferInstance
+
+instance : PreservesColimits (solidToCondensed R) := sorry
+
+-- TODO: define this property:
+-- instance : PreservesExtensions (solidToCondensed R) := sorry
 
 end Solid
 
