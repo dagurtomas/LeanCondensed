@@ -9,7 +9,8 @@ open CategoryTheory
 
 namespace LightCondensed
 
-variable (R : Type _) [Ring R] -- might need some more assumptions
+-- This should be done for all concrete categories with a left adjoint to types.
+variable (R : Type _) [Ring R]
 
 @[simps! apply]
 def yoneda (S : LightProfinite.{u}) (A : LightCondSet) :

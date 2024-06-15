@@ -17,6 +17,9 @@ This file proves that a sequential limit of epimorhpisms is epimorphic in `Light
 In other words, given epis
 `⋯ ⟶ Sₙ₊₁ ⟶ Sₙ ⟶ ⋯ ⟶ S₀`,
 the projection map `lim Sₙ ⟶ S₀` is surjective.
+
+This should be generalised to light condensed objects in concrete categories for which
+`epi_iff_locallySurjective` holds.
 -/
 
 open CategoryTheory Limits

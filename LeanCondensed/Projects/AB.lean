@@ -154,9 +154,7 @@ lemma abStar_iff_preserves_epi [HasLimitsOfShape I A] :
       apply left_exact_of_left_exact
       exact fun i ↦ ⟨(hh i).mono_f, (hh i).1⟩
     · exact h _ hh
-  · intro h F hh
-    have := h F hh
-    exact this.epi_g
+  · exact fun h F hh ↦ (h F hh).epi_g
 
 lemma ab_iff_preserves_mono [HasColimitsOfShape I A] :
     ((∀ (F : I ⥤ ShortComplex A),
@@ -166,16 +164,13 @@ lemma ab_iff_preserves_mono [HasColimitsOfShape I A] :
   constructor
   · intro h F hh
     have := ShortExact.mk' (S := (colimitCocone F).pt)
-    rw [Imp.swap (a := Mono (colimitCocone F).pt.f) ] at this
-    rw [← and_imp] at this
+    rw [Imp.swap (a := Mono (colimitCocone F).pt.f), ← and_imp] at this
     apply this
     · rw [and_comm]
       apply right_exact_of_right_exact
       exact fun i ↦ ⟨(hh i).epi_g, (hh i).1⟩
     · exact h _ hh
-  · intro h F hh
-    have := h F hh
-    exact this.mono_f
+  · exact fun h F hh ↦ (h F hh).mono_f
 
 lemma finite_abStar (I : Type) [Finite I] : HasExactLimitsOfShape (Discrete I) A := by sorry
 
