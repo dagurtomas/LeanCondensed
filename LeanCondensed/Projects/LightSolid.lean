@@ -3,6 +3,7 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
+import Mathlib.Condensed.Light.Discrete
 import LeanCondensed.Projects.InternallyProjective
 /-!
 
@@ -17,7 +18,103 @@ import LeanCondensed.Projects.InternallyProjective
   natural map of internal homs from `P` to `A` induced by `1 - shift` is an iso.
 
 -/
+noncomputable section
 
-open CategoryTheory
+universe u
+
+open CategoryTheory LightProfinite OnePoint Limits MonoidalClosed
 
 namespace LightCondensed
+
+def _root_.LightProfinite.shift : ℕ∪{∞} ⟶ ℕ∪{∞} where
+  toFun
+    | ∞ => ∞
+    | OnePoint.some n => (n + 1 : ℕ)
+  continuous_toFun := by
+    rw [OnePoint.continuous_iff_of_nat, Filter.tendsto_add_atTop_iff_nat, tendsto_atTop_nhds]
+    intro U h hU
+    simp only [isOpen_iff_of_mem h, isClosed_discrete, isCompact_iff_finite, true_and] at hU
+    refine ⟨sSup (Option.some ⁻¹' U)ᶜ + 1, fun n hn ↦ by
+      simpa using not_mem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩
+
+variable (R : Type) [CommRing R]
+
+example : Abelian (LightCondMod R) := by infer_instance
+
+example (A B : LightCondMod R) : AddCommGroup (A ⟶ B) := by infer_instance
+
+def one_minus_shift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
+  𝟙 _  - (lightProfiniteToLightCondSet ⋙ free R).map LightProfinite.shift
+
+def one_minus_shift : P R ⟶ P R := by
+  refine P_homMk R _ (one_minus_shift' R) ?_ ≫ P_proj R
+  simp [one_minus_shift']
+  sorry
+
+abbrev induced_from_one_minus_shift (A : LightCondMod R) :
+    ((ihom (P R)).obj A) ⟶ ((ihom (P R)).obj A) :=
+  (pre (one_minus_shift R)).app A
+
+variable {R}
+
+class IsSolid (A : LightCondMod R) : Prop where
+  one_minus_shift_induces_iso : IsIso ((pre (one_minus_shift R)).app A)
+
+variable (R) in
+structure Solid where
+  toLightCondMod : LightCondMod R
+  [isSolid : IsSolid toLightCondMod]
+
+namespace Solid
+
+def of (A : LightCondMod R) [IsSolid A] : Solid R := ⟨A⟩
+
+instance category : Category (Solid R) :=
+  InducedCategory.category toLightCondMod
+
+instance : IsSolid ((discrete (ModuleCat R)).obj (ModuleCat.of R R)) := sorry
+
+instance : Inhabited (Solid R) := ⟨Solid.of ((discrete (ModuleCat R)).obj (ModuleCat.of R R))⟩
+
+variable (R) in
+@[simps!]
+def solidToCondensed : Solid R ⥤ LightCondMod R :=
+  inducedFunctor _
+
+variable (R) in
+def solidification : LightCondMod R ⥤ Solid R := sorry
+
+def _root_.LightCondMod.solidify (A : LightCondMod R) : Solid R := (solidification R).obj A
+
+def val (A : Solid R) : LightCondMod R := A.toLightCondMod -- maybe unnecessary, `A.1` is fine.
+
+def solidificationAdjunction : solidification R ⊣ solidToCondensed R := sorry
+
+open MonoidalCategory
+
+-- This should be constructed using the same general machinery we need to develop to
+-- construct the monoidal structure on `LightCondMod R`.
+instance : MonoidalCategory (Solid R) where
+  tensorObj A B := (A.1 ⊗ B.1).solidify
+  tensorHom α β := (solidification R).map (α ⊗ β)
+  whiskerLeft A _ _ β := (solidification R).map (A.1 ◁ β)
+  whiskerRight α B := sorry
+    -- why doesn't `(solidification R).map (α ▷ B.1)` work like `whiskerLeft` here?
+  tensorUnit := (solidification R).obj tensorUnit
+  associator := sorry
+  leftUnitor := sorry
+  rightUnitor := sorry
+  tensorHom_def := sorry
+  tensor_id := sorry
+  tensor_comp := sorry
+  whiskerLeft_id := sorry
+  id_whiskerRight := sorry
+  associator_naturality := sorry
+  leftUnitor_naturality := sorry
+  rightUnitor_naturality := sorry
+  pentagon := sorry
+  triangle := sorry
+
+end Solid
+
+end LightCondensed
