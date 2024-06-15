@@ -8,6 +8,8 @@ import LeanCondensed.Epi.EssentiallySmall
 import LeanCondensed.Epi.ExtensiveTopology
 import LeanCondensed.Epi.LightCondensed
 import LeanCondensed.LightCondensed.SequentialLimit
+import LeanCondensed.LightCondensed.Small
+import LeanCondensed.LightCondensed.Yoneda
 import LeanCondensed.LightProfinite.AsLimit
 import LeanCondensed.LightProfinite.Sequences
 import LeanCondensed.LightProfinite.SequentialLimit
