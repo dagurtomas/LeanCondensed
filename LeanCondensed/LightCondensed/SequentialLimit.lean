@@ -84,25 +84,33 @@ lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
     simp only [preimage_diagram, Nat.succ_eq_add_one, Nat.functor_mk_obj, Nat.functor_mk_map_step]
     exact preimage_transitionMap_surj _ _ _ _ _ _
   refine ⟨limit (preimage_diagram R c hF S g), limit.π (preimage_diagram R c hF S g) ⟨0⟩, h, ?_⟩
-  let g' := (LightCondensed.yoneda S ((forget R).obj (F.obj ⟨0⟩))).symm g
+  let d : Cone F := by
+    refine F.nat_op_cone_mk ((lightProfiniteToLightCondSet ⋙ free R).obj
+      (limit (LightCondensed.preimage_diagram R c hF S g))) ?_ ?_
+    · exact fun n ↦ (lightProfiniteToLightCondSet ⋙ free R).map
+        (limit.π _ ⟨n⟩) ≫ (freeYoneda R _ _).symm (preimage R c hF S g n).2
+    · intro n
+      rw [← limit.w (LightCondensed.preimage_diagram R c hF S g) (homOfLE n.le_succ).op]
+      simp only [Functor.comp_obj, Functor.comp_map, Nat.succ_eq_add_one, Category.assoc,
+        Functor.map_comp]
+      congr 1
+      erw [freeYoneda_symm_naturality, freeYoneda_symm_conaturality]
+      congr 1
+      erw [preimage_w R c hF S g n]
+      simp only [preimage_diagram, Nat.functor_mk_obj, Nat.functor_mk_map_step]
   let x : lightProfiniteToLightCondSet.obj (limit (preimage_diagram R c hF S g)) ⟶
       (forget R).obj c.pt := by
-    let d : Cone F := by
-      refine F.nat_op_cone_mk ((lightProfiniteToLightCondSet ⋙ free R).obj
-        (limit (LightCondensed.preimage_diagram R c hF S g))) ?_ ?_
-      · exact fun n ↦ (lightProfiniteToLightCondSet ⋙ free R).map
-          (limit.π _ ⟨n⟩) ≫ (freeYoneda R _ _).symm (preimage R c hF S g n).2
-      · intro n
-        rw [← limit.w (LightCondensed.preimage_diagram R c hF S g) (homOfLE n.le_succ).op]
-        simp only [Functor.comp_obj, Functor.comp_map, Nat.succ_eq_add_one, Category.assoc,
-          Functor.map_comp]
-        congr 1
-        erw [freeYoneda_symm_naturality, freeYoneda_symm_conaturality]
-        congr 1
-        erw [preimage_w R c hF S g n]
-        simp only [preimage_diagram, Nat.functor_mk_obj, Nat.functor_mk_map_step]
     exact (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
   refine ⟨LightCondensed.yoneda _ _ x, ?_⟩
-  simp only [Functor.const_obj_obj, yoneda_apply]
-  erw [yonedaEquiv_apply]
-  sorry
+  change ((forget R).map _).val.app _ _ = _
+  erw [yoneda_conaturality]
+  simp only [x]
+  simp only [Functor.const_obj_obj, Adjunction.homEquiv_unit, Functor.id_obj, Functor.comp_obj,
+    Category.assoc]
+  rw [← (forget R).map_comp, hc.fac]
+  simp only [Functor.comp_obj, Functor.comp_map, freeYoneda, Equiv.symm_trans_apply,
+    Nat.succ_eq_add_one, id_eq, eq_mpr_eq_cast, Functor.nat_op_cone_mk_pt, Functor.nat_op_cone_mk_π,
+    Adjunction.homEquiv_counit, Functor.id_obj, natTrans_nat_op_mk_app, Functor.map_comp,
+    Adjunction.unit_naturality_assoc, Adjunction.right_triangle_components, Category.comp_id, d]
+  erw [yoneda_symm_naturality, Equiv.apply_symm_apply]
+  rfl

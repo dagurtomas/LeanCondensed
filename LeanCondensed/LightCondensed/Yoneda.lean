@@ -38,6 +38,9 @@ lemma yoneda_symm_conaturality (S : LightProfinite) {A A' : LightCondSet} (f : A
   ext T y
   exact NatTrans.naturality_apply (φ := f.val) (Y := T) _ _
 
+lemma yoneda_conaturality (S : LightProfinite) {A A' : LightCondSet} (f : A ⟶ A')
+    (g : S.toCondensed ⟶ A) : f.val.app ⟨S⟩ (yoneda S A g) = yoneda S A' (g ≫ f) := rfl
+
 abbrev forgetYoneda (S : LightProfinite) (A : LightCondMod R) :
     (S.toCondensed ⟶ (forget R).obj A) ≃ A.val.obj ⟨S⟩ := yoneda _ _
 
