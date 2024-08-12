@@ -1,8 +1,6 @@
 import LeanCondensed.LightCondensed.SequentialLimit
 import LeanCondensed.LightCondensed.Small
 import LeanCondensed.LightCondensed.Yoneda
-import LeanCondensed.Mathlib.CategoryTheory.Adjunction.KanExtension
-import LeanCondensed.Mathlib.CategoryTheory.Sites.ConstantSheaf
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Misc.NatFunctor
