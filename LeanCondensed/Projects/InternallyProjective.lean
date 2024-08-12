@@ -11,6 +11,7 @@ import Mathlib.CategoryTheory.Preadditive.Projective
 import Mathlib.Condensed.Light.Functors
 import Mathlib.Condensed.Light.Module
 import Mathlib.Topology.Category.LightProfinite.Sequence
+import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.LightCondensed.Yoneda
 /-!
 
@@ -75,14 +76,13 @@ def ihom_points (A B : LightCondMod.{u} R) (S : LightProfinite) :
 -- This equivalence follows from the adjunction.
 -- This probably needs some naturality lemmas
 
--- def tensorFreeIso (X Y : LightCondSet.{u}) :
---     (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) := sorry
--- We need to add instances for some limits/colimits in `LightCondensed`. Lean doesn't know that
--- the binary product of `X` and `Y` exists. Anyway, for now we just need:
+def tensorFreeIso (X Y : LightCondSet.{u}) :
+    (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) := sorry
 
-def tensorFreeIso (S T : LightProfinite) :
+def tensorFreeIso' (S T : LightProfinite) :
     (free R).obj S.toCondensed ⊗ (free R).obj T.toCondensed ≅
-      (free R).obj (S ⨯ T).toCondensed := sorry
+      (free R).obj (S ⨯ T).toCondensed := tensorFreeIso R S.toCondensed T.toCondensed ≪≫
+        (free R).mapIso (Limits.PreservesLimitPair.iso lightProfiniteToLightCondSet _ _).symm
 
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
   sorry
