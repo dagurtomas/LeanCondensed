@@ -37,39 +37,39 @@ private noncomputable def preimage (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ Light
     ⟨this.choose, this.choose_spec.choose_spec.choose_spec.choose⟩
 
 private noncomputable def preimage_transitionMap
-  (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-    (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) :
-    (n : ℕ) → ((preimage R c hF S g (n+1)).1 ⟶ (preimage R c hF S g n).1) := fun n ↦
+    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
+      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
+        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
+          ((preimage R c hF S g (n+1)).1 ⟶ (preimage R c hF S g n).1) :=
   have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
     (preimage R c hF S g n).1 (preimage R c hF S g n).2
   this.choose_spec.choose
 
 private lemma preimage_transitionMap_surj
-  (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-    (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
-    Function.Surjective (preimage_transitionMap R c hF S g n) :=
+    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
+      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
+        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
+          Function.Surjective (preimage_transitionMap R c hF S g n) :=
   have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
     (preimage R c hF S g n).1 (preimage R c hF S g n).2
   this.choose_spec.choose_spec.choose
 
 private lemma preimage_w
-  (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-    (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
-      (F.map (homOfLE n.le_succ).op).val.app ⟨(LightCondensed.preimage R c hF S g (n+1)).1⟩
-        (LightCondensed.preimage R c hF S g (n+1)).2 =
-      ((F.obj ⟨n⟩).val.map (preimage_transitionMap R c hF S g n).op)
-        (LightCondensed.preimage R c hF S g n).2 := by
+    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
+      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
+        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
+          (F.map (homOfLE n.le_succ).op).val.app ⟨(LightCondensed.preimage R c hF S g (n+1)).1⟩
+            (LightCondensed.preimage R c hF S g (n+1)).2 =
+              ((F.obj ⟨n⟩).val.map (preimage_transitionMap R c hF S g n).op)
+                (LightCondensed.preimage R c hF S g n).2 := by
   have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
     (preimage R c hF S g n).1 (preimage R c hF S g n).2
   exact this.choose_spec.choose_spec.choose_spec.choose_spec
 
 private noncomputable def preimage_diagram
     (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-    (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-    (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) : ℕᵒᵖ ⥤ LightProfinite :=
+      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
+        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) : ℕᵒᵖ ⥤ LightProfinite :=
   Nat.functor_mk (fun n ↦ (preimage R c hF S g n).1) fun n ↦ preimage_transitionMap R c hF S g n
 
 variable (R : Type*) [Ring R]
