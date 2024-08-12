@@ -10,8 +10,8 @@ import Mathlib.CategoryTheory.Preadditive.Injective
 import Mathlib.CategoryTheory.Preadditive.Projective
 import Mathlib.Condensed.Light.Functors
 import Mathlib.Condensed.Light.Module
+import Mathlib.Topology.Category.LightProfinite.Sequence
 import LeanCondensed.LightCondensed.Yoneda
-import LeanCondensed.LightProfinite.Sequences
 /-!
 
 # Project: prove that `ℤ[ℕ∪{∞}]` is internally projective in light condensed abelian groups
@@ -111,7 +111,7 @@ lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : Internall
 -- (see the file `Epi/LightCondensed.lean`), and `ihom_points` above (together with some ).
 
 def P_map :
-    (free R).obj (LightProfinite.of PUnit).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
+    (free R).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
   (lightProfiniteToLightCondSet ⋙ free R).map (⟨fun _ ↦ ∞, continuous_const⟩)
 
 def P : LightCondMod R := cokernel (P_map R)

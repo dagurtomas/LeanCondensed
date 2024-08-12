@@ -24,8 +24,9 @@ section
 variable (I : Type*) [Category I]
 variable (A : Type*) [Category A] [Abelian A]
 
-example (S : ShortComplex A) (h : S.Exact) : Exact S.f S.g := by
-  rwa [exact_iff_shortComplex_exact S]
+-- I guess this API has been removed?
+-- example (S : ShortComplex A) (h : S.Exact) : Exact S.f S.g := by
+--   rwa [exact_iff_shortComplex_exact S]
 
 example : I ⥤ ShortComplex A ≌ ShortComplex (I ⥤ A) :=
   (functorEquivalence I A).symm

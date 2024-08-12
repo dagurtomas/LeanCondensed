@@ -3,8 +3,7 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Sites.Limits
-import Mathlib.Condensed.Light.Discrete
+import Mathlib.Condensed.Discrete.Basic
 import LeanCondensed.Projects.InternallyProjective
 /-!
 
@@ -32,7 +31,7 @@ def _root_.LightProfinite.shift : ℕ∪{∞} ⟶ ℕ∪{∞} where
     | ∞ => ∞
     | OnePoint.some n => (n + 1 : ℕ)
   continuous_toFun := by
-    rw [OnePoint.continuous_iff_of_nat, Filter.tendsto_add_atTop_iff_nat, tendsto_atTop_nhds]
+    rw [OnePoint.continuous_iff_from_nat, Filter.tendsto_add_atTop_iff_nat, tendsto_atTop_nhds]
     intro U h hU
     simp only [isOpen_iff_of_mem h, isClosed_discrete, isCompact_iff_finite, true_and] at hU
     refine ⟨sSup (Option.some ⁻¹' U)ᶜ + 1, fun n hn ↦ by
@@ -128,8 +127,6 @@ instance : Category.{0, 1} (ModuleCat R) := inferInstance
 instance : SmallCategory.{1} (LightCondMod R) := inferInstance
 
 variable (A : LightCondMod R)
-
-#check A ⟶ A
 
 instance : HasLimitsOfSize.{0, 0} (ModuleCat R) := inferInstance
 

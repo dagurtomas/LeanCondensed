@@ -3,11 +3,10 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
+import Mathlib.Condensed.Light.Epi
 import Mathlib.Condensed.Light.Functors
 import Mathlib.Condensed.Light.Module
-import LeanCondensed.Epi.LightCondensed
 import LeanCondensed.LightCondensed.Yoneda
-import LeanCondensed.LightProfinite.SequentialLimit
 import LeanCondensed.Misc.NatFunctor
 /-!
 
@@ -82,7 +81,7 @@ lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
   intro S g
   have h : Function.Surjective
       (limit.π (LightCondensed.preimage_diagram R c hF S g) { unop := 0 }) := by
-    refine LightProfinite.limit_of_surjections_surjective (limit.isLimit _) ?_
+    refine Concrete.surjective_π_app_zero_of_surjective_map (limit.isLimit _) ?_
     intro n
     simp only [preimage_diagram, Nat.succ_eq_add_one, Nat.functor_mk_obj, Nat.functor_mk_map_step]
     exact preimage_transitionMap_surj _ _ _ _ _ _
