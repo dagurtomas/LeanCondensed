@@ -28,7 +28,7 @@ def inverseDirectImageAdjunction :
   ((F.op.lanAdjunction A).comp (sheafificationAdjunction K A)).restrictFullyFaithful
     (fullyFaithfulSheafToPresheaf J A) (Functor.FullyFaithful.id _) (Iso.refl _) (Iso.refl _)
 
-@[simp, reassoc]
+@[simp]
 lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :
     ((inverseDirectImageAdjunction J K A F).unit.app X).val =
     F.op.lanUnit.app X.val ≫ whiskerLeft F.op (toSheafify K (F.op.lan.obj X.val)) := by
@@ -40,7 +40,6 @@ lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :
     Functor.associator_inv_app, Category.comp_id, Iso.refl_hom, NatTrans.id_app, Functor.comp_map,
     Functor.map_id, whiskerLeft_id']
 
-@[simp, reassoc]
 lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
     ((inverseDirectImageAdjunction J K A F).unit.app X).val.app ⟨Y⟩ =
     (F.op.lanUnit.app X.val).app ⟨Y⟩ ≫ (toSheafify K (F.op.lan.obj X.val)).app ⟨F.obj Y⟩ := by
@@ -48,7 +47,7 @@ lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
     inverseDirectImageAdjunction_unit_app_val, whiskeringLeft_obj_obj, NatTrans.comp_app,
     Functor.op_obj, whiskerLeft_app]
 
-@[simp, reassoc]
+@[simp]
 lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
     ((inverseDirectImageAdjunction J K A F).counit.app X) =
     (presheafToSheaf K A).map ((F.op.lanAdjunction A).counit.app X.val) ≫
@@ -72,14 +71,10 @@ def equivPresheafUnderlying : PUnitᵒᵖ ⥤ A ≌ A where
   unitIso := by
     refine NatIso.ofComponents (fun X ↦ NatIso.ofComponents (fun ⟨⟨⟩⟩ ↦ Iso.refl _) ?_) ?_
     · intro ⟨⟨⟩⟩ ⟨⟨⟩⟩ _
-      simp only [Functor.id_obj, Functor.comp_obj, Functor.const_obj_obj, Iso.refl_hom,
-        Category.comp_id, Functor.const_obj_map]
-      simp only [← Functor.map_id]
-      congr
+      simp [← Functor.map_id]
+      rfl
     · aesop
   counitIso := Iso.refl _
-  functor_unitIso_comp := by simp only [Functor.id_obj, Functor.comp_obj, Functor.const_obj_obj,
-    NatIso.ofComponents_hom_app, Iso.refl_hom, NatTrans.id_app, Category.comp_id, implies_true]
 
 def equivSheafPresheaf : Sheaf pointTopology A ≌ PUnitᵒᵖ ⥤ A where
   functor := sheafToPresheaf _ _
