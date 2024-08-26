@@ -76,6 +76,7 @@ variable (R : Type*) [Ring R]
 variable {F : ℕᵒᵖ ⥤ LightCondMod R} {c : Cone F} (hc : IsLimit c)
   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
 
+include hc hF in
 lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
   rw [LightCondMod.epi_iff_locallySurjective_on_lightProfinite]
   intro S g
