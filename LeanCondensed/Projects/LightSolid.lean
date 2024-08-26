@@ -97,28 +97,8 @@ instance : (solidToCondensed R).IsRightAdjoint := (solidificationAdjunction R).i
 
 open MonoidalCategory
 
--- This should be constructed using the same general machinery we need to develop to
--- construct the monoidal structure on `LightCondMod R`.
-instance : MonoidalCategory (Solid R) where
-  tensorObj A B := (A.1 ⊗ B.1).solidify
-  tensorHom α β := (solidification R).map (α ⊗ β)
-  whiskerLeft A _ _ β := (solidification R).map (A.1 ◁ β)
-  whiskerRight α B := sorry
-    -- why doesn't `(solidification R).map (α ▷ B.1)` work like `whiskerLeft` here?
-  tensorUnit := (solidification R).obj tensorUnit
-  associator := sorry
-  leftUnitor := sorry
-  rightUnitor := sorry
-  tensorHom_def := sorry
-  tensor_id := sorry
-  tensor_comp := sorry
-  whiskerLeft_id := sorry
-  id_whiskerRight := sorry
-  associator_naturality := sorry
-  leftUnitor_naturality := sorry
-  rightUnitor_naturality := sorry
-  pentagon := sorry
-  triangle := sorry
+/- This is the monoidal structure on localized categories -/
+instance : MonoidalCategory (Solid R) := sorry
 
 instance : HasLimitsOfSize.{u, 0} Type := inferInstance
 

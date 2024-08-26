@@ -40,30 +40,14 @@ section MonoidalClosed
 
 variable (R : Type u) [CommRing R] -- might need some more assumptions
 
-/- This should be done in much greater generality for sheaf categories, or even reflective
-subcategories satisfying some extra properties. -/
-instance : MonoidalCategory (LightCondMod.{u} R) where
-  tensorObj A B := (presheafToSheaf _ _).obj (A.val ⊗ B.val)
-  tensorHom α β := (presheafToSheaf _ _).map (α.val ⊗ β.val)
-  whiskerLeft A _ _ β := (presheafToSheaf _ _).map (A.val ◁ β.val)
-  whiskerRight α B := (presheafToSheaf _ _).map (α.val ▷ B.val)
-  tensorUnit := (presheafToSheaf _ _).obj tensorUnit
-  associator X Y Z := sorry
-  leftUnitor := sorry
-  rightUnitor := sorry
-  tensorHom_def := sorry
-  tensor_id := sorry
-  tensor_comp := sorry
-  whiskerLeft_id := sorry
-  id_whiskerRight := sorry
-  associator_naturality := sorry
-  leftUnitor_naturality := sorry
-  rightUnitor_naturality := sorry
-  pentagon := sorry
-  triangle := sorry
+/- This is the monoidal structure on localized categories. -/
+instance : MonoidalCategory (LightCondMod.{u} R) := sorry
 
-/- This should be done in much greater generality for sheaf categories, or even reflective
-subcategories satisfying some extra properties. -/
+instance : MonoidalPreadditive (LightCondMod.{u} R) := sorry
+
+instance : SymmetricCategory (LightCondMod.{u} R) := sorry
+
+/- Constructed using Day's reflection theorem. -/
 instance : MonoidalClosed (LightCondMod.{u} R) := sorry
 
 variable (A : LightCondMod R) (S : LightProfinite)
@@ -84,9 +68,11 @@ def tensorFreeIso' (S T : LightProfinite) :
       (free R).obj (S ⨯ T).toCondensed := tensorFreeIso R S.toCondensed T.toCondensed ≪≫
         (free R).mapIso (Limits.PreservesLimitPair.iso lightProfiniteToLightCondSet _ _).symm
 
+instance (A : LightCondMod R) : PreservesColimits (tensorRight A) := sorry
+
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
-  sorry
--- In general the tensor product commutes with colimits
+  preservesColimitIso (tensorRight C) _ ≪≫
+    HasColimit.isoOfNatIso (parallelPair.ext (Iso.refl _) (Iso.refl _) rfl (by simp))
 
 end MonoidalClosed
 
