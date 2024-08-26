@@ -45,6 +45,7 @@ instance : (sheafCompose J s ⋙ sheafToPresheaf _ _).Faithful :=
 instance : (sheafCompose J s).Faithful :=
   Functor.Faithful.of_comp (sheafCompose J s) (sheafToPresheaf _ _)
 
+include w in
 lemma naturality_promote : f ≫ sheafForgetPromote _ _ β hβ =
     sheafForgetPromote _ _ α h ≫ g := by
   apply (sheafCompose J s).map_injective

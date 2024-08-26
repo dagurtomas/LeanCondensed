@@ -147,12 +147,14 @@ variable (g : ℕ → ℕ) (hg : Monotone g) (hg' : ∀ n, (∃ m, n ≤ g m))
 @[simps!]
 def Nat.functor : ℕ ⥤ ℕ := Nat.functor_mk' g (fun n ↦ homOfLE (hg (Nat.le_succ n)))
 
+include hg' in
 lemma final : (Nat.functor g hg).Final := by
   rw [Functor.final_iff_of_isFiltered]
   refine ⟨fun n ↦ ?_, fun _ _ ↦ ⟨_, 𝟙 _, rfl⟩⟩
   obtain ⟨m, hm⟩ := hg' n
   exact ⟨m, ⟨homOfLE hm⟩⟩
 
+include hg' in
 lemma initial : (Nat.functor g hg).op.Initial :=
   have := final g hg hg'
   Functor.initial_op_of_final _
