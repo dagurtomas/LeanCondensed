@@ -130,6 +130,8 @@ abbrev induced_from_one_minus_shift (A : LightCondMod R) :
 
 variable {R : Type} [CommRing R]
 
+/-- A light condensed `R`-module `A` is *solid* if the shift map `ℕ∪∞ → ℕ∪∞` induces an isomorphism
+on internal homs into `A` -/
 class IsSolid (A : LightCondMod R) : Prop where
   one_minus_shift_induces_iso : IsIso ((pre (one_minus_shift R)).app A)
 
