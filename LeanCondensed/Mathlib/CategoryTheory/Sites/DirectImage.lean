@@ -33,12 +33,7 @@ lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :
     ((inverseDirectImageAdjunction J K A F).unit.app X).val =
     F.op.lanUnit.app X.val ≫ whiskerLeft F.op (toSheafify K (F.op.lan.obj X.val)) := by
   change ((sheafToPresheaf J A).map ((inverseDirectImageAdjunction J K A F).unit.app X)) = _
-  simp only [Functor.id_obj, sheafToPresheaf_obj, Functor.comp_obj, inverseDirectImageAdjunction,
-    Adjunction.comp, whiskeringLeft_obj_obj, Functor.lanAdjunction_unit,
-    Adjunction.map_restrictFullyFaithful_unit_app, NatTrans.comp_app, whiskerLeft_app,
-    whiskerRight_app, sheafificationAdjunction_unit_app, whiskeringLeft_obj_map,
-    Functor.associator_inv_app, Category.comp_id, Iso.refl_hom, NatTrans.id_app, Functor.comp_map,
-    Functor.map_id, whiskerLeft_id']
+  simp [inverseDirectImageAdjunction, -sheafToPresheaf_map]
 
 lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
     ((inverseDirectImageAdjunction J K A F).unit.app X).val.app ⟨Y⟩ =
@@ -57,9 +52,7 @@ lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
     Adjunction.map_restrictFullyFaithful_counit_app, Iso.refl_inv, NatTrans.id_app,
     whiskeringLeft_obj_obj, Functor.comp_map, Category.id_comp]
   erw [Functor.map_id, Functor.map_id]
-  simp only [Adjunction.comp, Functor.comp_obj, sheafToPresheaf_obj, whiskeringLeft_obj_obj,
-    Functor.lanAdjunction_unit, NatTrans.comp_app, Functor.id_obj, Functor.associator_hom_app,
-    whiskerLeft_app, whiskerRight_app, Category.id_comp]
+  simp
 
 def pointTopology : GrothendieckTopology PUnit := ⊥
 
