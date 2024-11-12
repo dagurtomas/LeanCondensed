@@ -193,7 +193,7 @@ variable (R : Type u) [Ring R]
 instance : sequentialAB4star (LightCondMod.{u} R) := by
   apply sequentialAB4star_of_epi_limit_of_epi
   intro _ _ hc hF
-  exact LightCondensed.epi_limit_of_epi _ hc hF
+  exact LightCondMod.epi_π_app_zero_of_epi _ hc hF
 
 -- the goal:
 instance : countableAB4star (LightCondMod.{u} R) := countableAB4star_of_sequentialAB4star _
