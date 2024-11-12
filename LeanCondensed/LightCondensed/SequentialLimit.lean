@@ -3,117 +3,152 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
+import Mathlib.CategoryTheory.Functor.OfSequence
+import Mathlib.CategoryTheory.Sites.Coherent.LocallySurjective
+import Mathlib.CategoryTheory.Sites.EpiMono
+import Mathlib.CategoryTheory.Sites.Subcanonical
 import Mathlib.Condensed.Light.Epi
-import Mathlib.Condensed.Light.Functors
-import Mathlib.Condensed.Light.Module
-import LeanCondensed.LightCondensed.Yoneda
-import LeanCondensed.Misc.NatFunctor
 /-!
+(This file is PRed to mathlib in #18336)
 
-# Limits of epimorphisms in `LightCondMod R`
+# Limits of epimorphisms in coherent topoi
 
-This file proves that a sequential limit of epimorhpisms is epimorphic in `LightCondMod R`
-In other words, given epis
-`⋯ ⟶ Sₙ₊₁ ⟶ Sₙ ⟶ ⋯ ⟶ S₀`,
-the projection map `lim Sₙ ⟶ S₀` is surjective.
+This file proves that a sequential limit of epimorphisms is epimorphic in the category of sheaves
+for the coherent topology on a preregular finitary extensive concrete category where the effective
+epimorphisms are precisely the surjective ones.
 
-This should be generalised to light condensed objects in concrete categories for which
-`epi_iff_locallySurjective` holds.
+In other words, given epimorphisms of sheaves
+
+`⋯ ⟶ Xₙ₊₁ ⟶ Xₙ ⟶ ⋯ ⟶ X₀`,
+
+the projection map `lim Xₙ ⟶ X₀` is an epimorphism (see `coherentTopology.epi_π_app_zero_of_epi`).
+
+This is deduced from the corresponding statement about locally surjective morphisms of sheaves
+(see `coherentTopology.isLocallySurjective_π_app_zero_of_isLocallySurjective_map`).
 -/
 
-open CategoryTheory Limits
+universe w v u
+
+open CategoryTheory Limits Opposite
 
 attribute [local instance] ConcreteCategory.instFunLike
 
-namespace LightCondensed
+namespace CategoryTheory.coherentTopology
 
-private noncomputable def preimage (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-  (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op)) (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) :
-    (n : ℕ) → ((T : LightProfinite) × (F.obj ⟨n⟩).val.obj ⟨T⟩)
-  | 0 => ⟨S, g⟩
-  | (n+1) =>
-    have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
-      (preimage R c hF S g n).1 (preimage R c hF S g n).2
-    ⟨this.choose, this.choose_spec.choose_spec.choose_spec.choose⟩
+variable {C : Type u} [Category.{v} C] [Preregular C] [FinitaryExtensive C]
 
-private noncomputable def preimage_transitionMap
-    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
-          ((preimage R c hF S g (n+1)).1 ⟶ (preimage R c hF S g n).1) :=
-  have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
-    (preimage R c hF S g n).1 (preimage R c hF S g n).2
-  this.choose_spec.choose
+variable {F : ℕᵒᵖ ⥤ Sheaf (coherentTopology C) (Type v)} {c : Cone F}
+    (hc : IsLimit c)
+    (hF : ∀ n, Sheaf.IsLocallySurjective (F.map (homOfLE (Nat.le_succ n)).op))
 
-private lemma preimage_transitionMap_surj
-    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
-          Function.Surjective (preimage_transitionMap R c hF S g n) :=
-  have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
-    (preimage R c hF S g n).1 (preimage R c hF S g n).2
-  this.choose_spec.choose_spec.choose
+private structure struct (F : ℕᵒᵖ ⥤ Sheaf (coherentTopology C) (Type v)) where
+  X (n : ℕ) : C
+  x (n : ℕ) : (F.obj ⟨n⟩).val.obj ⟨X n⟩
+  map (n : ℕ) : X (n + 1) ⟶ X n
+  effectiveEpi (n : ℕ) : EffectiveEpi (map n)
+  w (n : ℕ) : (F.map (homOfLE (n.le_add_right 1)).op).val.app (op (X (n + 1))) (x (n + 1)) =
+      (F.obj (op n)).val.map (map n).op (x n)
 
-private lemma preimage_w
-    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) (n : ℕ) :
-          (F.map (homOfLE n.le_succ).op).val.app ⟨(LightCondensed.preimage R c hF S g (n+1)).1⟩
-            (LightCondensed.preimage R c hF S g (n+1)).2 =
-              ((F.obj ⟨n⟩).val.map (preimage_transitionMap R c hF S g n).op)
-                (LightCondensed.preimage R c hF S g n).2 := by
-  have := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite _ _).mp (hF n)
-    (preimage R c hF S g n).1 (preimage R c hF S g n).2
-  exact this.choose_spec.choose_spec.choose_spec.choose_spec
+include hF in
+private lemma exists_effectiveEpi (n : ℕ) (X : C) (y : (F.obj ⟨n⟩).val.obj ⟨X⟩) :
+    ∃ (X' : C) (φ : X' ⟶ X) (_ : EffectiveEpi φ) (x : (F.obj ⟨n + 1⟩).val.obj ⟨X'⟩),
+      ((F.map (homOfLE (n.le_add_right 1)).op).val.app ⟨X'⟩) x = ((F.obj ⟨n⟩).val.map φ.op) y := by
+  have := hF n
+  rw [coherentTopology.isLocallySurjective_iff, regularTopology.isLocallySurjective_iff] at this
+  exact this X y
 
-private noncomputable def preimage_diagram
-    (R : Type*) [Ring R] {F : ℕᵒᵖ ⥤ LightCondMod R} (c : Cone F)
-      (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
-        (S : LightProfinite) (g : (F.obj ⟨0⟩).val.obj ⟨S⟩) : ℕᵒᵖ ⥤ LightProfinite :=
-  Nat.functor_mk (fun n ↦ (preimage R c hF S g n).1) fun n ↦ preimage_transitionMap R c hF S g n
+private noncomputable def preimage (X : C) (y : (F.obj ⟨0⟩).val.obj ⟨X⟩) :
+    (n : ℕ) → ((Y : C) × (F.obj ⟨n⟩).val.obj ⟨Y⟩)
+  | 0 => ⟨X, y⟩
+  | (n+1) => ⟨(exists_effectiveEpi hF n (preimage X y n).1 (preimage X y n).2).choose,
+      (exists_effectiveEpi hF n
+        (preimage X y n).1 (preimage X y n).2).choose_spec.choose_spec.choose_spec.choose⟩
 
-variable (R : Type*) [Ring R]
+private noncomputable def preimageStruct (X : C) (y : (F.obj ⟨0⟩).val.obj ⟨X⟩) : struct F where
+  X n := (preimage hF X y n).1
+  x n := (preimage hF X y n).2
+  map n := (exists_effectiveEpi hF n _ _).choose_spec.choose
+  effectiveEpi n := (exists_effectiveEpi hF n _ _).choose_spec.choose_spec.choose
+  w n := (exists_effectiveEpi hF n _ _).choose_spec.choose_spec.choose_spec.choose_spec
+
+private noncomputable def preimageDiagram (X : C) (y : (F.obj ⟨0⟩).val.obj ⟨X⟩) : ℕᵒᵖ ⥤ C :=
+  Functor.ofOpSequence (preimageStruct hF X y).map
+
+variable [HasLimitsOfShape ℕᵒᵖ C]
+
+private noncomputable def cone (X : C) (y : (F.obj ⟨0⟩).val.obj ⟨X⟩) : Cone F where
+  pt := ((coherentTopology C).yoneda).obj (limit (preimageDiagram hF X y))
+  π := NatTrans.ofOpSequence
+    (fun n ↦ (coherentTopology C).yoneda.map
+      (limit.π _ ⟨n⟩) ≫ ((coherentTopology C).yonedaEquiv).symm ((preimageStruct hF X y).x n)) (by
+    intro n
+    simp only [Functor.const_obj_obj, homOfLE_leOfHom, Functor.const_obj_map, Category.id_comp,
+      Category.assoc, ← limit.w (preimageDiagram hF X y) (homOfLE (n.le_add_right 1)).op,
+      homOfLE_leOfHom, Functor.map_comp]
+    simp [GrothendieckTopology.yonedaEquiv_symm_naturality_left,
+      GrothendieckTopology.yonedaEquiv_symm_naturality_right,
+      preimageDiagram, (preimageStruct hF X y).w n])
+
+variable [ConcreteCategory C] (h : ∀ {X Y : C} (f : X ⟶ Y), EffectiveEpi f ↔ Function.Surjective f)
+
+variable [PreservesLimitsOfShape ℕᵒᵖ (forget C)]
+
+include hF h hc in
+lemma isLocallySurjective_π_app_zero_of_isLocallySurjective_map :
+    Sheaf.IsLocallySurjective (c.π.app ⟨0⟩) := by
+  rw [coherentTopology.isLocallySurjective_iff, regularTopology.isLocallySurjective_iff]
+  intro X y
+  have hh : EffectiveEpi (limit.π (preimageDiagram hF X y) ⟨0⟩) := by
+    rw [h]
+    refine Concrete.surjective_π_app_zero_of_surjective_map (limit.isLimit _) fun n ↦ ?_
+    simpa [preimageDiagram, ← h] using (preimageStruct hF X y).effectiveEpi n
+  refine ⟨limit (preimageDiagram hF X y), limit.π (preimageDiagram hF X y) ⟨0⟩, hh,
+    (coherentTopology C).yonedaEquiv (hc.lift (cone hF X y )),
+    (?_ : (c.π.app (op 0)).val.app _ _ = _)⟩
+  simp only [← (coherentTopology C).yonedaEquiv_comp, Functor.const_obj_obj, cone,
+    IsLimit.fac, NatTrans.ofOpSequence_app, (coherentTopology C).yonedaEquiv_comp,
+    (coherentTopology C).yonedaEquiv_yoneda_map]
+  rfl
+
+include h in
+lemma epi_π_app_zero_of_epi [HasSheafify (coherentTopology C) (Type v)]
+    [Balanced (Sheaf (coherentTopology C) (Type v))]
+    [(coherentTopology C).WEqualsLocallyBijective (Type v)]
+    {F : ℕᵒᵖ ⥤ Sheaf (coherentTopology C) (Type v)}
+    {c : Cone F} (hc : IsLimit c)
+    (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op)) : Epi (c.π.app ⟨0⟩) := by
+  simp_rw [← Sheaf.isLocallySurjective_iff_epi'] at hF ⊢
+  exact isLocallySurjective_π_app_zero_of_isLocallySurjective_map hc hF h
+
+end CategoryTheory.coherentTopology
+
+namespace LightCondMod
+
+variable (R : Type u) [Ring R]
+
+instance : (LightCondensed.forget R).ReflectsEpimorphisms where
+  reflects f hf := by
+    rw [← Sheaf.isLocallySurjective_iff_epi'] at hf ⊢
+    exact (Presheaf.isLocallySurjective_iff_whisker_forget _ f.val).mpr hf
+
+instance : (LightCondensed.forget R).PreservesEpimorphisms where
+  preserves f hf := by
+    rw [← Sheaf.isLocallySurjective_iff_epi'] at hf ⊢
+    exact (Presheaf.isLocallySurjective_iff_whisker_forget _ f.val).mp hf
+
 variable {F : ℕᵒᵖ ⥤ LightCondMod R} {c : Cone F} (hc : IsLimit c)
   (hF : ∀ n, Epi (F.map (homOfLE (Nat.le_succ n)).op))
 
+open LightCondensed
+
 include hc hF in
-lemma epi_limit_of_epi : Epi (c.π.app ⟨0⟩) := by
-  rw [LightCondMod.epi_iff_locallySurjective_on_lightProfinite]
-  intro S g
-  have h : Function.Surjective
-      (limit.π (LightCondensed.preimage_diagram R c hF S g) { unop := 0 }) := by
-    refine Concrete.surjective_π_app_zero_of_surjective_map (limit.isLimit _) ?_
-    intro n
-    simp only [preimage_diagram, Nat.succ_eq_add_one, Nat.functor_mk_obj, Nat.functor_mk_map_step]
-    exact preimage_transitionMap_surj _ _ _ _ _ _
-  refine ⟨limit (preimage_diagram R c hF S g), limit.π (preimage_diagram R c hF S g) ⟨0⟩, h, ?_⟩
-  let d : Cone F := by
-    refine F.nat_op_cone_mk ((lightProfiniteToLightCondSet ⋙ free R).obj
-      (limit (LightCondensed.preimage_diagram R c hF S g))) ?_ ?_
-    · exact fun n ↦ (lightProfiniteToLightCondSet ⋙ free R).map
-        (limit.π _ ⟨n⟩) ≫ (freeYoneda R _ _).symm (preimage R c hF S g n).2
-    · intro n
-      rw [← limit.w (LightCondensed.preimage_diagram R c hF S g) (homOfLE n.le_succ).op]
-      simp only [Functor.comp_obj, Functor.comp_map, Nat.succ_eq_add_one, Category.assoc,
-        Functor.map_comp]
-      congr 1
-      erw [freeYoneda_symm_naturality, freeYoneda_symm_conaturality]
-      congr 1
-      erw [preimage_w R c hF S g n]
-      simp only [preimage_diagram, Nat.functor_mk_obj, Nat.functor_mk_map_step]
-  let x : lightProfiniteToLightCondSet.obj (limit (preimage_diagram R c hF S g)) ⟶
-      (forget R).obj c.pt := by
-    exact (freeForgetAdjunction R).homEquiv _ _ (hc.lift d)
-  refine ⟨LightCondensed.yoneda _ _ x, ?_⟩
-  change ((forget R).map _).val.app _ _ = _
-  erw [yoneda_conaturality]
-  simp only [x]
-  simp only [Functor.const_obj_obj, Adjunction.homEquiv_unit, Functor.id_obj, Functor.comp_obj,
-    Category.assoc]
-  rw [← (forget R).map_comp, hc.fac]
-  simp only [Functor.comp_obj, Functor.comp_map, freeYoneda, Equiv.symm_trans_apply,
-    Nat.succ_eq_add_one, id_eq, eq_mpr_eq_cast, Functor.nat_op_cone_mk_pt, Functor.nat_op_cone_mk_π,
-    Adjunction.homEquiv_counit, Functor.id_obj, natTrans_nat_op_mk_app, Functor.map_comp,
-    Adjunction.unit_naturality_assoc, Adjunction.right_triangle_components, Category.comp_id, d]
-  erw [yoneda_symm_naturality, Equiv.apply_symm_apply]
-  rfl
+lemma epi_π_app_zero_of_epi : Epi (c.π.app ⟨0⟩) := by
+  apply Functor.epi_of_epi_map (forget R)
+  change Epi (((forget R).mapCone c).π.app ⟨0⟩)
+  apply coherentTopology.epi_π_app_zero_of_epi
+  · exact LightProfinite.effectiveEpi_iff_surjective
+  · have := (freeForgetAdjunction R).isRightAdjoint
+    exact isLimitOfPreserves _ hc
+  · exact fun _ ↦ (forget R).map_epi _
+
+end LightCondMod
