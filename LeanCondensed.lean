@@ -7,4 +7,5 @@ import LeanCondensed.Misc.Promote
 import LeanCondensed.Misc.SheafHomForget
 import LeanCondensed.Projects.AB
 import LeanCondensed.Projects.InternallyProjective
+import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.LightSolid
