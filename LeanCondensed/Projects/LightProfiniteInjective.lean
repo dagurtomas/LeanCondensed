@@ -41,7 +41,7 @@ universe u
 open Set
 
 /-
-  For every closed Z ⊆ open U ⊆ profinite X, there is an clopen C with
+  For every closed Z ⊆ open U ⊆ profinite X, there is a clopen C with
   Z ⊆ C ⊆ U.  Perhaps this should go in mathlib somewhere?
 -/
 
@@ -309,7 +309,7 @@ lemma light_key_lifting_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
 /-
-  The map from a nonempty space to pt is epi in a CompHausLike category of spaces
+  The map from a nonempty space to pt is (split) epi in a CompHausLike category of spaces
 -/
 
 instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
