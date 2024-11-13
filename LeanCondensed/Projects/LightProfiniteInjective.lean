@@ -38,14 +38,14 @@ along a presentation of S as sequential limit of finite spaces. The key lemma is
 noncomputable section
 universe u
 
-open Set
+open Set Profinite Topology CategoryTheory LightProfinite Fin Limits
 
 /-
   For every closed Z ⊆ open U ⊆ profinite X, there is a clopen C with
   Z ⊆ C ⊆ U.  Perhaps this should go in mathlib somewhere?
 -/
 
-namespace LightProfinite
+namespace Profinite
 
 lemma clopen_of_closed_subset_open  (X : Profinite.{u}) (Z U : Set X)
     (hZ : IsClosed Z) (hU : IsOpen U) (hZU : Z ⊆ U) :
@@ -64,8 +64,6 @@ lemma clopen_of_closed_subset_open  (X : Profinite.{u}) (Z U : Set X)
   have C_subset_U : C ⊆ U := by simp_all only [iUnion_subset_iff, C, implies_true]
   exact ⟨C, C_clopen, hI, C_subset_U⟩
 
-
-open Fin
 
 /-
   Let X be profinite, D i ⊆ X a finite family of clopens, and Z i ⊆ D i closed.
@@ -181,8 +179,6 @@ lemma clopen_partition_of_disjoint_closeds_in_clopens
     take Z s to be the fiber of g at s, and D s the fiber of g' at f' s
 -/
 
-open Topology
-
 lemma key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
   (f : X → Y) (hf : Continuous f) (f_inj : Function.Injective f)
   (f' : S → T) (f'_surj : Function.Surjective f')
@@ -282,8 +278,6 @@ lemma key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
   exact ⟨k, h_cont, h_f'k_g', h_kf_g⟩
 
 
-open CategoryTheory
-
 -- categorically stated versions of key_extension_lemma
 
 lemma profinite_key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
@@ -297,6 +291,10 @@ lemma profinite_key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
     g.toFun g.continuous g'.toFun g'.continuous h_comm'
   exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
+
+end Profinite
+
+namespace LightProfinite
 
 lemma light_key_extension_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
     (f : X ⟶ Y) [Mono f] (f' : S ⟶ T) [Epi f']
@@ -313,22 +311,26 @@ lemma light_key_extension_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
   exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
+end LightProfinite
+
+namespace CompHausLike
+
 /-
   The map from a nonempty space to pt is (split) epi in a CompHausLike category of spaces
 -/
 
-instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
+instance {P : TopCat.{u} → Prop} [HasProp P PUnit.{u+1}]
     (X : CompHausLike.{u} P) [Nonempty X] :
-    IsSplitEpi (CompHausLike.isTerminalPUnit.from X) := IsSplitEpi.mk'
-  { section_ := CompHausLike.const _ (Nonempty.some inferInstance)
-    id := CompHausLike.isTerminalPUnit.hom_ext _ _ }
+    IsSplitEpi (isTerminalPUnit.from X) := IsSplitEpi.mk'
+  { section_ := const _ (Nonempty.some inferInstance), id := isTerminalPUnit.hom_ext _ _ }
 
+end CompHausLike
 
 /-
   Next we show that nonempty (light) profinite spaces are injective.
 -/
 
-instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S] :
+instance LightProfinite.injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S] :
     Injective (S) where
   factors {X Y} g f _ := by
     let f' := CompHausLike.isTerminalPUnit.from S
@@ -337,7 +339,7 @@ instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite
       (CompHausLike.isTerminalPUnit.hom_ext _ _)
     exact ⟨k, h2⟩
 
-instance profinite_injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite S] :
+instance Profinite.injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite S] :
     Injective (S) where
   factors {X Y} g f _ := by
     let f' := CompHausLike.isTerminalPUnit.from S
@@ -347,7 +349,7 @@ instance profinite_injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite 
     exact ⟨k, h2⟩
 
 
-open LightProfinite Limits
+namespace LightProfinite
 
 /-
   Main theorem: a nonempty light profinite space is injective in LightProfinite
