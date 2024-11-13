@@ -361,63 +361,63 @@ open LightProfinite Limits
 
 -/
 
-theorem injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S := by
-  constructor
-  intro X Y g f h
-  -- help the instance inference a bit
-  haveI (n : ℕ) : Finite (S.component n) := by unfold component; dsimp; exact inferInstance
-  haveI : Nonempty (S.component 0) := Nonempty.map (S.proj 0).toFun inferInstance
-  haveI (n : ℕ) : Epi (S.transitionMap n) := (LightProfinite.epi_iff_surjective _).mpr
-    (S.surjective_transitionMap n)
-  -- base step of the induction: find k0 : Y ⟶ S.component 0
-  obtain ⟨k0, h_down0⟩ :=  (light_injective_of_finite (S.component 0)).factors (g ≫ S.proj 0) f
-  have h_comm0 : f ≫ k0 = g ≫ S.proj 1 ≫ S.transitionMap 0 := by
-    rw [h_down0]
-    exact congrArg _ (S.proj_comp_transitionMap 0).symm
-  -- key part of induction step: next produces k n+1 out of k n, see diagram above
-  have h_step (n : ℕ) (k : Y ⟶ S.component n) (h_down : f ≫ k = g ≫ S.proj n) :
-    ∃ k' : Y ⟶ S.component (n+1), k' ≫ S.transitionMap n = k ∧ f ≫ k' = g ≫ S.proj (n+1) := by
-    have h_comm : f ≫ k = g ≫ S.proj (n+1) ≫ S.transitionMap n := by
+instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S where
+  factors {X Y} g f h := by
+    -- help the instance inference a bit
+    haveI (n : ℕ) : Finite (S.component n) :=
+      inferInstanceAs (Finite (FintypeCat.toLightProfinite.obj _))
+    haveI : Nonempty (S.component 0) := Nonempty.map (S.proj 0).toFun inferInstance
+    haveI (n : ℕ) : Epi (S.transitionMap n) := (LightProfinite.epi_iff_surjective _).mpr
+      (S.surjective_transitionMap n)
+    -- base step of the induction: find k0 : Y ⟶ S.component 0
+    obtain ⟨k0, h_down0⟩ :=  Injective.factors (g ≫ S.proj 0) f
+    have h_comm0 : f ≫ k0 = g ≫ S.proj 1 ≫ S.transitionMap 0 := by
+      rw [h_down0]
+      exact congrArg _ (S.proj_comp_transitionMap 0).symm
+    -- key part of induction step: next produces k n+1 out of k n, see diagram above
+    have h_step (n : ℕ) (k : Y ⟶ S.component n) (h_down : f ≫ k = g ≫ S.proj n) :
+      ∃ k' : Y ⟶ S.component (n+1), k' ≫ S.transitionMap n = k ∧ f ≫ k' = g ≫ S.proj (n+1) := by
+      have h_comm : f ≫ k = g ≫ S.proj (n+1) ≫ S.transitionMap n := by
+        rw [h_down]
+        exact congrArg _ (S.proj_comp_transitionMap n).symm
+      exact light_key_lifting_lemma _ _ _ _ f (S.transitionMap n) (g ≫ (S.proj (n+1))) k h_comm
+    let lifts (n : ℕ) := { k : Y ⟶ S.component n // f ≫ k = g ≫ S.proj n }
+    let next (n : ℕ) : lifts n → lifts (n+1) :=
+      fun k ↦ ⟨Classical.choose (h_step n k.val k.property),
+        (Classical.choose_spec (h_step n k.val k.property)).2⟩
+    -- now define sequence of lifts using induction
+    let k_seq (n : Nat) : lifts n := Nat.rec ⟨k0, h_down0⟩ next n
+    -- h_up and h_down are the required commutativity properties
+    have h_down (n : ℕ) : f ≫ (k_seq n).val = g ≫ S.proj n := (k_seq n).property
+    have h_up (n : ℕ) : (k_seq (n+1)).val ≫ S.transitionMap n = (k_seq n).val := by
+      induction' n with n ih
+      · exact (Classical.choose_spec (h_step 0 k0 h_down0)).1
+      · exact (Classical.choose_spec (h_step (n+1) (k_seq (n+1)).val (k_seq (n+1)).property)).1
+    let k_cone : Cone S.diagram :=
+      { pt := Y, π := NatTrans.ofOpSequence (fun n ↦ (k_seq n).val) (fun n ↦ (h_up n).symm) }
+    -- now the induced map Y ⟶ S = lim S.component is the desired map
+    use S.asLimit.lift k_cone
+    let g_cone : Cone S.diagram :=
+      { pt := X, π := NatTrans.ofOpSequence (fun n ↦ g ≫ S.proj n) (fun n ↦ by
+        simp only [Functor.const_obj_obj, Functor.const_obj_map, Category.id_comp]
+        exact congrArg _ (S.proj_comp_transitionMap n).symm) }
+    have hg : g = S.asLimit.lift g_cone := by
+      apply S.asLimit.uniq g_cone
+      intro n
+      simp only [NatTrans.ofOpSequence_app]
+    rw [hg]
+    have hlim : S.asLimit.lift (k_cone.extend f) = S.asLimit.lift g_cone := by
+      unfold Cone.extend
+      congr
+      ext n
+      dsimp only [Cone.extensions_app, NatTrans.comp_app, Functor.const_map_app,
+        NatTrans.ofOpSequence_app]
       rw [h_down]
-      exact congrArg _ (S.proj_comp_transitionMap n).symm
-    exact light_key_lifting_lemma _ _ _ _ f (S.transitionMap n) (g ≫ (S.proj (n+1))) k h_comm
-  let lifts (n : ℕ) := { k : Y ⟶ S.component n // f ≫ k = g ≫ S.proj n }
-  let next (n : ℕ) : lifts n → lifts (n+1) :=
-    fun k ↦ ⟨Classical.choose (h_step n k.val k.property),
-      (Classical.choose_spec (h_step n k.val k.property)).2⟩
-  -- now define sequence of lifts using induction
-  let k_seq (n : Nat) : lifts n := Nat.rec ⟨k0, h_down0⟩ next n
-  -- h_up and h_down are the required commutativity properties
-  have h_down (n : ℕ) : f ≫ (k_seq n).val = g ≫ S.proj n := (k_seq n).property
-  have h_up (n : ℕ) : (k_seq (n+1)).val ≫ S.transitionMap n = (k_seq n).val := by
-    induction' n with n ih
-    · exact (Classical.choose_spec (h_step 0 k0 h_down0)).1
-    · exact (Classical.choose_spec (h_step (n+1) (k_seq (n+1)).val (k_seq (n+1)).property)).1
-  let k_cone : Cone S.diagram :=
-    { pt := Y, π := NatTrans.ofOpSequence (fun n ↦ (k_seq n).val) (fun n ↦ (h_up n).symm) }
-  -- now the induced map Y ⟶ S = lim S.component is the desired map
-  use S.asLimit.lift k_cone
-  let g_cone : Cone S.diagram :=
-    { pt := X, π := NatTrans.ofOpSequence (fun n ↦ g ≫ S.proj n) (fun n ↦ by
-      simp only [Functor.const_obj_obj, Functor.const_obj_map, Category.id_comp]
-      exact congrArg _ (S.proj_comp_transitionMap n).symm) }
-  have hg : g = S.asLimit.lift g_cone := by
-    apply S.asLimit.uniq g_cone
+    rw [← hlim]
+    apply S.asLimit.uniq (k_cone.extend f)
     intro n
-    simp only [NatTrans.ofOpSequence_app]
-  rw [hg]
-  have hlim : S.asLimit.lift (k_cone.extend f) = S.asLimit.lift g_cone := by
-    unfold Cone.extend
-    congr
-    ext n
-    dsimp only [Cone.extensions_app, NatTrans.comp_app, Functor.const_map_app,
-      NatTrans.ofOpSequence_app]
-    rw [h_down]
-  rw [← hlim]
-  apply S.asLimit.uniq (k_cone.extend f)
-  intro n
-  simp only [Category.assoc, IsLimit.fac, Cone.extend_π,  Cone.extensions_app,
-    NatTrans.comp_app,  Functor.const_map_app]
+    simp only [Category.assoc, IsLimit.fac, Cone.extend_π,  Cone.extensions_app,
+      NatTrans.comp_app,  Functor.const_map_app]
 
 
 -- instance version
