@@ -6,6 +6,7 @@ Authors: Lenny Taelman
 
 import Mathlib.CategoryTheory.Preadditive.Injective
 import Mathlib.Topology.Category.LightProfinite.AsLimit
+import Mathlib.Topology.Category.CompHausLike.Limits
 import Mathlib.CategoryTheory.Functor.OfSequence
 import Mathlib.CategoryTheory.EpiMono
 
@@ -29,8 +30,8 @@ along a presentation of S as sequential limit of finite spaces. The key lemma is
 
 ## References
 
-* https://kskedlaya.org/condensed/sec_profinite_set.html#sec_profinite_set-5
-
+* <https://kskedlaya.org/condensed/sec_profinite_set.html#sec_profinite_set-5>
+* <https://www.youtube.com/watch?v=_4G582SIo28&t=3187s>
 
 -/
 
@@ -127,7 +128,7 @@ lemma clopen_partition_of_disjoint_closeds_in_clopens
     have C_subset_D : ∀ i, C i ⊆ D i := cases C0_subset_D0 C'_subset_D
     have C_cover_D : (⋃ i, D i) ⊆ (⋃ i, C i) := by -- messy, but I don't see easy simplification
       intro x hx
-      simp
+      rw [mem_iUnion]
       by_cases hx0 : x ∈ C0
       · exact ⟨0, hx0⟩
       · by_cases hxD : x ∈ D 0
@@ -203,8 +204,7 @@ lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
   have D_clopen i : IsClopen (D i) := IsClopen.preimage (isClopen_discrete {f' (ψ i)}) hg'
   have Z_subset_D i : Z i ⊆ D i := by
     intro z hz
-    rw [mem_preimage]
-    simp
+    rw [mem_preimage, mem_singleton_iff]
     obtain ⟨x, hx1, hx2⟩ := (mem_image _ _ _).mp hz
     rw [←hx2]
     have h_comm' : g' (f x) = f' (g x) := congr_fun h_comm x
@@ -236,7 +236,7 @@ lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
   -- now verify that k has the desired properties
   have h_f'k_g' : f' ∘ k = g' := by
     ext y
-    simp
+    rw [Function.comp_apply]
     -- y is contained in C i for some i
     have hy : y ∈ ⋃ i, C i := by
       rw [C_cover_univ]
@@ -247,7 +247,7 @@ lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
     exact symm (C_subset_D i hi)
   have h_kf_g : k ∘ f = g := by
     ext x
-    simp
+    rw [Function.comp_apply]
     let i := φ (g x)
     have hfC : f x ∈ Z i := by
       rw [mem_image]
@@ -261,7 +261,8 @@ lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
     constructor
     · exact liftCover_of_mem
     · rw [preimage_liftCover]
-      simp
+      simp only [mem_iUnion, mem_image, mem_preimage, exists_and_left,
+        Subtype.exists, exists_prop, exists_eq_right, forall_exists_index, and_imp]
       intro j hji hj
       rw [Function.LeftInverse.injective h2 hji] at hj
       exact hj
@@ -307,6 +308,9 @@ lemma light_key_lifting_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
   exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
+/-
+  The map from a nonempty space to pt is epi in a CompHausLike category of spaces
+-/
 
 instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
     (X : CompHausLike.{u} P) [Nonempty X] :
@@ -319,7 +323,7 @@ instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
   Next we show that nonempty (light) profinite spaces are injective.
 -/
 
-instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S] : 
+instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S] :
     Injective (S) where
   factors {X Y} g f _ := by
     let f' := CompHausLike.isTerminalPUnit.from S
@@ -346,7 +350,7 @@ open LightProfinite Limits
 -/
 
 /-
-  Induction step:
+  Induction step in the proof:
 
       X        --f-->  Y
       |g' (n+1)        |k n
@@ -418,12 +422,3 @@ instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S w
     intro n
     simp only [Category.assoc, IsLimit.fac, Cone.extend_π,  Cone.extensions_app,
       NatTrans.comp_app,  Functor.const_map_app]
-
-
--- instance version
-
-namespace LightProfinite
-
-instance (S : LightProfinite.{u}) [Nonempty S] : Injective S := injective_of_light S
-
-end LightProfinite
