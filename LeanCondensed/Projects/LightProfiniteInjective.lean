@@ -45,6 +45,8 @@ open Set
   Z ⊆ C ⊆ U.  Perhaps this should go in mathlib somewhere?
 -/
 
+namespace LightProfinite
+
 lemma clopen_of_closed_subset_open  (X : Profinite.{u}) (Z U : Set X)
     (hZ : IsClosed Z) (hU : IsOpen U) (hZU : Z ⊆ U) :
     ∃ C : Set X, IsClopen C ∧ Z ⊆ C ∧ C ⊆ U := by
@@ -425,3 +427,5 @@ instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S w
     intro n
     simp only [Category.assoc, IsLimit.fac, Cone.extend_π,  Cone.extensions_app,
       NatTrans.comp_app,  Functor.const_map_app]
+
+end LightProfinite
