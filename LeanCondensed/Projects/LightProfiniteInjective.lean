@@ -308,33 +308,11 @@ lemma light_key_lifting_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
 
-/-
-  The next four lemmas establish that the map from a nonempty (light) profinite
-  to the final object is a (split) epi.
-  Probably nicer to do this for CompHausLike or similar
--/
-
-lemma to_final_split_epi (X : Profinite.{u}) [Nonempty X] :
-    IsSplitEpi (Limits.terminalIsTerminal.from X) := by
-  let s : ⊤_ Profinite ⟶ X :=
-    { toFun := fun _ => Nonempty.some inferInstance, continuous_toFun := continuous_const}
-  exact IsSplitEpi.mk' { section_ := s, id := Limits.terminal.hom_ext _ _ }
-
-lemma to_final_epi (X : Profinite.{u}) [Nonempty X] :
-    Epi (Limits.terminalIsTerminal.from X) := by
-  haveI := to_final_split_epi X
-  exact IsSplitEpi.epi (Limits.terminalIsTerminal.from X)
-
-lemma light_to_final_split_epi (X : LightProfinite.{u}) [Nonempty X] :
-    IsSplitEpi (Limits.terminalIsTerminal.from X) := by
-  let s : ⊤_ LightProfinite ⟶ X :=
-    { toFun := fun _ => Nonempty.some inferInstance, continuous_toFun := continuous_const}
-  exact IsSplitEpi.mk' { section_ := s, id := Limits.terminal.hom_ext _ _ }
-
-lemma light_to_final_epi (X : LightProfinite.{u}) [Nonempty X] :
-    Epi (Limits.terminalIsTerminal.from X) := by
-  haveI := light_to_final_split_epi X
-  exact IsSplitEpi.epi (Limits.terminalIsTerminal.from X)
+instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
+    (X : CompHausLike.{u} P) [Nonempty X] :
+    IsSplitEpi (CompHausLike.isTerminalPUnit.from X) := IsSplitEpi.mk'
+  { section_ := CompHausLike.const _ (Nonempty.some inferInstance)
+    id := CompHausLike.isTerminalPUnit.hom_ext _ _ }
 
 
 /-
