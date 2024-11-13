@@ -24,9 +24,9 @@ profinite spaces are injective in the category of all profinite spaces.
 ## Implementation notes
 
 The main result is `injective_of_light`, which provides an instance of `Injective S` for
-a non-empty light profinite space `S`. The proof uses an inductive lifting argument
+a non-empty light profinite space `S`. The proof uses an inductive extension argument
 along a presentation of S as sequential limit of finite spaces. The key lemma is
-`light_key_lifting_lemma`.
+`light_key_extension_lemma`.
 
 ## References
 
@@ -166,19 +166,22 @@ lemma clopen_partition_of_disjoint_closeds_in_clopens
 
 
 /-
-  this is the key statement for the inductive proof of injectivity. Given
-  a commutative square
+  This is the key statement for the inductive proof of injectivity of light
+  profinite spaces. Given a commutative square
       X >-f->  Y
       |g       |g'
       v        v
       S -f'->> T
   where Y is profinite, S is finite, f is injective and f' is surjective,
   there exists a diagonal map k : Y → S making the diagram commute.
+
+  It is mathematically equivalent to the previous lemma:
+    take Z s to be the fiber of g at s, and D s the fiber of g' at f' s
 -/
 
 open Topology
 
-lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
+lemma key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
   (f : X → Y) (hf : Continuous f) (f_inj : Function.Injective f)
   (f' : S → T) (f'_surj : Function.Surjective f')
   (g : X → S) (hg : Continuous g) (g' : Y → T) (hg' : Continuous g')
@@ -279,27 +282,27 @@ lemma key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
 
 open CategoryTheory
 
--- categorically stated versions of key_lifting_lemma
+-- categorically stated versions of key_extension_lemma
 
-lemma profinite_key_lifting_lemma (X Y S T : Profinite.{u}) [Finite S]
+lemma profinite_key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
     (f : X ⟶ Y) [Mono f] (f' : S ⟶ T) [Epi f']
     (g : X ⟶ S) (g' : Y ⟶ T) (h_comm : f ≫ g' = g ≫ f') :
     ∃ k : Y ⟶ S, (k ≫ f' = g') ∧ (f ≫ k = g)  := by
   have h_comm' : (f ≫ g').toFun = (g ≫ f').toFun := congrArg _ h_comm
-  obtain ⟨k_fun, k_cont, h2, h3⟩ := key_lifting_lemma X Y S T
+  obtain ⟨k_fun, k_cont, h2, h3⟩ := key_extension_lemma X Y S T
     f.toFun f.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
     f'.toFun ((Profinite.epi_iff_surjective f').mp inferInstance)
     g.toFun g.continuous g'.toFun g'.continuous h_comm'
   exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
-lemma light_key_lifting_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
+lemma light_key_extension_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
     (f : X ⟶ Y) [Mono f] (f' : S ⟶ T) [Epi f']
     (g : X ⟶ S) (g' : Y ⟶ T) (h_comm : f ≫ g' = g ≫ f') :
     ∃ k : Y ⟶ S, (k ≫ f' = g') ∧ (f ≫ k = g)  := by
   haveI : Finite (lightToProfinite.obj S).toTop := hS -- help the instance inference
   have h_comm' : (f ≫ g').toFun = (g ≫ f').toFun := congrArg _ h_comm
-  obtain ⟨k_fun, k_cont, h2, h3⟩ := key_lifting_lemma
+  obtain ⟨k_fun, k_cont, h2, h3⟩ := key_extension_lemma
     (lightToProfinite.obj X) (lightToProfinite.obj Y)
     (lightToProfinite.obj S) (lightToProfinite.obj T)
     f.toFun f.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
@@ -328,7 +331,7 @@ instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite
   factors {X Y} g f _ := by
     let f' := CompHausLike.isTerminalPUnit.from S
     let g' := CompHausLike.isTerminalPUnit.from Y
-    obtain ⟨k, _, h2⟩ := light_key_lifting_lemma _ _ S _ f f' g g'
+    obtain ⟨k, _, h2⟩ := light_key_extension_lemma _ _ S _ f f' g g'
       (CompHausLike.isTerminalPUnit.hom_ext _ _)
     exact ⟨k, h2⟩
 
@@ -337,7 +340,7 @@ instance profinite_injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite 
   factors {X Y} g f _ := by
     let f' := CompHausLike.isTerminalPUnit.from S
     let g' := CompHausLike.isTerminalPUnit.from Y
-    obtain ⟨k, _, h2⟩ := profinite_key_lifting_lemma _ _ S _ f f' g g'
+    obtain ⟨k, _, h2⟩ := profinite_key_extension_lemma _ _ S _ f f' g g'
       (CompHausLike.isTerminalPUnit.hom_ext _ _)
     exact ⟨k, h2⟩
 
@@ -360,7 +363,7 @@ open LightProfinite Limits
   find k n+1 : Y ⟶ S' (n+1) making both diagrams commute. That is:
    - h_up n+1 : k (n+1) ≫ p n = k n   **** recursive, requires k n
    - h_down n+1 : f ≫ k (n+1) = g' (n+1)
-  Construction of k (n+1) through lifting lemma requires as input:
+  Construction of k (n+1) through extension lemma requires as input:
    - h_comm n : g' (n+1) ≫ p n = f ≫ k n, which can be obtained from h_down n
 
 -/
@@ -384,7 +387,7 @@ instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S w
       have h_comm : f ≫ k = g ≫ S.proj (n+1) ≫ S.transitionMap n := by
         rw [h_down]
         exact congrArg _ (S.proj_comp_transitionMap n).symm
-      exact light_key_lifting_lemma _ _ _ _ f (S.transitionMap n) (g ≫ (S.proj (n+1))) k h_comm
+      exact light_key_extension_lemma _ _ _ _ f (S.transitionMap n) (g ≫ (S.proj (n+1))) k h_comm
     let lifts (n : ℕ) := { k : Y ⟶ S.component n // f ≫ k = g ≫ S.proj n }
     let next (n : ℕ) : lifts n → lifts (n+1) :=
       fun k ↦ ⟨Classical.choose (h_step n k.val k.property),
