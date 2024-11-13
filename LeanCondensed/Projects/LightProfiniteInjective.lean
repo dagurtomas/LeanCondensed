@@ -319,25 +319,23 @@ instance {P : TopCat.{u} → Prop} [CompHausLike.HasProp P PUnit.{u+1}]
   Next we show that nonempty (light) profinite spaces are injective.
 -/
 
-lemma light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S]:
-    Injective (S) := by
-  constructor
-  intro X Y g f f_mono
-  let f' := Limits.terminalIsTerminal.from S
-  haveI : Epi  f' := light_to_final_epi S
-  let g' := Limits.terminalIsTerminal.from Y
-  obtain ⟨k, _, h2⟩ := light_key_lifting_lemma _ _ S _ f f' g g' (Limits.terminal.hom_ext _ _)
-  exact ⟨k, h2⟩
+instance light_injective_of_finite (S : LightProfinite.{u}) [Nonempty S] [Finite S] : 
+    Injective (S) where
+  factors {X Y} g f _ := by
+    let f' := CompHausLike.isTerminalPUnit.from S
+    let g' := CompHausLike.isTerminalPUnit.from Y
+    obtain ⟨k, _, h2⟩ := light_key_lifting_lemma _ _ S _ f f' g g'
+      (CompHausLike.isTerminalPUnit.hom_ext _ _)
+    exact ⟨k, h2⟩
 
-lemma profinite_injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite S]:
-    Injective (S) := by
-  constructor
-  intro X Y g f f_mono
-  let f' := Limits.terminalIsTerminal.from S
-  haveI : Epi  f' := to_final_epi S
-  let g' := Limits.terminalIsTerminal.from Y
-  obtain ⟨k, _, h2⟩ := profinite_key_lifting_lemma _ _ S _ f f' g g' (Limits.terminal.hom_ext _ _)
-  exact ⟨k, h2⟩
+instance profinite_injective_of_finite (S : Profinite.{u}) [Nonempty S] [Finite S] :
+    Injective (S) where
+  factors {X Y} g f _ := by
+    let f' := CompHausLike.isTerminalPUnit.from S
+    let g' := CompHausLike.isTerminalPUnit.from Y
+    obtain ⟨k, _, h2⟩ := profinite_key_lifting_lemma _ _ S _ f f' g g'
+      (CompHausLike.isTerminalPUnit.hom_ext _ _)
+    exact ⟨k, h2⟩
 
 
 open LightProfinite Limits
