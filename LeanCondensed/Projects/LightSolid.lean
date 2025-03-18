@@ -3,7 +3,7 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Preadditive.Injective
+import Mathlib.CategoryTheory.Preadditive.Injective.Basic
 import Mathlib.Condensed.Discrete.Basic
 import Mathlib.Topology.Category.LightProfinite.Sequence
 import LeanCondensed.Mathlib.Condensed.Light.Limits
@@ -19,7 +19,7 @@ universe u
 
 open CategoryTheory LightProfinite OnePoint Limits LightCondensed MonoidalCategory MonoidalClosed
 
-attribute [local instance] ConcreteCategory.instFunLike
+attribute [local instance] HasForget.instFunLike
 
 section MonoidalClosed
 
@@ -65,7 +65,7 @@ namespace LightProfinite
 
 instance (S : LightProfinite.{u}) : Injective S := sorry
 
-def shift : ℕ∪{∞} ⟶ ℕ∪{∞} where
+def shift : ℕ∪{∞} ⟶ ℕ∪{∞} := TopCat.ofHom {
   toFun
     | ∞ => ∞
     | OnePoint.some n => (n + 1 : ℕ)
@@ -74,7 +74,7 @@ def shift : ℕ∪{∞} ⟶ ℕ∪{∞} where
     intro U h hU
     simp only [isOpen_iff_of_mem h, isClosed_discrete, isCompact_iff_finite, true_and] at hU
     refine ⟨sSup (Option.some ⁻¹' U)ᶜ + 1, fun n hn ↦ by
-      simpa using not_mem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩
+      simpa using not_mem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩ }
 
 end LightProfinite
 
@@ -94,7 +94,7 @@ lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : Internall
 
 def P_map :
     (free R).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
-  (lightProfiniteToLightCondSet ⋙ free R).map (⟨fun _ ↦ ∞, continuous_const⟩)
+  (lightProfiniteToLightCondSet ⋙ free R).map (TopCat.ofHom ⟨fun _ ↦ ∞, continuous_const⟩)
 
 def P : LightCondMod R := cokernel (P_map R)
 

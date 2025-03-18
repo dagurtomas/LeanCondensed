@@ -23,7 +23,7 @@ instance : HasFiniteLimits LightCondSet.{u} := hasFiniteLimits_of_hasLimitsOfSiz
 
 noncomputable instance {I : Type*} [Category I] (K : I ⥤ LightProfinite.{u}) :
     PreservesLimit K lightProfiniteToLightCondSet where
-  preserves hc := isLimitOfReflects (sheafToPresheaf _ _) (isLimitOfPreserves yoneda hc)
+  preserves hc := ⟨isLimitOfReflects (sheafToPresheaf _ _) (isLimitOfPreserves yoneda hc)⟩
 
 noncomputable instance : PreservesLimits lightProfiniteToLightCondSet where
   preservesLimitsOfShape := { preservesLimit := inferInstance }

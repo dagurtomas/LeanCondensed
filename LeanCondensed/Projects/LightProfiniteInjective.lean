@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lenny Taelman
 -/
 
-import Mathlib.CategoryTheory.Preadditive.Injective
+import Mathlib.CategoryTheory.Preadditive.Injective.Basic
 import Mathlib.Topology.Category.LightProfinite.AsLimit
 import Mathlib.Topology.Category.CompHausLike.Limits
 import Mathlib.CategoryTheory.Functor.OfSequence
@@ -156,7 +156,7 @@ lemma clopen_partition_of_disjoint_closeds_in_clopens
     have C_disj (i j : Fin (n+1)) (hij : i < j) : Disjoint (C i) (C j) := by
       by_cases hi : i = 0
       · rw [hi]; rw [hi] at hij
-        rw [(pred_eq_iff_eq_succ (pos_iff_ne_zero.mp hij)).mp rfl] -- j = succ _
+        rw [(pred_eq_iff_eq_succ (Fin.pos_iff_ne_zero.mp hij)).mp rfl] -- j = succ _
         apply Disjoint.mono_right (subset_iUnion (fun i ↦ C' i) (j.pred (ne_zero_of_lt hij)))
         exact disjoint_sdiff_left
       · have hj : j ≠ 0 := ne_zero_of_lt hij
@@ -284,12 +284,12 @@ lemma profinite_key_extension_lemma (X Y S T : Profinite.{u}) [Finite S]
     (f : X ⟶ Y) [Mono f] (f' : S ⟶ T) [Epi f']
     (g : X ⟶ S) (g' : Y ⟶ T) (h_comm : f ≫ g' = g ≫ f') :
     ∃ k : Y ⟶ S, (k ≫ f' = g') ∧ (f ≫ k = g)  := by
-  have h_comm' : (f ≫ g').toFun = (g ≫ f').toFun := congrArg _ h_comm
+  have h_comm' : (f ≫ g' : _ → _) = g ≫ f' := by simp_rw [h_comm]
   obtain ⟨k_fun, k_cont, h2, h3⟩ := key_extension_lemma X Y S T
-    f.toFun f.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
-    f'.toFun ((Profinite.epi_iff_surjective f').mp inferInstance)
-    g.toFun g.continuous g'.toFun g'.continuous h_comm'
-  exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
+    f f.hom.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
+    f' ((Profinite.epi_iff_surjective f').mp inferInstance)
+    g g.hom.continuous g' g'.hom.continuous h_comm'
+  exact ⟨TopCat.ofHom ⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
 end Profinite
@@ -301,14 +301,14 @@ lemma light_key_extension_lemma (X Y S T : LightProfinite.{u}) [hS : Finite S]
     (g : X ⟶ S) (g' : Y ⟶ T) (h_comm : f ≫ g' = g ≫ f') :
     ∃ k : Y ⟶ S, (k ≫ f' = g') ∧ (f ≫ k = g)  := by
   haveI : Finite (lightToProfinite.obj S).toTop := hS -- help the instance inference
-  have h_comm' : (f ≫ g').toFun = (g ≫ f').toFun := congrArg _ h_comm
+  have h_comm' : (f ≫ g' : _ → _) = g ≫ f' := by simp_rw [h_comm]
   obtain ⟨k_fun, k_cont, h2, h3⟩ := key_extension_lemma
     (lightToProfinite.obj X) (lightToProfinite.obj Y)
     (lightToProfinite.obj S) (lightToProfinite.obj T)
-    f.toFun f.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
-    f'.toFun ((LightProfinite.epi_iff_surjective f').mp inferInstance)
-    g.toFun g.continuous g'.toFun g'.continuous h_comm'
-  exact ⟨⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
+    f f.hom.continuous ((CompHausLike.mono_iff_injective f).mp inferInstance)
+    f' ((LightProfinite.epi_iff_surjective f').mp inferInstance)
+    g g.hom.continuous g' g'.hom.continuous h_comm'
+  exact ⟨TopCat.ofHom ⟨k_fun, k_cont⟩, ConcreteCategory.hom_ext_iff.mpr (congrFun h2),
     ConcreteCategory.hom_ext_iff.mpr (congrFun h3)⟩
 
 end LightProfinite
@@ -377,7 +377,7 @@ instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S w
     -- help the instance inference a bit
     haveI (n : ℕ) : Finite (S.component n) :=
       inferInstanceAs (Finite (FintypeCat.toLightProfinite.obj _))
-    haveI : Nonempty (S.component 0) := Nonempty.map (S.proj 0).toFun inferInstance
+    haveI : Nonempty (S.component 0) := Nonempty.map (S.proj 0) inferInstance
     haveI (n : ℕ) : Epi (S.transitionMap n) := (LightProfinite.epi_iff_surjective _).mpr
       (S.surjective_transitionMap n)
     -- base step of the induction: find k0 : Y ⟶ S.component 0
@@ -415,15 +415,15 @@ instance injective_of_light (S : LightProfinite.{u}) [Nonempty S]: Injective S w
     have hg : g = S.asLimit.lift g_cone := by
       apply S.asLimit.uniq g_cone
       intro n
-      simp only [NatTrans.ofOpSequence_app]
+      rw [NatTrans.ofOpSequence_app]
     rw [hg]
     have hlim : S.asLimit.lift (k_cone.extend f) = S.asLimit.lift g_cone := by
       unfold Cone.extend
       congr
       ext n
-      dsimp only [Cone.extensions_app, NatTrans.comp_app, Functor.const_map_app,
+      simp only [Cone.extensions_app, NatTrans.comp_app, Functor.const_map_app,
         NatTrans.ofOpSequence_app]
-      rw [h_down]
+      erw [h_down]
     rw [← hlim]
     apply S.asLimit.uniq (k_cone.extend f)
     intro n
