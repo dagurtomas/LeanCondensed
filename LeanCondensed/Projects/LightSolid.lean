@@ -71,7 +71,8 @@ end LightProfinite
 
 namespace LightCondensed
 
-variable (R : Type _) [CommRing R] -- might need some more assumptions
+variable (R : Type _) [CommRing R]
+-- might need some more assumptions, finite type over `ℤ`?
 
 lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : InternallyProjective P ↔
     ∀ {A B : LightCondMod R} (e : A ⟶ B) [Epi e],
