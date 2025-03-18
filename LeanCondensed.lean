@@ -5,3 +5,4 @@ import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.LightSolid
+import LeanCondensed.Projects.Monoidal

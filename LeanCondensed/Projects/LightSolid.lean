@@ -8,6 +8,7 @@ import Mathlib.Condensed.Discrete.Basic
 import Mathlib.Topology.Category.LightProfinite.Sequence
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Projects.InternallyProjective
+import LeanCondensed.Projects.Monoidal
 /-!
 
 # Project: light solid abelian groups
@@ -23,17 +24,7 @@ attribute [local instance] HasForget.instFunLike
 
 section MonoidalClosed
 
-variable (R : Type u) [CommRing R] -- might need some more assumptions
-
-/- This is the monoidal structure on localized categories. -/
-instance : MonoidalCategory (LightCondMod.{u} R) := sorry
-
-instance : MonoidalPreadditive (LightCondMod.{u} R) := sorry
-
-instance : SymmetricCategory (LightCondMod.{u} R) := sorry
-
-/- Constructed using Day's reflection theorem. -/
-instance : MonoidalClosed (LightCondMod.{u} R) := sorry
+variable (R : Type u) [CommRing R]
 
 variable (A : LightCondMod R) (S : LightProfinite)
 

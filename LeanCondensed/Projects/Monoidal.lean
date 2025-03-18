@@ -51,8 +51,6 @@ instance : ((coherentTopology LightProfinite.{u}).W (A := ModuleCat R)).IsMonoid
 /- This is the monoidal structure on localized categories. -/
 instance : MonoidalCategory (LightCondMod.{u} R) := CategoryTheory.Sheaf.monoidalCategory _ _
 
-instance : MonoidalPreadditive (LightCondMod.{u} R) := sorry
-
 instance : MonoidalClosed (LightProfinite.{u}ᵒᵖ ⥤ ModuleCat.{u} R) :=
   FunctorCategory.monoidalClosed
 
@@ -67,3 +65,7 @@ instance : MonoidalClosed (LightCondMod.{u} R) :=
   haveI :  (sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat R)).Full :=
     (fullyFaithfulSheafToPresheaf _ _).full
   Monoidal.Reflective.monoidalClosed (sheafificationAdjunction _ _)
+
+instance : MonoidalPreadditive (LightCondMod.{u} R) := sorry
+
+instance : SymmetricCategory (LightCondMod.{u} R) := sorry
