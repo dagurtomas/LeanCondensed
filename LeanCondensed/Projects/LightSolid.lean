@@ -5,6 +5,7 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.CategoryTheory.Preadditive.Injective.Basic
 import Mathlib.Condensed.Discrete.Basic
+import Mathlib.Condensed.Light.CartesianClosed
 import Mathlib.Topology.Category.LightProfinite.Sequence
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Projects.InternallyProjective
@@ -37,8 +38,12 @@ def ihom_points (A B : LightCondMod.{u} R) (S : LightProfinite) :
 -- This equivalence follows from the adjunction.
 -- This probably needs some naturality lemmas
 
+instance : (free R).Monoidal := sorry
+
 def tensorFreeIso (X Y : LightCondSet.{u}) :
-    (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) := sorry
+    (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) :=
+  Functor.Monoidal.μIso (free R) X Y ≪≫ ((free R).mapIso
+    ((ChosenFiniteProducts.product X Y).isLimit.conePointUniqueUpToIso (limit.isLimit (pair X Y))))
 
 def tensorFreeIso' (S T : LightProfinite) :
     (free R).obj S.toCondensed ⊗ (free R).obj T.toCondensed ≅
@@ -48,6 +53,10 @@ def tensorFreeIso' (S T : LightProfinite) :
 instance (A : LightCondMod R) : PreservesColimits (tensorRight A) := by sorry
 
 instance : MonoidalPreadditive (LightCondMod R) := by sorry
+
+instance : Linear R (LightCondMod R) := by sorry
+
+instance : MonoidalLinear R (LightCondMod R) := by sorry
 
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
   preservesColimitIso (tensorRight C) _ ≪≫
