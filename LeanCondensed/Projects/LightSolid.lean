@@ -8,7 +8,8 @@ import Mathlib.Condensed.Discrete.Basic
 import Mathlib.Topology.Category.LightProfinite.Sequence
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Projects.InternallyProjective
-import LeanCondensed.Projects.Monoidal
+import LeanCondensed.Projects.LightProfiniteInjective
+import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 /-!
 
 # Project: light solid abelian groups
@@ -44,7 +45,9 @@ def tensorFreeIso' (S T : LightProfinite) :
       (free R).obj (S ⨯ T).toCondensed := tensorFreeIso R S.toCondensed T.toCondensed ≪≫
         (free R).mapIso (Limits.PreservesLimitPair.iso lightProfiniteToLightCondSet _ _).symm
 
-instance (A : LightCondMod R) : PreservesColimits (tensorRight A) := sorry
+instance (A : LightCondMod R) : PreservesColimits (tensorRight A) := by sorry
+
+instance : MonoidalPreadditive (LightCondMod R) := by sorry
 
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
   preservesColimitIso (tensorRight C) _ ≪≫
@@ -53,8 +56,6 @@ def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅
 end MonoidalClosed
 
 namespace LightProfinite
-
-instance (S : LightProfinite.{u}) : Injective S := sorry
 
 def shift : ℕ∪{∞} ⟶ ℕ∪{∞} := TopCat.ofHom {
   toFun
