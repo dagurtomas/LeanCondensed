@@ -1,8 +1,12 @@
 import LeanCondensed.LightCondensed.Small
+import LeanCondensed.Mathlib.CategoryTheory.Localization.Monoidal.Braided
+import LeanCondensed.Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
+import LeanCondensed.Mathlib.CategoryTheory.Sites.Monoidal
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Light.Limits
+import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.LightSolid
-import LeanCondensed.Projects.Monoidal
