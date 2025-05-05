@@ -1,4 +1,5 @@
 import LeanCondensed.LightCondensed.Small
+import LeanCondensed.Mathlib.CategoryTheory.Localization.Bifunctor
 import LeanCondensed.Mathlib.CategoryTheory.Localization.Monoidal.Braided
 import LeanCondensed.Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
