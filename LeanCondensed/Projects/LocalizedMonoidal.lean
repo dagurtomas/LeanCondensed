@@ -1,6 +1,8 @@
 import Mathlib
 import LeanCondensed.Mathlib.CategoryTheory.Localization.Bifunctor
 
+universe u
+
 namespace CategoryTheory
 
 open GrothendieckTopology CategoryTheory Limits Opposite Monoidal MonoidalCategory
@@ -30,7 +32,6 @@ theorem map_associator_inv' (X Y Z : C) :
 end Functor.Monoidal
 
 open Functor.Monoidal
-
 
 section FunctorCategory
 
@@ -137,8 +138,7 @@ noncomputable instance : Lifting₂ L' L' W W
   iso' := Iso.refl _
 
 noncomputable def μNatIso : ((((whiskeringLeft₂ _).obj F).obj F).obj (curriedTensor E)) ≅
-    (curriedTensor _ ⋙ (whiskeringRight _ _ _).obj F)
-     := by
+    (curriedTensor _ ⋙ (whiskeringRight _ _ _).obj F) := by
   refine lift₂NatIso L' L' W W
     ((((whiskeringLeft₂ _).obj (L' ⋙ F)).obj (L' ⋙ F)).obj (curriedTensor E))
     ((curriedTensor C) ⋙ (whiskeringRight C C E).obj (L' ⋙ F))
@@ -430,4 +430,3 @@ noncomputable def functorMonoidalOfComp : F.Monoidal :=
   (functorCoremonoidalOfComp L W ε F).toMonoidal
 
 end CategoryTheory.Localization.Monoidal
--- All of the above should together imply that `Condensed.free R` is monoidal

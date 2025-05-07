@@ -17,11 +17,10 @@ variable (W₁ : MorphismProperty C₁) (W₂ : MorphismProperty C₂)
   (F : C₁ ⥤ C₂ ⥤ E) (F' : D₁ ⥤ D₂ ⥤ E) [Lifting₂ L₁ L₂ W₁ W₂ F F']
 
 noncomputable instance Lifting₂.compRight {E' : Type*} [Category E'] [Lifting₂ L₁ L₂ W₁ W₂ F F']
-    (G : E ⥤ E') :
-    Lifting₂ L₁ L₂ W₁ W₂
+    (G : E ⥤ E') : Lifting₂ L₁ L₂ W₁ W₂
       (F ⋙ (whiskeringRight _ _ _).obj G)
-      (F' ⋙ (whiskeringRight _ _ _).obj G) := ⟨isoWhiskerRight (iso L₁ L₂ W₁ W₂ F F')
-        ((whiskeringRight _ _ _).obj G)⟩
+      (F' ⋙ (whiskeringRight _ _ _).obj G) :=
+  ⟨isoWhiskerRight (iso L₁ L₂ W₁ W₂ F F') ((whiskeringRight _ _ _).obj G)⟩
 
 end
 
