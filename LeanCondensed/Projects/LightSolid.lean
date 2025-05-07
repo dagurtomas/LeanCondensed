@@ -94,6 +94,8 @@ lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : Internall
 -- light condensed abelian groups as locally surjective maps
 -- (see the file `Epi/LightCondensed.lean`), and `ihom_points` above (together with some ).
 
+instance : TotallySeparatedSpace PUnit.{1} := TotallySeparatedSpace.of_discrete PUnit.{1}
+
 def P_map :
     (free R).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
   (lightProfiniteToLightCondSet ⋙ free R).map (TopCat.ofHom ⟨fun _ ↦ ∞, continuous_const⟩)
