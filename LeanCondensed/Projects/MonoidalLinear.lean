@@ -1,4 +1,8 @@
-import Mathlib
+import Mathlib.Algebra.Equiv.TransferInstance
+import Mathlib.CategoryTheory.Linear.FunctorCategory
+import Mathlib.CategoryTheory.Monoidal.Preadditive
+import Mathlib.CategoryTheory.Sites.Monoidal
+import Mathlib.Combinatorics.Quiver.ReflQuiver
 
 universe v u
 

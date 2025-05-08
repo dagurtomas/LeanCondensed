@@ -8,7 +8,6 @@ import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
-import LeanCondensed.Projects.CompMonoidal
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.IsLocalizedMonoidal
 import LeanCondensed.Projects.LightProfiniteInjective

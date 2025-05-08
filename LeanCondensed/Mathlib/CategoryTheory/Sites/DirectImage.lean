@@ -3,7 +3,11 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib
+import Mathlib.CategoryTheory.Adjunction.Restrict
+import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
+import Mathlib.CategoryTheory.Sites.Continuous
+import Mathlib.CategoryTheory.Sites.Sheafification
+import Mathlib.Order.CompletePartialOrder
 
 universe w
 
@@ -73,8 +77,6 @@ def equivSheafPresheaf : Sheaf pointTopology A ≌ PUnitᵒᵖ ⥤ A where
     map := fun f ↦ ⟨f⟩ }
   unitIso := Iso.refl _
   counitIso := Iso.refl _
-
-
 
 end CategoryTheory
 
