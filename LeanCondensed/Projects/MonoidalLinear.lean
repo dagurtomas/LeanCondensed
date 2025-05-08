@@ -1,6 +1,6 @@
 import Mathlib.Algebra.Equiv.TransferInstance
 import Mathlib.CategoryTheory.Linear.FunctorCategory
-import Mathlib.CategoryTheory.Monoidal.Preadditive
+import Mathlib.CategoryTheory.Monoidal.Linear
 import Mathlib.CategoryTheory.Sites.Monoidal
 import Mathlib.Combinatorics.Quiver.ReflQuiver
 
@@ -101,6 +101,40 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     rw [← Functor.map_add, map_whiskerRight', map_whiskerRight', map_whiskerRight' (F := L')]
     simp
 
+def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful]
+    (adj : L ⊣ R) [Linear A D] [Linear A C] [L.Linear A]
+    [MonoidalLinear A C] :
+    @MonoidalLinear A _ (LocalizedMonoidal L W ε) _ _ (inferInstanceAs (Linear A D)) _
+      (monoidalPreadditive L W ε R adj) := by
+  haveI := monoidalPreadditive L W ε R adj
+  letI : Linear A (LocalizedMonoidal L W ε) := inferInstanceAs (Linear A D)
+  letI : (L').Linear A := inferInstanceAs (L.Linear A)
+  refine ⟨?_, ?_⟩
+  · intro X Y Z r f
+    let eX : (L').obj (R.obj X) ≅ X := asIso (adj.counit.app X)
+    let eY : (L').obj (R.obj Y) ≅ Y := asIso (adj.counit.app Y)
+    let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
+    suffices ((L').obj (R.obj X)) ◁ (r • (L').map (R.map f)) =
+        r • ((L').obj (R.obj X)) ◁ ((L').map (R.map f)) by
+      refine Eq.trans ?_ (((eX.inv ⊗ eY.inv) ≫= this =≫ (eX.hom ⊗ eZ.hom)).trans ?_)
+      · rw [← id_tensorHom, ← id_tensorHom, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
+        simp [eZ, eY]
+      · simp [eX, eY, eZ, ← MonoidalCategory.id_tensorHom, ← MonoidalCategory.tensor_comp]
+    rw [← Functor.map_smul, map_whiskerLeft', map_whiskerLeft']
+    simp
+  · intro r Y Z f X
+    let eX : (L').obj (R.obj X) ≅ X := asIso (adj.counit.app X)
+    let eY : (L').obj (R.obj Y) ≅ Y := asIso (adj.counit.app Y)
+    let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
+    suffices (r • (L').map (R.map f)) ▷ ((L').obj (R.obj X)) =
+        r • ((L').map (R.map f)) ▷ ((L').obj (R.obj X)) by
+      refine Eq.trans ?_ (((eY.inv ⊗ eX.inv) ≫= this =≫ (eZ.hom ⊗ eX.hom)).trans ?_)
+      · rw [← tensorHom_id, ← tensorHom_id, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
+        simp [eZ, eY]
+      · simp [eX, eY, eZ, ← MonoidalCategory.tensorHom_id, ← MonoidalCategory.tensor_comp]
+    rw [← Functor.map_smul, map_whiskerRight', map_whiskerRight']
+    simp
+
 end CategoryTheory.Localization.Monoidal
 
 section Preadditive
@@ -142,10 +176,26 @@ instance [MonoidalCategory A] [MonoidalPreadditive A] : MonoidalPreadditive (C �
 def CategoryTheory.Sheaf.monoidalPreadditive [MonoidalCategory A]
     [(J.W (A := A)).IsMonoidal] [HasSheafify J A] [Limits.HasBinaryProducts A]
     [MonoidalPreadditive A] :
-    haveI := monoidalCategory J A
+    letI := monoidalCategory J A
     MonoidalPreadditive (Sheaf J A) :=
   Localization.Monoidal.monoidalPreadditive
     (L := presheafToSheaf J A) (W := J.W (A := A)) (Iso.refl _)
     (R := sheafToPresheaf J A) (sheafificationAdjunction J A)
+
+instance [MonoidalCategory A] [MonoidalPreadditive A]
+    (R : Type u) [Ring R] [Linear R A] [MonoidalLinear R A] : MonoidalLinear R (C ⥤ A) where
+
+attribute [local instance] CategoryTheory.Sheaf.monoidalCategory
+  CategoryTheory.Sheaf.monoidalPreadditive in
+def CategoryTheory.Sheaf.monoidalLinear [MonoidalCategory A]
+    [(J.W (A := A)).IsMonoidal] [HasSheafify J A] [Limits.HasBinaryProducts A]
+    [MonoidalPreadditive A] (R : Type u) [Ring R] [Linear R A]
+    [MonoidalLinear R A] [(presheafToSheaf J A).Linear R] :
+    MonoidalLinear R (Sheaf J A) :=
+  Localization.Monoidal.monoidalLinear (A := R)
+    (L := presheafToSheaf J A) (W := J.W (A := A)) (Iso.refl _)
+    (R := sheafToPresheaf J A) (sheafificationAdjunction J A)
+
+-- TODO: figure out when the sheafification functor is `R`-linear.
 
 end Preadditive

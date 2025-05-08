@@ -52,7 +52,6 @@ def natIsoCancel : F ≅ G :=
     apply (sheafToPresheaf _ _).map_injective
     simpa [-sheafToPresheaf_map, -sheafToPresheaf_obj] using i.hom.naturality _)
 
-
 end CategoryTheory.Sheaf
 
 namespace LightCondensed
