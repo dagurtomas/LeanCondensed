@@ -110,7 +110,6 @@ instance : (free R).Monoidal := by
   let i : (equivSmall (Type u)).inverse ⋙ free R ⋙ (equivSmall (ModuleCat R)).functor ≅
       Sheaf.composeAndSheafify _ (ModuleCat.free R) := by
     refine natIsoCancel ?_
-    dsimp only [free, composeAndSheafify]
     let j := (((equivSmallModel LightProfinite.{u}).transportSheafificationAdjunction
             (coherentTopology LightProfinite.{u})
             ((equivSmallModel _).inverse.inducedTopology (coherentTopology LightProfinite.{u}))
