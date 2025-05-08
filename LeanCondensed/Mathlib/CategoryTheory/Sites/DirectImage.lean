@@ -3,10 +3,7 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
-import Mathlib.CategoryTheory.Sites.CoverPreserving
-import Mathlib.CategoryTheory.Sites.Sheafification
-import Mathlib.CategoryTheory.Adjunction.Restrict
+import Mathlib
 
 universe w
 
@@ -54,7 +51,7 @@ lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
   erw [Functor.map_id, Functor.map_id]
   simp
 
-def pointTopology : GrothendieckTopology PUnit := ⊥
+abbrev pointTopology : GrothendieckTopology PUnit := ⊥
 
 def equivPresheafUnderlying : PUnitᵒᵖ ⥤ A ≌ A where
   functor := {
@@ -77,4 +74,24 @@ def equivSheafPresheaf : Sheaf pointTopology A ≌ PUnitᵒᵖ ⥤ A where
   unitIso := Iso.refl _
   counitIso := Iso.refl _
 
+
+
 end CategoryTheory
+
+namespace CategoryTheory.Sheaf
+
+open Limits
+
+variable {C : Type*} [Category C] (J : GrothendieckTopology C) (t : C) (ht : IsTerminal t)
+  (A : Type*) [Category A]  [HasWeakSheafify J A] -- [HasWeakSheafify J A]
+
+variable [∀ (G : PUnit.{w+1}ᵒᵖ ⥤ A), ((Functor.const _).obj t).op.HasLeftKanExtension G]
+
+instance : ((Functor.const _).obj t).IsContinuous pointTopology J where
+  op_comp_isSheaf_of_types _ := by exact Presieve.isSheaf_bot
+
+def iso₁ : ((Functor.const _).obj t).sheafPushforwardContinuous A pointTopology J ⋙
+    (equivSheafPresheaf A).functor ⋙ (equivPresheafUnderlying A).functor ≅
+    (sheafSections J A).obj ⟨t⟩ := sorry
+
+end CategoryTheory.Sheaf

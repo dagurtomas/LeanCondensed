@@ -36,26 +36,44 @@ def CategoryTheory.Equivalence.monoidalOfComp' [(G ⋙ e.inverse).Monoidal] : G.
 
 end
 
-namespace LightCondensed
+namespace CategoryTheory.Sheaf
 
-attribute [local instance] monoidalCategory symmetricCategory
+variable {C D : Type*} [Category C] [Category D]
+    {J : GrothendieckTopology C}
+    {A : Type*} [Category A]
+    {F G : D ⥤ Sheaf J A} (i : F ⋙ sheafToPresheaf _ _ ≅ G ⋙ sheafToPresheaf _ _)
+
+def natIsoCancel : F ≅ G :=
+  NatIso.ofComponents (fun X ↦ (sheafToPresheaf _ _).preimageIso (i.app _)) (by
+    intro X Y f
+    apply (sheafToPresheaf _ _).map_injective
+    simpa [-sheafToPresheaf_map, -sheafToPresheaf_obj] using i.hom.naturality _)
+
+
+end CategoryTheory.Sheaf
+
+namespace LightCondensed
 
 variable (R : Type u) [CommRing R]
 
+attribute [local instance] monoidalCategory in
 instance : MonoidalCategory (LightCondMod.{u} R) :=
   inferInstanceAs (MonoidalCategory (Transported (equivSmall (ModuleCat R)).symm))
 
 instance : MonoidalCategory (Sheaf (coherentTopology LightProfinite.{u}) (ModuleCat.{u} R)) :=
   inferInstanceAs (MonoidalCategory (LightCondMod.{u} R))
 
+attribute [local instance] monoidalCategory symmetricCategory in
 instance : SymmetricCategory (LightCondMod.{u} R) :=
   inferInstanceAs (SymmetricCategory (Transported (equivSmall (ModuleCat R)).symm))
 
-local instance : MonoidalClosed
+attribute [local instance] monoidalCategory in
+def monoidalClosedSmallSheaves : MonoidalClosed
     (Sheaf ((equivSmallModel.{u} LightProfinite.{u}).inverse.inducedTopology
       (coherentTopology LightProfinite.{u})) (ModuleCat R)) :=
   Reflective.monoidalClosed (sheafificationAdjunction _ _)
 
+attribute [local instance] monoidalCategory monoidalClosedSmallSheaves in
 instance : MonoidalClosed (LightCondMod.{u} R) :=
   inferInstanceAs (MonoidalClosed (Transported (equivSmall (ModuleCat R)).symm))
 
@@ -63,8 +81,7 @@ instance : MonoidalClosed (LightCondMod.{u} R) :=
 -- TODO: add a global instance for sheafification of type-valued sheaves
 attribute [local instance] Types.instConcreteCategory
 
-instance : (presheafToSheaf _ _ ⋙ free R).Monoidal := sorry
-
+attribute [local instance] monoidalCategory in
 def monoidalOfPostcomp {E : Type*} [Category E] [MonoidalCategory E] (F : E ⥤ LightCondMod.{u} R)
     [(F ⋙ (equivSmall _).functor).Monoidal] : F.Monoidal :=
   letI : (F ⋙ (equivSmall _).symm.inverse).Monoidal :=
@@ -76,19 +93,88 @@ def monoidalOfPrecomp {E : Type*} [Category E] [MonoidalCategory E] (F : LightCo
     [((equivSmall _).inverse ⋙ F).Monoidal] : F.Monoidal :=
   letI : ((equivSmall _).symm.functor ⋙ F).Monoidal :=
     inferInstanceAs ((equivSmall _).inverse ⋙ F).Monoidal
-  letI : (equivSmall (Type u)).symm.inverse.Monoidal := sorry
-    -- ((Functor.Monoidal.nonempty_monoidal_iff_preservesFiniteProducts
-    --   (equivSmall (Type u)).symm.inverse).mpr inferInstance).some
-    -- The above is from a more recent mathlib
+  letI : (equivSmall (Type u)).symm.inverse.Monoidal :=
+    ((Functor.Monoidal.nonempty_monoidal_iff_preservesFiniteProducts
+      (equivSmall (Type u)).symm.inverse).mpr inferInstance).some
   monoidalTransport ((equivSmall _).symm.invFunIdAssoc F)
 
 instance : (free R).Monoidal := by
+  letI : MonoidalCategory (Sheaf
+      ((equivSmallModel _).inverse.inducedTopology (coherentTopology LightProfinite.{u}))
+      (ModuleCat.{u} R)) := monoidalCategory _ _
   apply (config := {allowSynthFailures := true}) monoidalOfPostcomp
   apply (config := {allowSynthFailures := true}) monoidalOfPrecomp
-  sorry
-  -- Localization.Monoidal.functorMonoidalOfComp
-  --   (presheafToSheaf _ _)
-  --   ((coherentTopology LightProfinite.{u}).W (A := ModuleCat.{u} R))
-  --   (Iso.refl _) _
+  let i : (equivSmall (Type u)).inverse ⋙ free R ⋙ (equivSmall (ModuleCat R)).functor ≅
+      Sheaf.composeAndSheafify _ (ModuleCat.free R) := by
+    refine natIsoCancel ?_
+    dsimp only [free, composeAndSheafify]
+    let j := (((equivSmallModel LightProfinite.{u}).transportSheafificationAdjunction
+            (coherentTopology LightProfinite.{u})
+            ((equivSmallModel _).inverse.inducedTopology (coherentTopology LightProfinite.{u}))
+            (ModuleCat.{u} R)).leftAdjointUniq
+            (sheafificationAdjunction (coherentTopology LightProfinite.{u}) _)).symm
+    calc _ ≅ ((equivSmall (Type u)).inverse ⋙ (sheafToPresheaf (coherentTopology LightProfinite.{u}) (Type u) ⋙
+          (whiskeringRight LightProfinite.{u}ᵒᵖ (Type u) (ModuleCat.{u} R)).obj (ModuleCat.free R) ⋙
+            (Equivalence.transportAndSheafify (coherentTopology LightProfinite)
+              ((equivSmallModel LightProfinite).inverse.inducedTopology (coherentTopology LightProfinite))
+              (equivSmallModel LightProfinite) (ModuleCat R))) ⋙
+              (equivSmall (ModuleCat.{u} R)).functor) ⋙
+                sheafToPresheaf ((equivSmallModel LightProfinite.{u}).inverse.inducedTopology
+                  (coherentTopology LightProfinite.{u})) (ModuleCat.{u} R) := ?_
+      _ ≅ _ := ?_
+    · exact isoWhiskerRight (isoWhiskerLeft _ (isoWhiskerRight (isoWhiskerLeft _
+        (isoWhiskerLeft _ j)) _)) _
+    · refine Functor.associator _ _ _ ≪≫ ?_
+      refine isoWhiskerLeft _ (Functor.associator _ _ _) ≪≫ ?_
+      refine isoWhiskerLeft _ (Functor.associator _ _ _) ≪≫ ?_
+      refine isoWhiskerLeft _ (isoWhiskerLeft _ (Functor.associator _ _ _)) ≪≫ ?_
+      refine isoWhiskerLeft _ (isoWhiskerLeft _ (isoWhiskerLeft _ (Functor.associator _ _ _))) ≪≫ ?_
+      refine isoWhiskerLeft _ (isoWhiskerLeft _ (isoWhiskerLeft _
+        (isoWhiskerLeft _ (Functor.associator _ _ _)))) ≪≫ ?_
+      refine ?_ ≪≫ (Functor.associator _ _ _).symm
+      refine ?_ ≪≫ isoWhiskerLeft _ (Functor.associator _ _ _).symm
+      refine isoWhiskerLeft (equivSmall (Type u)).inverse
+        (isoWhiskerLeft (sheafToPresheaf (coherentTopology LightProfinite) (Type u)) (isoWhiskerLeft
+          ((whiskeringRight LightProfiniteᵒᵖ (Type u) (ModuleCat R)).obj (ModuleCat.free R))
+            (isoWhiskerLeft (equivSmallModel LightProfinite).op.congrLeft.functor
+              (isoWhiskerLeft (H := sheafToPresheaf
+                ((equivSmallModel LightProfinite.{u}).inverse.inducedTopology
+                  (coherentTopology LightProfinite.{u})) (ModuleCat.{u} R)) (presheafToSheaf
+                    ((equivSmallModel LightProfinite.{u}).inverse.inducedTopology
+                      (coherentTopology LightProfinite.{u}))
+                        (ModuleCat.{u} R)) ?_)))) ≪≫ ?_
+      · refine NatIso.ofComponents (fun X ↦ ?_) ?_
+        · exact isoWhiskerRight (equivSmallModel LightProfinite.{u}).op.counitIso X.val ≪≫
+              Functor.leftUnitor _
+        · intros
+          ext
+          simp [equivSmall, Equivalence.sheafCongr,
+            Equivalence.sheafCongr.functor, Equivalence.sheafCongr.inverse]
+      · refine ?_ ≪≫ (Functor.associator _ _ _)
+        refine (Functor.associator _ _ _).symm ≪≫ ?_
+        refine (Functor.associator _ _ _).symm ≪≫ ?_
+        refine (Functor.associator _ _ _).symm ≪≫ ?_
+        refine isoWhiskerRight ?_ _
+        refine NatIso.ofComponents (fun X ↦ ?_) ?_
+        · exact (Functor.associator _ _ _).symm ≪≫ isoWhiskerRight
+            (isoWhiskerRight (equivSmallModel LightProfinite.{u}).op.counitIso X.val ≪≫
+              Functor.leftUnitor _) (ModuleCat.free R)
+        · intros
+          apply NatTrans.ext
+          apply funext
+          intro
+          simp only [Equivalence.sheafCongr, Equivalence.sheafCongr.functor,
+            Equivalence.sheafCongr.inverse, Equivalence.congrLeft_functor, Equivalence.op_inverse,
+            Functor.comp_obj, sheafToPresheaf_obj, whiskeringRight_obj_obj, whiskeringLeft_obj_obj,
+            Functor.op_obj, Functor.comp_map, sheafToPresheaf_map, whiskeringRight_obj_map,
+            whiskeringLeft_obj_map, Equivalence.op_functor, Equivalence.op_counitIso,
+            isoWhiskerRight_trans, isoWhiskerRight_twice, Iso.trans_assoc, Iso.trans_hom,
+            Iso.symm_hom, isoWhiskerRight_hom, NatIso.op_inv, NatTrans.comp_app,
+            CategoryTheory.whiskerLeft_app, CategoryTheory.whiskerRight_app,
+            Functor.associator_inv_app, Functor.associator_hom_app, Functor.id_obj, NatTrans.op_app,
+            Functor.leftUnitor_hom_app, CategoryTheory.Functor.map_id, Category.comp_id,
+            Category.id_comp, Category.assoc]
+          simp [← Functor.map_comp, ← Functor.map_comp_assoc]
+  exact monoidalTransport i.symm
 
 end LightCondensed
