@@ -1,4 +1,3 @@
-import Mathlib
 import LeanCondensed.Projects.LocalizedMonoidal
 
 open CategoryTheory Localization.Monoidal MonoidalCategory

@@ -1,11 +1,14 @@
-import Mathlib
+import Mathlib.CategoryTheory.EffectiveEpi.RegularEpi
+import Mathlib.CategoryTheory.Localization.Monoidal
+import Mathlib.CategoryTheory.Monoidal.FunctorCategory
+import Mathlib.Combinatorics.Quiver.ReflQuiver
 import LeanCondensed.Mathlib.CategoryTheory.Localization.Bifunctor
 
 universe u
 
 namespace CategoryTheory
 
-open GrothendieckTopology CategoryTheory Limits Opposite Monoidal MonoidalCategory
+open CategoryTheory Limits Opposite Monoidal MonoidalCategory
 
 namespace Functor.Monoidal
 

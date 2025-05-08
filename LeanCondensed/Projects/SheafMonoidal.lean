@@ -1,4 +1,11 @@
+import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
+import Mathlib.CategoryTheory.Limits.Shapes.Countable
+import Mathlib.CategoryTheory.Sites.ChosenFiniteProducts
+import Mathlib.CategoryTheory.Sites.LeftExact
+import Mathlib.CategoryTheory.Sites.Monoidal
+import Mathlib.CategoryTheory.Sites.PreservesSheafification
 import LeanCondensed.Projects.LocalizedMonoidal
+
 
 universe v u
 

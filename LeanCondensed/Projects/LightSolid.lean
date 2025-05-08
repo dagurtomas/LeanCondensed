@@ -38,8 +38,6 @@ def ihom_points (A B : LightCondMod.{u} R) (S : LightProfinite) :
 -- This equivalence follows from the adjunction.
 -- This probably needs some naturality lemmas
 
-instance : (free R).Monoidal := sorry
-
 def tensorFreeIso (X Y : LightCondSet.{u}) :
     (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) :=
   Functor.Monoidal.μIso (free R) X Y ≪≫ ((free R).mapIso
@@ -93,8 +91,6 @@ lemma internallyProjective_iff_tensor_condition (P : LightCondMod R) : Internall
 -- The proof of this should be completely formal, using the characterisation of epimorphisms in
 -- light condensed abelian groups as locally surjective maps
 -- (see the file `Epi/LightCondensed.lean`), and `ihom_points` above (together with some ).
-
-instance : TotallySeparatedSpace PUnit.{1} := TotallySeparatedSpace.of_discrete PUnit.{1}
 
 def P_map :
     (free R).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
