@@ -180,4 +180,6 @@ instance : (free R).Monoidal := by
           simp [← Functor.map_comp, ← Functor.map_comp_assoc]
   exact monoidalTransport i.symm
 
+-- TODO: add `MonoidalPreadditive` and `MonoidalLinear` instances
+
 end LightCondensed
