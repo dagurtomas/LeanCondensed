@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dagur Asgeirsson
+-/
 import Mathlib.Algebra.Category.ModuleCat.Monoidal.Closed
 import Mathlib.CategoryTheory.Monoidal.Braided.Reflection
 import Mathlib.Condensed.Discrete.Module
@@ -6,6 +11,7 @@ import LeanCondensed.Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import LeanCondensed.Mathlib.CategoryTheory.Sites.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Projects.SheafMonoidal
+import LeanCondensed.Projects.MonoidalLinear
 
 universe u
 
@@ -178,6 +184,22 @@ instance : (free R).Monoidal := by
           simp [← Functor.map_comp, ← Functor.map_comp_assoc]
   exact monoidalTransport i.symm
 
--- TODO: add `MonoidalPreadditive` and `MonoidalLinear` instances
+attribute [local instance] monoidalCategory in
+instance : (equivSmall (ModuleCat R)).functor.Monoidal :=
+  inferInstanceAs (equivalenceTransported (equivSmall (ModuleCat R)).symm).inverse.Monoidal
+
+attribute [local instance] monoidalCategory in
+instance : (equivSmall (ModuleCat R)).inverse.Monoidal := by
+  exact (equivSmall (ModuleCat R)).inverseMonoidal
+
+instance : (equivSmall (ModuleCat R)).functor.Additive :=
+  Functor.additive_of_preserves_binary_products _
+
+instance : (equivSmall (ModuleCat R)).inverse.Additive :=
+  Functor.additive_of_preserves_binary_products _
+
+attribute [local instance] monoidalCategory CategoryTheory.Sheaf.monoidalPreadditive in
+instance : MonoidalPreadditive (LightCondMod.{u} R) := by
+  apply monoidalPreadditive_of_faithful (equivSmall (ModuleCat R)).functor
 
 end LightCondensed
