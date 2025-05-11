@@ -10,6 +10,7 @@ import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.ChosenFiniteProducts
+import LeanCondensed.Projects.FreeCondensed
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.IsLocalizedMonoidal
 import LeanCondensed.Projects.LightProfiniteInjective
