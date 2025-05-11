@@ -262,4 +262,3 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightP
 end LightCondensed
 
 end Condensed
-#min_imports

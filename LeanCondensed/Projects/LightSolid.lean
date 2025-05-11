@@ -23,8 +23,8 @@ variable (R : Type u) [CommRing R]
 
 variable (A : LightCondMod R) (S : LightProfinite)
 
-instance (A : LightCondMod R) : PreservesColimits (tensorRight A) := by
-  sorry
+instance (A : LightCondMod R) : PreservesColimits (tensorRight A) :=
+  preservesColimits_of_natIso (BraidedCategory.tensorLeftIsoTensorRight A)
 
 instance : Linear R (LightCondMod R) := inferInstanceAs (Linear R (Sheaf _ _))
 
@@ -67,10 +67,7 @@ def P_proj : (free R).obj (ℕ∪{∞}).toCondensed ⟶ P R := cokernel.π _
 def P_homMk (A : LightCondMod R) (f : (free R).obj (ℕ∪{∞}).toCondensed ⟶ A)
     (hf : P_map R ≫ f = 0) : P R ⟶ A := cokernel.desc _ f hf
 
-instance : InternallyProjective (P R) := by
-  rw [internallyProjective_iff_tensor_condition]
-  intro A B e he S g
-  sorry
+instance : InternallyProjective (P R) := sorry
 
 instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := sorry
 
@@ -80,26 +77,19 @@ example : Abelian (LightCondMod R) := by infer_instance
 
 example (A B : LightCondMod R) : AddCommGroup (A ⟶ B) := by infer_instance
 
-def one_minus_shift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
+def oneMinusShift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
   𝟙 _  - (lightProfiniteToLightCondSet ⋙ free R).map LightProfinite.shift
 
-def one_minus_shift : P R ⟶ P R := by
-  refine P_homMk R _ (one_minus_shift' R) ?_ ≫ P_proj R
-  simp only [one_minus_shift', Functor.comp_obj, Functor.comp_map, Preadditive.comp_sub,
-    Category.comp_id]
+def oneMinusShift : P R ⟶ P R := by
+  refine P_homMk R _ (oneMinusShift' R) ?_ ≫ P_proj R
   sorry
-
-
-abbrev induced_from_one_minus_shift (A : LightCondMod R) :
-    ((ihom (P R)).obj A) ⟶ ((ihom (P R)).obj A) :=
-  (pre (one_minus_shift R)).app A
 
 variable {R : Type} [CommRing R]
 
 /-- A light condensed `R`-module `A` is *solid* if the shift map `ℕ∪∞ → ℕ∪∞` induces an isomorphism
 on internal homs into `A` -/
 class IsSolid (A : LightCondMod R) : Prop where
-  one_minus_shift_induces_iso : IsIso ((pre (one_minus_shift R)).app A)
+  oneMinusShift_induces_iso : IsIso ((pre (oneMinusShift R)).app A)
 
 structure Solid (R : Type) [CommRing R] where
   toLightCondMod : LightCondMod R
@@ -119,6 +109,17 @@ instance : Inhabited (Solid R) := ⟨Solid.of ((discrete (ModuleCat R)).obj (Mod
 @[simps!]
 def solidToCondensed (R : Type) [CommRing R] : Solid R ⥤ LightCondMod R :=
   inducedFunctor _
+
+instance : HasLimitsOfSize.{0, 0} (Solid R) := sorry
+
+instance : HasColimits (Solid R) := sorry
+
+instance : PreservesLimits (solidToCondensed R) := sorry
+
+instance : PreservesColimits (solidToCondensed R) := sorry
+
+-- TODO: define this property:
+-- instance : PreservesExtensions (solidToCondensed R) := sorry
 
 def solidification  (R : Type) [CommRing R] : LightCondMod R ⥤ Solid R := sorry
 
@@ -151,18 +152,6 @@ instance : HasLimitsOfSize.{0, 0} (ModuleCat R) := inferInstance
 instance : HasLimitsOfSize.{0, 0} (LightCondMod R) :=
   show (HasLimitsOfSize (Sheaf _ _)) from inferInstance
 
-instance : HasLimitsOfSize.{0, 0} (Solid R) := sorry
-
-instance : HasColimits (Solid R) := sorry
-
-example : PreservesLimits (solidToCondensed R) := inferInstance
-
-instance : PreservesColimits (solidToCondensed R) := sorry
-
--- TODO: define this property:
--- instance : PreservesExtensions (solidToCondensed R) := sorry
-
 end Solid
 
 end LightCondensed
-#min_imports
