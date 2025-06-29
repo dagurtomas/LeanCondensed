@@ -30,11 +30,26 @@ instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet where
     }
   }
 
+instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet.{0} where
+  preserves _ :=
+    preservesShape_fin_of_preserves_binary_and_initial lightProfiniteToLightCondSet _
+
 instance : PreservesColimitsOfShape (Discrete WalkingPair) lightProfiniteToLightCondSet := by
   sorry
 
 instance : PreservesColimitsOfShape (Discrete PEmpty.{1}) lightProfiniteToLightCondSet := by
   sorry
+
+instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet where
+  preserves n := {
+    preservesColimit {K} := {
+      preserves {c} hc := by
+        apply Nonempty.map isColimitOfOp
+        apply coyonedaFunctor_reflectsLimits.reflectsLimitsOfShape.reflectsLimit.reflects
+        -- use the coyoneda lemma here
+        sorry
+    }
+  }
 
 instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet.{0} where
   preserves _ :=
