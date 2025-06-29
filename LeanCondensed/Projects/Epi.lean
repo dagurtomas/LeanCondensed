@@ -1,7 +1,6 @@
 import Mathlib
 
 import LeanCondensed.Mathlib.CategoryTheory.Countable
-import LeanCondensed.Projects.Pullbacks
 
 open Function CategoryTheory Limits Opposite
 
@@ -74,8 +73,13 @@ instance : lightProfiniteToLightCondSet.PreservesEpimorphisms := {
       ⟩
 }
 
-lemma abc {A : Type u} {s : Set A} {x y : A} {px : x ∈ s} {py : y ∈ s} (h : (⟨x, px⟩ : s) = ⟨y, py⟩) : x = y
+lemma stupid {A : Type u} {s : Set A} {x y : A} {px : x ∈ s} {py : y ∈ s} (h : (⟨x, px⟩ : s) = ⟨y, py⟩) : x = y
   := congr_arg (fun (a : s) ↦ (↑a : A)) h
+
+noncomputable def πpair {X Y : LightProfinite} (π : X ⟶ Y) : WalkingParallelPair ⥤ LightCondSet :=
+  parallelPair
+    (lightProfiniteToLightCondSet.map <| pullback.fst π π)
+    (lightProfiniteToLightCondSet.map <| pullback.snd π π)
 
 noncomputable def regular {X Y : LightProfinite} (π : X ⟶ Y)
     : Cofork (lightProfiniteToLightCondSet.map <| pullback.fst π π) (lightProfiniteToLightCondSet.map <| pullback.snd π π) := Cofork.ofπ (lightProfiniteToLightCondSet.map <| π) (by
@@ -126,7 +130,7 @@ lemma regularLift_comp {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] (
     : (regular π).π ≫ regularLift π cone = cone.π := by
   refine Sheaf.Hom.ext (yonedaEquiv.injective ?_)
   erw [←yonedaEquiv_naturality (F := cone.pt.val), Equiv.apply_symm_apply]
-  exact abc (s := {x : cone.pt.val.obj (Opposite.op X) | cone.pt.val.map (pullback.fst π π).op x = cone.pt.val.map (pullback.snd π π).op x}) (regularLift_prop π cone)
+  exact stupid (s := {x : cone.pt.val.obj (Opposite.op X) | cone.pt.val.map (pullback.fst π π).op x = cone.pt.val.map (pullback.snd π π).op x}) (regularLift_prop π cone)
 
 lemma regularLift_unique {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] (cone : cfork π)
       (m : (lightProfiniteToLightCondSet.obj Y) ⟶ cone.pt) (hm : (regular π).π ≫ m = cone.π)

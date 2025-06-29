@@ -1,4 +1,5 @@
 import Mathlib
+import LeanCondensed.Projects.Epi
 
 open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
   MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom Topology
@@ -264,11 +265,37 @@ lemma map_snd {X' Y' Z' : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) (f' : X' �
   (g' : Y' ⟶ Z') (i₁ : X ⟶ X') (i₂ : Y ⟶ Y') (i₃ : Z ⟶ Z')
   (eq₁ : f ≫ i₃ = i₁ ≫ f') (eq₂ : g ≫ i₃ = i₂ ≫ g') : map f g f' g' i₁ i₂ i₃ eq₁ eq₂ ≫ snd f' g' = snd f g ≫ i₂ := rfl
 
+def explicitPair  {X Y : LightProfinite} (π : X ⟶ Y) : WalkingParallelPair ⥤ LightCondSet
+  := parallelPair
+    (lightProfiniteToLightCondSet.map (fst π π)) (lightProfiniteToLightCondSet.map (snd π π))
+
+noncomputable def explicitPullbackIsoPullback {X Y : LightProfinite} (π : X ⟶ Y) : explicitPullback π π ≅ pullback π π :=
+  Limits.IsLimit.conePointUniqueUpToIso (IsLimit (f := π) (g := π)) (pullback.isLimit π π)
+
+noncomputable def explicitPairIsoPair {X Y : LightProfinite} (π : X ⟶ Y) : explicitPair π ≅ πpair π :=
+  parallelPair.ext
+    (lightProfiniteToLightCondSet.mapIso (explicitPullbackIsoPullback π) : (explicitPair π).obj zero ≅ (πpair π).obj zero)
+    (Iso.refl _)
+    (
+        by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl
+    )
+    (
+        by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl
+    )
+
 def explicitRegular {X Y : LightProfinite} (π : X ⟶ Y)
     : Cofork (lightProfiniteToLightCondSet.map <| fst π π)
       (lightProfiniteToLightCondSet.map <| snd π π) :=
   Cofork.ofπ (lightProfiniteToLightCondSet.map π)
     (by simp only [←Functor.map_comp, condition])
 
-def explicitRegularIsColimit {X Y : LightProfinite} (π : X ⟶ Y) : IsColimit (explicitRegular π) := by
-  sorry
+noncomputable def explicitRegularIsColimit {X Y : LightProfinite} (π : X ⟶ Y) [hepi : Epi π]
+    : IsColimit (explicitRegular π) := by
+  rw [LightProfinite.epi_iff_surjective, ←LightProfinite.effectiveEpi_iff_surjective] at hepi
+  exact (
+    IsColimit.equivOfNatIsoOfIso
+      (explicitPairIsoPair _)
+      _
+      (regular _)
+      (Cofork.ext (Iso.refl _) rfl)
+  ).symm (regular_IsColimit _)

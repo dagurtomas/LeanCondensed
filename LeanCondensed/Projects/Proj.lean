@@ -3,6 +3,7 @@ import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.Initial
 import LeanCondensed.Projects.OverN
 import LeanCondensed.Projects.InternallyProjective
+import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Mathlib.CategoryTheory.Countable
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.ChosenFiniteProducts
 import LeanCondensed.Projects.Pullbacks
@@ -354,7 +355,8 @@ lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfin
   use T, π, g
 
 instance : PreservesFiniteCoproducts (lightProfiniteToLightCondSet ⋙ (free R)) := by
-  have : PreservesFiniteCoproducts lightProfiniteToLightCondSet := sorry
+  have : PreservesFiniteCoproducts lightProfiniteToLightCondSet :=
+    instPreservesFiniteCoproductsLightProfiniteLightCondSetLightProfiniteToLightCondSet_leanCondensed
   have : IsLeftAdjoint (free R) := ⟨_, ⟨LightCondensed.freeForgetAdjunction R⟩⟩
   infer_instance
 
