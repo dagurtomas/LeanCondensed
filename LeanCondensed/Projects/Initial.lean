@@ -22,8 +22,7 @@ def empty_iso {X Y : LightProfinite} (hY : ¬Nonempty Y) (f : X ⟶ Y) : IsIso f
       rw [empty_subset hY ((fun y ↦ _root_.empty_elim hY y) ⁻¹' s)]
       exact TopologicalSpace.isOpen_univ
   }
-  apply IsIso.mk
-  use finv
+  refine IsIso.mk ⟨finv, ?_⟩
   constructor <;> ext x
   exact empty_elim hY (f x)
   exact empty_elim hY x

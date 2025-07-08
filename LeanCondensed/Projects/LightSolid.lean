@@ -82,7 +82,9 @@ def oneMinusShift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (�
 
 def oneMinusShift : P R ⟶ P R := by
   refine P_homMk R _ (oneMinusShift' R) ?_ ≫ P_proj R
-  sorry
+  erw [Preadditive.comp_sub, Category.comp_id]
+  simp only [sub_eq_zero, P_map, ←Functor.map_comp]
+  rfl
 
 variable {R : Type} [CommRing R]
 

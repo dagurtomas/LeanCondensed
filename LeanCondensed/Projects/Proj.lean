@@ -538,3 +538,5 @@ theorem internallyProjective : InternallyProjective ((free R).obj (ℕ∪{∞}).
   obtain ⟨S', π, g, hπ, comm⟩ := proj_explicit R p f
   rw [LightProfinite.epi_iff_surjective] at hπ
   use S', π, hπ, g, comm
+
+#print axioms internallyProjective

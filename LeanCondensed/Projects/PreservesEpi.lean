@@ -84,8 +84,7 @@ noncomputable def πSplit : SplitEpi (P_proj R) where
   id := by
     apply (P_proj_Epi R).left_cancellation
     erw [
-      ←assoc _ (cokernel.desc (P_map R) (xyz R) (comp_zero _)) _,
-      cokernel.π_desc,
+      cokernel.π_desc_assoc,
       sub_comp,
       id_comp,
       assoc,
