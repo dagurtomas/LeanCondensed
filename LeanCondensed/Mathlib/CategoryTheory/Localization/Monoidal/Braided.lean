@@ -205,7 +205,7 @@ noncomputable instance : BraidedCategory (LocalizedMonoidal L W ε) where
       · simp [← braiding_naturality_assoc, ← whiskerLeft_comp_assoc]
       · simp only [Functor.flip_obj_obj, Iso.app_hom, assoc, ← id_tensorHom]
         rw [← tensor_comp_assoc, braiding_naturality]
-        simp only [comp_id, Functor.flip_obj_obj, assoc, associator_conjugation,
+        simp only [comp_id, Functor.flip_obj_obj, associator_conjugation,
           MonoidalCategory.id_tensorHom]
         rw [← id_comp eX.inv, tensor_comp, id_tensorHom]
         simp only [← associator_conjugation]

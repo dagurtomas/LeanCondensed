@@ -54,7 +54,7 @@ lemma freeYoneda_symm_naturality {S S' : LightProfinite} (f : S' ⟶ S) (A : Lig
     (x : A.val.obj ⟨S⟩) : (lightProfiniteToLightCondSet ⋙ free R).map f ≫
       (freeYoneda R S A).symm x = (freeYoneda R S' A).symm ((A.val.map f.op) x) := by
   simp only [Functor.comp_obj, Functor.comp_map, freeYoneda, Equiv.symm_trans_apply,
-    Adjunction.homEquiv_counit, Functor.id_obj]
+    Adjunction.homEquiv_counit]
   simp only [← Category.assoc, ← Functor.map_comp]
   erw [yoneda_symm_naturality]
   rfl

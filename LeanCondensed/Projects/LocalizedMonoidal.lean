@@ -93,7 +93,7 @@ def coreMonoidalTransport {F G : C ⥤ D} [F.Monoidal] (i : F ≅ G) : G.CoreMon
     simp only [tensor_whiskerLeft, Functor.LaxMonoidal.associativity, Category.assoc,
       Iso.inv_hom_id_assoc]
     rw [← tensorHom_id, associator_naturality_assoc]
-    simp [← id_tensorHom, ← tensorHom_id, ← tensor_comp, ← tensor_comp_assoc]
+    simp [← id_tensorHom, ← tensorHom_id, ← tensor_comp_assoc]
   left_unitality X := by
     simp only [Iso.trans_hom, εIso_hom, Iso.app_hom, ← tensorHom_id, tensorIso_hom, Iso.symm_hom,
       μIso_hom, Category.assoc, ← tensor_comp_assoc, Iso.hom_inv_id_app, Category.comp_id,
@@ -166,7 +166,7 @@ noncomputable def μNatIso : ((((whiskeringLeft₂ _).obj F).obj F).obj (curried
     simp only [Functor.comp_obj, whiskeringRight_obj_obj, curriedTensor_obj_obj,
       whiskeringLeft₂_obj_obj_obj_obj_obj, Functor.comp_map, whiskeringRight_obj_map,
       NatTrans.comp_app, Functor.whiskerRight_app, curriedTensor_map_app, NatIso.ofComponents_hom_app,
-      Iso.symm_hom, μIso_inv, whiskeringLeft₂_obj_obj_obj_map_app]
+      whiskeringLeft₂_obj_obj_obj_map_app]
     change _ = _ ≫ (L' ⋙ F).map _
     rw [map_whiskerRight]
     simp
@@ -308,9 +308,9 @@ noncomputable def functorCoremonoidalOfComp : F.CoreMonoidal where
       curriedTensor_obj_obj, μNatIso_inv_app_app, Functor.CoreMonoidal.toMonoidal_toLaxMonoidal,
       comp_whiskerRight, μNatIso_hom_app_app, Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal,
       MonoidalCategory.whiskerLeft_comp, Category.assoc, Iso.map_inv_hom_id, Category.comp_id]
-    simp only [← MonoidalCategory.tensorHom_id, ← MonoidalCategory.id_tensorHom, ←
-      MonoidalCategory.tensor_comp, Category.comp_id, ← MonoidalCategory.tensor_comp_assoc,
-      map_δ_μ_assoc, μ_δ, Functor.comp_obj]
+    simp only [← MonoidalCategory.tensorHom_id, ← MonoidalCategory.id_tensorHom,
+      Category.comp_id, ← MonoidalCategory.tensor_comp_assoc, map_δ_μ_assoc, μ_δ,
+      Functor.comp_obj]
     simp
   left_unitality X := by
     obtain ⟨x, ⟨eX⟩⟩ : ∃ x, Nonempty ((L').obj x ≅ X) := ⟨_, ⟨(L').objObjPreimageIso X⟩⟩
@@ -392,7 +392,7 @@ noncomputable def functorCoremonoidalOfComp : F.CoreMonoidal where
           MonoidalCategory.id_tensorHom, Category.assoc, ← Functor.map_comp]
         have : Functor.LaxMonoidal.ε L' = ε.inv := rfl
         rw [this, ← MonoidalCategory.whiskerLeft_comp_assoc]
-        simp only [Iso.hom_inv_id, id_whiskerRight, Category.id_comp, δ_μ_assoc, Functor.map_comp]
+        simp only [Iso.hom_inv_id, Functor.map_comp]
         slice_rhs 2 3 =>
           rw [← MonoidalCategory.id_tensorHom, ← Functor.map_id, μNatIso_naturality]
         rw [@rightUnitor_inv_naturality_assoc]
