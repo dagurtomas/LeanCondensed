@@ -59,14 +59,14 @@ noncomputable instance :
   letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
   monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
 
-noncomputable instance foo :
-    letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
-    (composeAndSheafify J F).Monoidal := by
-  letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
-  letI : (presheafToSheaf J (Type (max u v))).Monoidal := sorry
-  exact
-    Functor.Monoidal.instComp (sheafToPresheaf J (Type (max u v)))
-      ((whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
+-- noncomputable instance foo :
+--     letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
+--     (composeAndSheafify J F).Monoidal := by
+--   letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
+--   letI : (presheafToSheaf J (Type (max u v))).Monoidal := sorry
+--   exact
+--     Functor.Monoidal.instComp (sheafToPresheaf J (Type (max u v)))
+--       ((whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
 
 
 end

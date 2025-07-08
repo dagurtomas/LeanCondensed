@@ -58,7 +58,7 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     obtain ⟨Y', ⟨eY⟩⟩ : ∃ X₁, Nonempty ((L').obj X₁ ≅ Y) := ⟨_, ⟨(L').objObjPreimageIso Y⟩⟩
     obtain ⟨Z', ⟨eZ⟩⟩ : ∃ X₁, Nonempty ((L').obj X₁ ≅ Z) := ⟨_, ⟨(L').objObjPreimageIso Z⟩⟩
     suffices (L').obj X' ◁ (0 : (L').obj Y' ⟶ (L').obj Z') = 0 by
-      refine Eq.trans ?_ (((eX.inv ⊗ eY.inv) ≫= this =≫ (eX.hom ⊗ eZ.hom)).trans ?_)
+      refine Eq.trans ?_ (((eX.inv ⊗ₘ eY.inv) ≫= this =≫ (eX.hom ⊗ₘ eZ.hom)).trans ?_)
       · rw [← id_tensorHom, ← id_tensorHom, ← tensor_comp, ← tensor_comp]
         simp
       · simp
@@ -69,7 +69,7 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     obtain ⟨Y', ⟨eY⟩⟩ : ∃ X₁, Nonempty ((L').obj X₁ ≅ Y) := ⟨_, ⟨(L').objObjPreimageIso Y⟩⟩
     obtain ⟨Z', ⟨eZ⟩⟩ : ∃ X₁, Nonempty ((L').obj X₁ ≅ Z) := ⟨_, ⟨(L').objObjPreimageIso Z⟩⟩
     suffices (0 : (L').obj Y' ⟶ (L').obj Z') ▷ (L').obj X' = 0 by
-      refine Eq.trans ?_ (((eY.inv ⊗ eX.inv) ≫= this =≫ (eZ.hom ⊗ eX.hom)).trans ?_)
+      refine Eq.trans ?_ (((eY.inv ⊗ₘ eX.inv) ≫= this =≫ (eZ.hom ⊗ₘ eX.hom)).trans ?_)
       · rw [← tensorHom_id, ← tensorHom_id, ← tensor_comp, ← tensor_comp]
         simp
       · simp
@@ -81,7 +81,7 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
     suffices (L').obj (R.obj X) ◁ ((L').map (R.map f) + (L').map (R.map g)) =
         ((L').obj (R.obj X) ◁ (L').map (R.map f)) + ((L').obj (R.obj X) ◁ (L').map (R.map g)) by
-      refine Eq.trans ?_ (((eX.inv ⊗ eY.inv) ≫= this =≫ (eX.hom ⊗ eZ.hom)).trans ?_)
+      refine Eq.trans ?_ (((eX.inv ⊗ₘ eY.inv) ≫= this =≫ (eX.hom ⊗ₘ eZ.hom)).trans ?_)
       · rw [← id_tensorHom, ← id_tensorHom, ← tensor_comp_assoc, ← Functor.map_add, ← tensor_comp]
         simp [eZ, eY]
       · rw [← id_tensorHom, ← id_tensorHom, ← id_tensorHom,
@@ -96,7 +96,7 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
     suffices  ((L').map (R.map f) + (L').map (R.map g)) ▷ (L').obj (R.obj X) =
         ((L').map (R.map f)) ▷ (L').obj (R.obj X) + ((L').map (R.map g) ▷ (L').obj (R.obj X)) by
-      refine Eq.trans ?_ (((eY.inv ⊗ eX.inv) ≫= this =≫ (eZ.hom ⊗ eX.hom)).trans ?_)
+      refine Eq.trans ?_ (((eY.inv ⊗ₘ eX.inv) ≫= this =≫ (eZ.hom ⊗ₘ eX.hom)).trans ?_)
       · rw [← tensorHom_id, ← tensorHom_id, ← tensor_comp_assoc, ← Functor.map_add, ← tensor_comp]
         simp [eZ, eY]
       · rw [← tensorHom_id, ← tensorHom_id, ← tensorHom_id,
@@ -121,7 +121,7 @@ def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.
     let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
     suffices ((L').obj (R.obj X)) ◁ (r • (L').map (R.map f)) =
         r • ((L').obj (R.obj X)) ◁ ((L').map (R.map f)) by
-      refine Eq.trans ?_ (((eX.inv ⊗ eY.inv) ≫= this =≫ (eX.hom ⊗ eZ.hom)).trans ?_)
+      refine Eq.trans ?_ (((eX.inv ⊗ₘ eY.inv) ≫= this =≫ (eX.hom ⊗ₘ eZ.hom)).trans ?_)
       · rw [← id_tensorHom, ← id_tensorHom, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
         simp [eZ, eY]
       · simp [eX, eY, eZ, ← MonoidalCategory.id_tensorHom, ← MonoidalCategory.tensor_comp]
@@ -133,7 +133,7 @@ def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.
     let eZ : (L').obj (R.obj Z) ≅ Z := asIso (adj.counit.app Z)
     suffices (r • (L').map (R.map f)) ▷ ((L').obj (R.obj X)) =
         r • ((L').map (R.map f)) ▷ ((L').obj (R.obj X)) by
-      refine Eq.trans ?_ (((eY.inv ⊗ eX.inv) ≫= this =≫ (eZ.hom ⊗ eX.hom)).trans ?_)
+      refine Eq.trans ?_ (((eY.inv ⊗ₘ eX.inv) ≫= this =≫ (eZ.hom ⊗ₘ eX.hom)).trans ?_)
       · rw [← tensorHom_id, ← tensorHom_id, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
         simp [eZ, eY]
       · simp [eX, eY, eZ, ← MonoidalCategory.tensorHom_id, ← MonoidalCategory.tensor_comp]
@@ -166,12 +166,12 @@ instance [Linear R A] : Linear R (Sheaf J A) where
   smul_comp X Y Z r f g := by
     have : (r • f.val) ≫ g.val = r • (f.val ≫ g.val) := by simp
     apply hom_ext
-    simp only [instCategorySheaf_comp_val]
+    simp only [comp_val]
     exact this
   comp_smul X Y Z f r g := by
     have : f.val ≫ (r • g.val) = r • (f.val ≫ g.val) := by simp
     apply hom_ext
-    simp only [instCategorySheaf_comp_val]
+    simp only [comp_val]
     exact this
 
 end Linear
