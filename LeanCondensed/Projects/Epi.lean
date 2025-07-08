@@ -45,8 +45,7 @@ instance surj_widePullback {J : Type*} (B : LightProfinite.{u}) (objs : J → Li
         intro j
         unfold point_maps
         by_cases h : i = j
-        · simp only [↓reduceDIte]
-          rw [dif_pos h]
+        · rw [dif_pos h]
           subst h
           rfl
         · rw [dif_neg h]

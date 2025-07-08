@@ -13,7 +13,7 @@ universe u
 
 namespace CategoryTheory
 
-open CategoryTheory Limits Opposite Monoidal MonoidalCategory
+open CategoryTheory Functor Limits Opposite Monoidal MonoidalCategory
 
 namespace Functor.Monoidal
 
@@ -47,24 +47,24 @@ set_option maxHeartbeats 300000 in
 instance {C D E : Type*} [Category C] [Category D] [Category E] [MonoidalCategory D]
     [MonoidalCategory E] (L : D ⥤ E) [L.LaxMonoidal] :
     ((whiskeringRight C D E).obj L).LaxMonoidal where
-  ε' := { app X := Functor.LaxMonoidal.ε L }
-  μ' F G := { app X := Functor.LaxMonoidal.μ L (F.obj X) (G.obj X) }
+  ε := { app X := Functor.LaxMonoidal.ε L }
+  μ F G := { app X := Functor.LaxMonoidal.μ L (F.obj X) (G.obj X) }
 
 set_option maxHeartbeats 300000 in
 instance {C D E : Type*} [Category C] [Category D] [Category E] [MonoidalCategory D]
     [MonoidalCategory E] (L : D ⥤ E) [L.OplaxMonoidal] :
     ((whiskeringRight C D E).obj L).OplaxMonoidal where
-  η' := { app X := Functor.OplaxMonoidal.η L }
-  δ' F G := { app X := Functor.OplaxMonoidal.δ L (F.obj X) (G.obj X) }
-  oplax_left_unitality' := by aesop -- `aesop_cat` fails for some reason
-  oplax_right_unitality' := by aesop -- `aesop_cat` fails for some reason
+  η := { app X := Functor.OplaxMonoidal.η L }
+  δ F G := { app X := Functor.OplaxMonoidal.δ L (F.obj X) (G.obj X) }
+  oplax_left_unitality := by aesop -- `aesop_cat` fails for some reason
+  oplax_right_unitality := by aesop -- `aesop_cat` fails for some reason
 
 instance {C D E : Type*} [Category C] [Category D] [Category E] [MonoidalCategory D]
     [MonoidalCategory E] (L : D ⥤ E) [L.Monoidal] : ((whiskeringRight C D E).obj L).Monoidal where
-  ε_η := by ext; exact Functor.Monoidal.ε_η
-  η_ε := by ext; exact Functor.Monoidal.η_ε
-  μ_δ _ _ := by ext; exact Functor.Monoidal.μ_δ _ _
-  δ_μ _ _ := by ext; exact Functor.Monoidal.δ_μ _ _
+  ε_η := by ext; exact Functor.Monoidal.ε_η _
+  η_ε := by ext; exact Functor.Monoidal.η_ε _
+  μ_δ _ _ := by ext; apply Functor.Monoidal.μ_δ
+  δ_μ _ _ := by ext; apply Functor.Monoidal.δ_μ
 
 end FunctorCategory
 
@@ -165,7 +165,7 @@ noncomputable def μNatIso : ((((whiskeringLeft₂ _).obj F).obj F).obj (curried
     ext
     simp only [Functor.comp_obj, whiskeringRight_obj_obj, curriedTensor_obj_obj,
       whiskeringLeft₂_obj_obj_obj_obj_obj, Functor.comp_map, whiskeringRight_obj_map,
-      NatTrans.comp_app, whiskerRight_app, curriedTensor_map_app, NatIso.ofComponents_hom_app,
+      NatTrans.comp_app, Functor.whiskerRight_app, curriedTensor_map_app, NatIso.ofComponents_hom_app,
       Iso.symm_hom, μIso_inv, whiskeringLeft₂_obj_obj_obj_map_app]
     change _ = _ ≫ (L' ⋙ F).map _
     rw [map_whiskerRight]
@@ -186,8 +186,8 @@ lemma μNatIso_inv_app_app (X Y : C) :
 
 @[reassoc]
 lemma μNatIso_naturality {X X' Y Y' : LocalizedMonoidal L W ε} (f : X ⟶ X') (g : Y ⟶ Y') :
-    (F.map f ⊗ F.map g) ≫ ((μNatIso L W ε F).hom.app X').app Y' =
-      ((μNatIso L W ε F).hom.app X).app Y ≫ F.map (f ⊗ g) := by
+    (F.map f ⊗ₘ F.map g) ≫ ((μNatIso L W ε F).hom.app X').app Y' =
+      ((μNatIso L W ε F).hom.app X).app Y ≫ F.map (f ⊗ₘ g) := by
   have := ((μNatIso L W ε F).hom.app X').naturality g
   simp only [whiskeringLeft₂_obj_obj_obj_obj_obj, curriedTensor_obj_obj, Functor.comp_obj,
     whiskeringRight_obj_obj, whiskeringLeft₂_obj_obj_obj_obj_map, curriedTensor_obj_map,
@@ -198,7 +198,7 @@ lemma μNatIso_naturality {X X' Y Y' : LocalizedMonoidal L W ε} (f : X ⟶ X') 
   apply NatTrans.congr_app at this
   simp only [whiskeringLeft₂_obj_obj_obj_obj_obj, curriedTensor_obj_obj, Functor.comp_obj,
     whiskeringRight_obj_obj, NatTrans.comp_app, whiskeringLeft₂_obj_obj_obj_map_app,
-    curriedTensor_map_app, Functor.comp_map, whiskeringRight_obj_map, whiskerRight_app] at this
+    curriedTensor_map_app, Functor.comp_map, whiskeringRight_obj_map, Functor.whiskerRight_app] at this
   specialize this Y
   rw [MonoidalCategory.tensorHom_id, ← Category.assoc, this]
   rw [Category.assoc, ← F.map_comp]
@@ -227,7 +227,7 @@ lemma μNatIso_associativity_aux (X Y Z : C) :
   simp only [whiskeringLeft₂_obj_obj_obj_obj_obj, curriedTensor_obj_obj, Functor.comp_obj,
     whiskeringRight_obj_obj, Functor.CoreMonoidal.toMonoidal_toLaxMonoidal, NatTrans.comp_app,
     whiskeringLeft₂_obj_obj_obj_map_app, curriedTensor_map_app, Functor.comp_map,
-    whiskeringRight_obj_map, whiskerRight_app] at this
+    whiskeringRight_obj_map, Functor.whiskerRight_app] at this
   change _ = _ ≫ (F.mapIso ((Functor.mapIso _ (Functor.Monoidal.μIso L' _ _)).app _)).hom at this
   rw [← Iso.comp_inv_eq] at this
   simp only [Functor.mapIso_inv, Iso.app_inv, Category.assoc] at this
@@ -267,11 +267,11 @@ noncomputable def functorCoremonoidalOfComp : F.CoreMonoidal where
         (α_ (F.obj ((L').obj x)) (F.obj ((L').obj y)) (F.obj ((L').obj z))).hom ≫
           F.obj ((L').obj x) ◁ ((μNatIso L W ε F).hom.app ((L').obj y)).app ((L').obj z) ≫
             ((μNatIso L W ε F).hom.app ((L').obj x)).app (((L').obj y) ⊗ ((L').obj z)) by
-      refine Eq.trans ?_ ((((F.map eX.inv ⊗ F.map eY.inv) ⊗ F.map eZ.inv) ≫= this =≫
-        (F.map (eX.hom ⊗ eY.hom ⊗ eZ.hom))).trans ?_)
+      refine Eq.trans ?_ ((((F.map eX.inv ⊗ₘ F.map eY.inv) ⊗ₘ F.map eZ.inv) ≫= this =≫
+        (F.map (eX.hom ⊗ₘ eY.hom ⊗ₘ eZ.hom))).trans ?_)
       · simp only [Category.assoc]
         rw [← F.map_comp, ← associator_naturality, F.map_comp, ← μNatIso_naturality_assoc]
-        rw [← Category.comp_id (F.map eZ.inv), ← Category.id_comp (F.map eX.inv ⊗ F.map eY.inv)]
+        rw [← Category.comp_id (F.map eZ.inv), ← Category.id_comp (F.map eX.inv ⊗ₘ F.map eY.inv)]
         rw [MonoidalCategory.tensor_comp, MonoidalCategory.tensorHom_id]
         simp only [MonoidalCategory.id_tensorHom, whiskeringLeft₂_obj_obj_obj_obj_obj,
           curriedTensor_obj_obj, Functor.comp_obj, whiskeringRight_obj_obj, Category.assoc]

@@ -3,7 +3,6 @@ import LeanCondensed.Projects.Pullbacks
 
 open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
   MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom
-  ChosenFiniteProducts
 
 
 lemma IsClosedThingy {T : LightProfinite} (f : T ⟶ ℕ∪{∞}) (s : ℕ → Set T)
