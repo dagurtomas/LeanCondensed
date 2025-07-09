@@ -13,7 +13,7 @@ import LeanCondensed.Projects.LocalizedMonoidal
 
 universe v u
 
-open CategoryTheory MonoidalCategory
+open CategoryTheory MonoidalCategory Functor
 
 namespace CategoryTheory.Functor.Monoidal
 
@@ -37,11 +37,11 @@ variable {A B : Type*} [Category A] [Category B]
 
 attribute [local instance] monoidalCategory
 
--- noncomputable instance : (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
---   monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
+noncomputable instance : (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
+  monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
 
--- noncomputable instance : (composeAndSheafify J F).Monoidal :=
---   Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (Iso.refl _) _
+noncomputable instance : (composeAndSheafify J F).Monoidal :=
+  Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (Iso.refl _) _
 
 end
 
@@ -58,14 +58,14 @@ noncomputable instance :
   letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
   monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
 
--- noncomputable instance foo :
---     letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
---     (composeAndSheafify J F).Monoidal := by
---   letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
---   letI : (presheafToSheaf J (Type (max u v))).Monoidal := sorry
---   exact
---     Functor.Monoidal.instComp (sheafToPresheaf J (Type (max u v)))
---       ((whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
+noncomputable instance foo :
+    letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
+    (composeAndSheafify J F).Monoidal := by
+  letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
+  letI : (presheafToSheaf J (Type (max u v))).Monoidal := sorry
+  exact
+    Functor.Monoidal.instComp (sheafToPresheaf J (Type (max u v)))
+      ((whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
 
 
 end

@@ -92,6 +92,7 @@ instance (e : C ≌ D) [MonoidalCategory C] [BraidedCategory C] :
       Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal, Functor.LaxMonoidal.comp_μ, Functor.comp_map,
       Equivalence.inv_fun_map, Functor.id_obj, Functor.OplaxMonoidal.comp_δ, assoc] at this
     simp [← this]
+    sorry
 
 instance Transported.instSymmetricCategory (e : C ≌ D) [MonoidalCategory C]
     [SymmetricCategory C] : SymmetricCategory (Transported e) :=

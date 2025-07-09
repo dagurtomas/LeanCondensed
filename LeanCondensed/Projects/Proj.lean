@@ -11,7 +11,7 @@ import Mathlib
 
 open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
   MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom
-  ChosenFiniteProducts Topology
+  CartesianMonoidalCategory Topology
 
 universe u
 
@@ -244,12 +244,12 @@ lemma xyz { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π]
       (lift (𝟙 S') (CompHausLike.ofHom _ <| ContinuousMap.const S' n))
       (
         by
-          simp only [Category.assoc, limit.cone_x, prod.lift_map, Category.id_comp,
-          Category.comp_id]
-          apply ChosenFiniteProducts.hom_ext
+          simp only [Category.assoc, limit.cone_x]
+          apply CartesianMonoidalCategory.hom_ext
           · simp [y']
           · ext
-            simp [←ConcreteCategory.comp_apply, fibre_condition]
+            simp only [Category.assoc, fibre_condition, tensorHom_id, lift_whiskerRight,
+              Category.id_comp, lift_snd, CompHausLike.hom_ofHom, ContinuousMap.const_apply]
             rfl
       )
   have hσ : ∀ n, σ' n ≫ π_tilde ≫ fst _ _ = 𝟙 _ := by
@@ -287,7 +287,7 @@ lemma xyz { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π]
         t,
         by
           simp only [Set.mem_preimage, ConcreteCategory.comp_apply, ht,
-            Set.mem_singleton_iff, S', y', Ttilde, σ']
+            Set.mem_singleton_iff]
           rfl
       ⟩
       rw [ConcreteCategory.comp_apply]
@@ -474,7 +474,7 @@ theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
           ≫ fst _ _
           ≫ lift (𝟙 _)
             (CompHausLike.ofHom _ (ContinuousMap.const S' (∞ : ℕ∪{∞}))) := by
-      apply ChosenFiniteProducts.hom_ext _ _ (by simp)
+      apply CartesianMonoidalCategory.hom_ext _ _ (by simp)
       simp only [Category.assoc]
       rw [fibre_condition ∞ (π' ≫ snd _ _)]
       ext

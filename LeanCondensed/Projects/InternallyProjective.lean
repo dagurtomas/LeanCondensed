@@ -48,6 +48,9 @@ def ihomPoints (A B : LightCondMod.{u} R) (S : LightProfinite) :
 -- We have an `R`-module structure on `M ⟶ N` for condensed `R`-modules `M`, `N`,
 -- and this could be made an `≅`. But it's not needed in this proof.
 
+
+lemma tensorLeft_obj (X Y : LightCondMod.{u} R) : (tensorLeft X).obj Y = X ⊗ Y := rfl
+
 lemma ihom_map_val_app (A B P : LightCondMod.{u} R) (S : LightProfinite) (e : A ⟶ B) :
     ∀ x, ConcreteCategory.hom (((ihom P).map e).val.app ⟨S⟩) x =
         (ihomPoints R P B S).symm (ihomPoints R P A S x ≫ e) := by
@@ -99,7 +102,7 @@ lemma ihomPoints_symm_comp (B P : LightCondMod.{u} R) (S S' : LightProfinite) (�
 def tensorFreeIso (X Y : LightCondSet.{u}) :
     (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) :=
   Functor.Monoidal.μIso (free R) X Y ≪≫ ((free R).mapIso
-    ((ChosenFiniteProducts.product X Y).isLimit.conePointUniqueUpToIso (limit.isLimit (pair X Y))))
+    ((CartesianMonoidalCategory.tensorProductIsBinaryProduct X Y).conePointUniqueUpToIso (limit.isLimit (pair X Y))))
 
 def tensorFreeIso' (S T : LightProfinite) :
     (free R).obj S.toCondensed ⊗ (free R).obj T.toCondensed ≅
