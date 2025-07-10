@@ -45,11 +45,12 @@ noncomputable def productIsLimit : IsLimit (productCone X Y hP) where
       exact h
 
 noncomputable def chosenFiniteProducts (hP : ∀ (X Y : CompHausLike.{u} P), HasProp P (X × Y))
-    [HasProp P PUnit.{u + 1}] : ChosenFiniteProducts (CompHausLike.{u} P) where
-  product X Y := ⟨productCone X Y (hP X Y), productIsLimit X Y (hP X Y)⟩
-  terminal := ⟨_, CompHausLike.isTerminalPUnit⟩
+    [HasProp P PUnit.{u + 1}] : CartesianMonoidalCategory (CompHausLike.{u} P) :=
+  .ofChosenFiniteProducts
+    ⟨_, CompHausLike.isTerminalPUnit⟩
+    (fun X Y ↦ ⟨productCone X Y (hP X Y), productIsLimit X Y (hP X Y)⟩)
 
-noncomputable instance : ChosenFiniteProducts LightProfinite.{u} :=
+noncomputable instance : CartesianMonoidalCategory LightProfinite.{u} :=
   chosenFiniteProducts (fun _ _ => inferInstance)
 
 example : LightProfinite ⥤ TopCat := by exact LightProfinite.toTopCat

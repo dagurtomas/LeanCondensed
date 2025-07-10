@@ -2,7 +2,7 @@ import Mathlib.CategoryTheory.Localization.Bifunctor
 
 namespace CategoryTheory
 
-open Category
+open Category Functor
 
 variable {C₁ C₂ D₁ D₂ E E' : Type*} [Category C₁] [Category C₂]
   [Category D₁] [Category D₂] [Category E] [Category E']

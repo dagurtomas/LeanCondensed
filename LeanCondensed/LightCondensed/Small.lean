@@ -3,7 +3,7 @@ import Mathlib.Condensed.Light.Module
 
 universe v u w
 
-open CategoryTheory
+open CategoryTheory Functor
 
 namespace LightCondensed
 

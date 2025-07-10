@@ -18,6 +18,7 @@ universe u
 noncomputable section
 
 open CategoryTheory Monoidal Sheaf MonoidalCategory MonoidalClosed MonoidalClosed.FunctorCategory
+  Functor
 
 section
 
@@ -177,7 +178,7 @@ instance : (free R).Monoidal := by
             whiskeringLeft_obj_map, Equivalence.op_functor, Equivalence.op_counitIso,
             isoWhiskerRight_trans, isoWhiskerRight_twice, Iso.trans_assoc, Iso.trans_hom,
             Iso.symm_hom, isoWhiskerRight_hom, NatIso.op_inv, NatTrans.comp_app,
-            CategoryTheory.whiskerLeft_app, CategoryTheory.whiskerRight_app,
+            Functor.whiskerLeft_app, Functor.whiskerRight_app,
             Functor.associator_inv_app, Functor.associator_hom_app, Functor.id_obj, NatTrans.op_app,
             Functor.leftUnitor_hom_app, CategoryTheory.Functor.map_id, Category.comp_id,
             Category.id_comp, Category.assoc]

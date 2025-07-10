@@ -33,7 +33,7 @@ Given two lax monoidal, monoidally isomorphic functors, if one is lax braided, s
 def ofNatIso (F G : C ⥤ D) (i : F ≅ G) [F.LaxBraided] [G.LaxMonoidal]
     [NatTrans.IsMonoidal i.hom]  : G.LaxBraided where
   braided X Y := by
-    have (X Y : C) : μ G X Y = (i.inv.app X ⊗ i.inv.app Y) ≫ μ F X Y ≫ i.hom.app _ := by
+    have (X Y : C) : μ G X Y = (i.inv.app X ⊗ₘ i.inv.app Y) ≫ μ F X Y ≫ i.hom.app _ := by
       simp [NatTrans.IsMonoidal.tensor X Y, ← tensor_comp_assoc]
     rw [this X Y, this Y X, ← braiding_naturality_assoc, ← Functor.LaxBraided.braided_assoc]
     simp
@@ -87,11 +87,16 @@ instance (e : C ≌ D) [MonoidalCategory C] [BraidedCategory C] :
       simp only [((e' e).functor ⋙ (e' e).inverse).map_braiding X Y,
         Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal, assoc,
         Functor.Monoidal.μ_δ, comp_id, Functor.Monoidal.μ_δ_assoc]
+    -- used to close the goal:
+    /-
     simp only [Functor.comp_obj, Functor.CoreMonoidal.toMonoidal_toLaxMonoidal,
       Equivalence.symm_inverse, Equivalence.symm_functor,
       Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal, Functor.LaxMonoidal.comp_μ, Functor.comp_map,
       Equivalence.inv_fun_map, Functor.id_obj, Functor.OplaxMonoidal.comp_δ, assoc] at this
     simp [← this]
+    -/
+    sorry
+
 
 instance Transported.instSymmetricCategory (e : C ≌ D) [MonoidalCategory C]
     [SymmetricCategory C] : SymmetricCategory (Transported e) :=

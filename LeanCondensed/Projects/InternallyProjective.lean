@@ -53,12 +53,12 @@ lemma ihom_map_val_app (A B P : LightCondMod.{u} R) (S : LightProfinite) (e : A 
         (ihomPoints R P B S).symm (ihomPoints R P A S x ≫ e) := by
   intro x
   apply (ihomPoints R P B S).injective
-  simp only [ihomPoints, freeYoneda, tensorLeft_obj, Equiv.trans_apply, Equiv.symm_trans_apply,
-    Equiv.symm_symm, Equiv.symm_apply_apply]
+  simp only [ihomPoints, freeYoneda, curriedTensor_obj_obj, Equiv.trans_apply,
+    Equiv.symm_trans_apply, Equiv.symm_symm, Equiv.symm_apply_apply]
   erw [← Adjunction.homEquiv_naturality_right_symm]
   erw [← Adjunction.homEquiv_naturality_right_symm]
-  simp only [LightCondensed.yoneda, sheafToPresheaf_obj, Equiv.symm_trans_apply, tensorLeft_obj,
-    EmbeddingLike.apply_eq_iff_eq]
+  simp only [LightCondensed.yoneda, sheafToPresheaf_obj, Equiv.symm_trans_apply,
+    curriedTensor_obj_obj, EmbeddingLike.apply_eq_iff_eq]
   apply (fullyFaithfulSheafToPresheaf _ _).map_injective
   erw [Functor.FullyFaithful.homEquiv_symm_apply, Functor.FullyFaithful.homEquiv_symm_apply]
   ext
@@ -69,14 +69,14 @@ lemma ihomPoints_symm_comp (B P : LightCondMod.{u} R) (S S' : LightProfinite) (�
     (f : _ ⟶ _) :
     (ihomPoints R P B S).symm (P ◁ (free R).map (lightProfiniteToLightCondSet.map π) ≫ f) =
       ConcreteCategory.hom (((ihom P).obj B).val.map π.op) ((ihomPoints R P B S').symm f) := by
-  simp only [ihomPoints, tensorLeft_obj, Equiv.symm_trans_apply, Equiv.symm_symm]
+  simp only [ihomPoints, Equiv.symm_trans_apply, Equiv.symm_symm]
   simp only [freeYoneda, LightCondensed.yoneda, sheafToPresheaf_obj, Equiv.trans_apply]
   erw [Adjunction.homEquiv_apply, Adjunction.homEquiv_apply, Adjunction.homEquiv_apply,
     Adjunction.homEquiv_apply]
-  simp only [Functor.comp_obj, tensorLeft_obj, ihom.ihom_adjunction_unit, Functor.map_comp]
+  simp only [Functor.comp_obj, ihom.ihom_adjunction_unit, Functor.map_comp]
   simp only [← Functor.map_comp]
   rw [(ihom P).map_comp, ← ihom.coev_naturality_assoc]
-  simp only [tensorLeft_obj, Functor.map_comp]
+  simp only [Functor.map_comp]
   rw [Adjunction.unit_naturality_assoc]
   erw [Equiv.trans_apply, Equiv.trans_apply, yonedaEquiv_comp,
     Functor.FullyFaithful.homEquiv_apply, yonedaEquiv_comp]
@@ -99,7 +99,8 @@ lemma ihomPoints_symm_comp (B P : LightCondMod.{u} R) (S S' : LightProfinite) (�
 def tensorFreeIso (X Y : LightCondSet.{u}) :
     (free R).obj X ⊗ (free R).obj Y ≅ (free R).obj (X ⨯ Y) :=
   Functor.Monoidal.μIso (free R) X Y ≪≫ ((free R).mapIso
-    ((ChosenFiniteProducts.product X Y).isLimit.conePointUniqueUpToIso (limit.isLimit (pair X Y))))
+    ((CartesianMonoidalCategory.tensorProductIsBinaryProduct X Y).conePointUniqueUpToIso
+      (limit.isLimit (pair X Y))))
 
 def tensorFreeIso' (S T : LightProfinite) :
     (free R).obj S.toCondensed ⊗ (free R).obj T.toCondensed ≅

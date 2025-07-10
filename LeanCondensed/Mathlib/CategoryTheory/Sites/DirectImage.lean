@@ -15,6 +15,8 @@ noncomputable section
 
 namespace CategoryTheory
 
+open Functor
+
 variable {C D : Type*} [Category C] [Category D]
 variable (J : GrothendieckTopology C) (K : GrothendieckTopology D)
 variable (A : Type*) [Category A] [HasWeakSheafify K A] -- [HasWeakSheafify J A]

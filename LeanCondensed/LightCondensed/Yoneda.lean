@@ -26,7 +26,7 @@ lemma yoneda_symm_naturality {S S' : LightProfinite} (f : S' ⟶ S) (A : LightCo
     (x : A.val.obj ⟨S⟩) : lightProfiniteToLightCondSet.map f ≫ (yoneda S A).symm x =
       (yoneda S' A).symm ((A.val.map f.op) x) := by
   apply Sheaf.hom_ext
-  rw [Sheaf.instCategorySheaf_comp_val]
+  simp only [comp_val]
   ext T y
   simp only [FunctorToTypes.comp, yoneda_symm_apply_val_app, Opposite.op_unop]
   rw [← FunctorToTypes.map_comp_apply (F := A.val)]
@@ -36,7 +36,7 @@ attribute [local instance] Types.instConcreteCategory Types.instFunLike
 lemma yoneda_symm_conaturality (S : LightProfinite) {A A' : LightCondSet} (f : A ⟶ A')
     (x : A.val.obj ⟨S⟩) : (yoneda S A).symm x ≫ f = (yoneda S A').symm (f.val.app ⟨S⟩ x) := by
   apply Sheaf.hom_ext
-  rw [Sheaf.instCategorySheaf_comp_val]
+  simp only [comp_val]
   ext T y
   exact NatTrans.naturality_apply (φ := f.val) (Y := T) _ _
 
@@ -54,7 +54,7 @@ lemma freeYoneda_symm_naturality {S S' : LightProfinite} (f : S' ⟶ S) (A : Lig
     (x : A.val.obj ⟨S⟩) : (lightProfiniteToLightCondSet ⋙ free R).map f ≫
       (freeYoneda R S A).symm x = (freeYoneda R S' A).symm ((A.val.map f.op) x) := by
   simp only [Functor.comp_obj, Functor.comp_map, freeYoneda, Equiv.symm_trans_apply,
-    Adjunction.homEquiv_counit, Functor.id_obj]
+    Adjunction.homEquiv_counit]
   simp only [← Category.assoc, ← Functor.map_comp]
   erw [yoneda_symm_naturality]
   rfl

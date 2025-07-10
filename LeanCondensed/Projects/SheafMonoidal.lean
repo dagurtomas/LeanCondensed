@@ -5,12 +5,11 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
-import Mathlib.CategoryTheory.Sites.ChosenFiniteProducts
+import Mathlib.CategoryTheory.Sites.CartesianMonoidal
 import Mathlib.CategoryTheory.Sites.LeftExact
 import Mathlib.CategoryTheory.Sites.Monoidal
 import Mathlib.CategoryTheory.Sites.PreservesSheafification
 import LeanCondensed.Projects.LocalizedMonoidal
-
 
 universe v u
 
@@ -66,9 +65,10 @@ noncomputable instance foo :
   letI : (presheafToSheaf J (Type (max u v))).Monoidal := sorry
   exact
     Functor.Monoidal.instComp (sheafToPresheaf J (Type (max u v)))
-      ((whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
+      ((Functor.whiskeringRight Cᵒᵖ (Type (max u v)) A).obj F ⋙ presheafToSheaf J A)
 
 
 end
 
 end CategoryTheory.Sheaf
+#min_imports
