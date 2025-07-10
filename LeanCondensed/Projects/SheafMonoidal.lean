@@ -71,4 +71,3 @@ noncomputable instance foo :
 end
 
 end CategoryTheory.Sheaf
-#min_imports
