@@ -63,13 +63,8 @@ instance {C D E : Type*} [Category C] [Category D] [Category E] [MonoidalCategor
     [MonoidalCategory E] (L : D ⥤ E) [L.Monoidal] : ((whiskeringRight C D E).obj L).Monoidal where
   ε_η := by ext; exact Functor.Monoidal.ε_η _
   η_ε := by ext; exact Functor.Monoidal.η_ε _
-<<<<<<< HEAD
-  μ_δ _ _ := by ext; apply Functor.Monoidal.μ_δ
-  δ_μ _ _ := by ext; apply Functor.Monoidal.δ_μ
-=======
   μ_δ _ _ := by ext; exact Functor.Monoidal.μ_δ _ _ _
   δ_μ _ _ := by ext; exact Functor.Monoidal.δ_μ _ _ _
->>>>>>> upstream/master
 
 end FunctorCategory
 
@@ -203,12 +198,8 @@ lemma μNatIso_naturality {X X' Y Y' : LocalizedMonoidal L W ε} (f : X ⟶ X') 
   apply NatTrans.congr_app at this
   simp only [whiskeringLeft₂_obj_obj_obj_obj_obj, curriedTensor_obj_obj, Functor.comp_obj,
     whiskeringRight_obj_obj, NatTrans.comp_app, whiskeringLeft₂_obj_obj_obj_map_app,
-<<<<<<< HEAD
-    curriedTensor_map_app, Functor.comp_map, whiskeringRight_obj_map, Functor.whiskerRight_app] at this
-=======
     curriedTensor_map_app, Functor.comp_map, whiskeringRight_obj_map,
     Functor.whiskerRight_app] at this
->>>>>>> upstream/master
   specialize this Y
   rw [MonoidalCategory.tensorHom_id, ← Category.assoc, this]
   rw [Category.assoc, ← F.map_comp]
@@ -319,13 +310,8 @@ noncomputable def functorCoremonoidalOfComp : F.CoreMonoidal where
       comp_whiskerRight, μNatIso_hom_app_app, Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal,
       MonoidalCategory.whiskerLeft_comp, Category.assoc, Iso.map_inv_hom_id, Category.comp_id]
     simp only [← MonoidalCategory.tensorHom_id, ← MonoidalCategory.id_tensorHom,
-<<<<<<< HEAD
-      Category.comp_id, ← MonoidalCategory.tensor_comp_assoc, map_δ_μ_assoc, μ_δ,
-      Functor.comp_obj]
-=======
       ← MonoidalCategory.tensor_comp, Category.comp_id, ← MonoidalCategory.tensor_comp_assoc,
       map_δ_μ_assoc, μ_δ, Functor.comp_obj]
->>>>>>> upstream/master
     simp
   left_unitality X := by
     obtain ⟨x, ⟨eX⟩⟩ : ∃ x, Nonempty ((L').obj x ≅ X) := ⟨_, ⟨(L').objObjPreimageIso X⟩⟩
