@@ -17,8 +17,8 @@ universe u
 
 noncomputable section
 
-open CategoryTheory Functor Monoidal Sheaf MonoidalCategory MonoidalClosed
-  MonoidalClosed.FunctorCategory
+open CategoryTheory Monoidal Sheaf MonoidalCategory MonoidalClosed MonoidalClosed.FunctorCategory
+  Functor
 
 section
 

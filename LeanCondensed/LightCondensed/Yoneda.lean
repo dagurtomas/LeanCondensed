@@ -26,7 +26,7 @@ lemma yoneda_symm_naturality {S S' : LightProfinite} (f : S' ⟶ S) (A : LightCo
     (x : A.val.obj ⟨S⟩) : lightProfiniteToLightCondSet.map f ≫ (yoneda S A).symm x =
       (yoneda S' A).symm ((A.val.map f.op) x) := by
   apply Sheaf.hom_ext
-  rw [Sheaf.comp_val]
+  simp only [comp_val]
   ext T y
   simp only [FunctorToTypes.comp, yoneda_symm_apply_val_app, Opposite.op_unop]
   rw [← FunctorToTypes.map_comp_apply (F := A.val)]
@@ -36,7 +36,7 @@ attribute [local instance] Types.instConcreteCategory Types.instFunLike
 lemma yoneda_symm_conaturality (S : LightProfinite) {A A' : LightCondSet} (f : A ⟶ A')
     (x : A.val.obj ⟨S⟩) : (yoneda S A).symm x ≫ f = (yoneda S A').symm (f.val.app ⟨S⟩ x) := by
   apply Sheaf.hom_ext
-  rw [Sheaf.comp_val]
+  simp only [comp_val]
   ext T y
   exact NatTrans.naturality_apply (φ := f.val) (Y := T) _ _
 
