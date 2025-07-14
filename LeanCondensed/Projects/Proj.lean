@@ -1,7 +1,6 @@
 import LeanCondensed.Projects.Epi
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.Initial
-import LeanCondensed.Projects.OverN
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Mathlib.CategoryTheory.Countable
@@ -32,6 +31,40 @@ def CategoryTheory.Limits.parallelPair.hom {C : Type*} [Category C]
       naturality := (by rintro _ _ ⟨_⟩ <;> simp [left, right])
     }
 
+lemma isClosed_fibres {T : LightProfinite} (f : T ⟶ ℕ∪{∞}) (s : ℕ → Set T)
+  (hs : ∀ n (x : s n), f x = n) (hs' : ∀ n, IsClosed (s n)) : IsClosed ({t | f t = ∞} ∪ ⋃ n, s n) := by
+  apply IsClosed.mk
+  let fibre : ℕ → Set T := fun n ↦ f ⁻¹' {OnePoint.some n}
+  have clopen : ∀ n, IsClopen (fibre n) := by
+    intro n
+    refine IsClopen.preimage ⟨isClosed_singleton, ?_⟩ f.1.continuous
+    exact ⟨fun h ↦ by simp at h, trivial⟩
+
+  suffices ({t | f t = ∞} ∪ ⋃ n, s n)ᶜ = ⋃ n, (s n)ᶜ ∩ fibre n by
+    rw [this]
+    exact isOpen_iUnion (fun i ↦ IsOpen.inter (hs' i).1 (clopen i).2)
+
+  ext x
+  simp only [Set.compl_union, Set.compl_iUnion, Set.mem_inter_iff, Set.mem_compl_iff,
+    Set.mem_setOf_eq, Set.mem_iInter, Set.mem_iUnion]
+  constructor
+  · intro ⟨h, h'⟩
+    obtain ⟨n', hn⟩ := Option.ne_none_iff_exists'.mp h
+    exact ⟨n', h' n', hn⟩
+  · intro ⟨n, hn, hn'⟩
+    refine ⟨?_, ?_⟩
+    · rw [hn']
+      exact OnePoint.coe_ne_infty _
+    intro i
+    by_cases h : i = n
+    exact h ▸ hn
+    intro h'
+    have := hs i ⟨x, h'⟩
+    apply h
+    rw [hn', OnePoint.coe_eq_coe,] at this
+    exact Eq.symm this
+
+
 set_option maxHeartbeats 500000
 noncomputable def smart_cover {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) : coprod T (explicitPullback (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π) (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)) ⟶ explicitPullback π π :=
   coprod.desc
@@ -58,11 +91,9 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
   have : IsClosed space := by
     unfold space
     rw [Set.union_comm]
-    apply IsClosedThingy
-    intro n ⟨x, ⟨s, hs⟩⟩
-    simp only [←hs, ←ConcreteCategory.comp_apply, Category.assoc]
-    exact hσ' n s
-    exact fun n ↦ IsCompact.isClosed (isCompact_range (σ' n).1.continuous)
+    exact isClosed_fibres _ _
+      (fun n ⟨x, ⟨s, hs⟩⟩ ↦ by simp only [←hs, ←ConcreteCategory.comp_apply, hσ' _ _])
+      (fun n ↦ IsCompact.isClosed (isCompact_range (σ' n).1.continuous))
 
   let T' : LightProfinite := ⟨TopCat.of space, inferInstance, inferInstance⟩
 
@@ -78,17 +109,12 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
       fun s ↦ ⟨σ' n s,
         by
           rcases n with (n | n)
-          · apply Or.inr
-            simp only [Set.mem_setOf_eq, ←ConcreteCategory.comp_apply];
-            exact hσ' ∞ s
+          · exact Or.inr (hσ' ∞ s)
           · apply Or.inl
             rw [Set.mem_iUnion]
             exact ⟨n, s, rfl⟩
       ⟩,
-      by
-        have : IsInducing i := by exact { eq_induced := rfl }
-        rw [IsInducing.continuous_iff this]
-        exact (σ' n).1.continuous
+      by continuity
     ⟩)
 
   have hσ'' : ∀ (n : ℕ∪{∞}) (t : T'), t ∈ Set.range (σ n) → (i ≫ π ≫ fst _ _ ≫ σ n) t = t := by
@@ -105,8 +131,7 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
     rw [Category.id_comp, hs]
 
   have coe_i : ∀ (t : T'), ↑t = i t := fun _ ↦ rfl
-
-  have σ_i : ∀ n, σ' n = σ n ≫ i := fun n ↦ rfl
+  have σ_i : ∀ n, σ' n = σ n ≫ i := fun _ ↦ rfl
 
   have hT' : ∀ (n : ℕ) t, t ∈ Set.range (σ n) ↔ (i ≫ π ≫ snd _ _) t = n := by
     intro n t'
@@ -146,8 +171,7 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
   · rw [LightProfinite.epi_iff_surjective]
     intro ⟨⟨t,t'⟩, ht⟩
     by_cases h : (i ≫ π ≫ snd _ _) t = ∞
-    · unfold smart_cover
-      have : (i ≫ π ≫ snd _ _) t' = ∞ := by
+    · have : (i ≫ π ≫ snd _ _) t' = ∞ := by
         rw [←Category.assoc, ConcreteCategory.comp_apply, ←ht,
           ←ConcreteCategory.comp_apply, Category.assoc, h
         ]
@@ -163,15 +187,14 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
       ⟩
       let p := coprod.inr (X := T') (Y := (explicitPullback _ _)) x
       use coprod.inr (X := T') (Y := (explicitPullback _ _)) x
-      rw [←ConcreteCategory.comp_apply]
-      simp only [←Category.assoc, coprod.inr_desc]
+      rw [smart_cover, ←ConcreteCategory.comp_apply]
+      simp only [coprod.inr_desc]
       rfl
     · rw [←ne_eq, OnePoint.ne_infty_iff_exists] at h
       obtain ⟨n, hn⟩ := h
       symm at hn
       use coprod.inl (X := T') (Y := (explicitPullback _ _)) ((i ≫ π ≫ fst _ _ ≫ σ n) t)
-      unfold smart_cover
-      simp only [←ConcreteCategory.comp_apply, Category.assoc, coprod.inl_desc]
+      simp only [smart_cover, ←ConcreteCategory.comp_apply, Category.assoc, coprod.inl_desc]
       rw [
         ←Category.assoc (fst _ _), ←Category.assoc π,  ←Category.assoc i,
         ConcreteCategory.comp_apply
@@ -198,10 +221,168 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
         erw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply (σ n),
           hs, hs'
         ]
-        erw [←Category.assoc, ConcreteCategory.comp_apply,ConcreteCategory.comp_apply (i ≫ π), ht]
+        erw [←Category.assoc, ConcreteCategory.comp_apply,
+          ConcreteCategory.comp_apply (i ≫ π), ht]
         rfl
-      · rw [hT']
-        exact hn
+      · exact (hT' _ _).mpr hn
+  · have : σ ∞ ≫ i = σ' ∞ := rfl
+
+    let σσ : S ⟶ fibre ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) :=
+      fibreLift ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) (σ ∞) (by exact hσ' ∞)
+
+    exact ⟨⟨
+        σσ,
+        by
+          simp only [←Category.assoc]
+          rw [
+            fibreLift_comp ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) (σ ∞) (by exact hσ' ∞),
+          ]
+          erw [hσ]
+    ⟩⟩
+
+lemma subspaceCover' { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hepi : Epi π]
+  {σ' : ℕ∪{∞} → (S ⟶ T)} (hσ : ∀ n, σ' n ≫ π ≫ fst _ _ = 𝟙 _)
+  (hσ' : ∀ n s, (σ' n ≫ π ≫ snd S ℕ∪{∞}) s = ↑n)
+    : ∃ (T' : LightProfinite) (i : T' ⟶ T),
+      Epi (i ≫ π) ∧ Epi (smart_cover (i ≫ π))
+        ∧ IsSplitEpi
+          (fibre_incl ∞ ((i ≫ π) ≫ snd _ _) ≫ i ≫ π ≫ fst S ℕ∪{∞}) := by
+
+  let space : Set T :=
+    Set.iUnion (fun (n : ℕ) ↦ Set.range (σ' (OnePoint.some n))) ∪ {t : T | (π ≫ snd _ _) t = ∞}
+  have : IsClosed space := by
+    unfold space
+    rw [Set.union_comm]
+    exact isClosed_fibres _ _
+      (fun n ⟨x, ⟨s, hs⟩⟩ ↦ by simp only [←hs, ←ConcreteCategory.comp_apply, hσ' _ _])
+      (fun n ↦ IsCompact.isClosed (isCompact_range (σ' n).1.continuous))
+
+  let T' : LightProfinite := ⟨TopCat.of space, inferInstance, inferInstance⟩
+
+  let i : T' ⟶ T :=
+    CompHausLike.ofHom _ ⟨Subtype.val, continuous_subtype_val⟩
+
+  have : Mono i := by
+    rw [CompHausLike.mono_iff_injective]
+    exact Subtype.val_injective
+
+  let σ : ℕ∪{∞} → (S ⟶ T') := fun n ↦ (CompHausLike.ofHom _
+    ⟨
+      fun s ↦ ⟨σ' n s,
+        by
+          rcases n with (n | n)
+          · exact Or.inr (hσ' ∞ s)
+          · apply Or.inl
+            rw [Set.mem_iUnion]
+            exact ⟨n, s, rfl⟩
+      ⟩,
+      by continuity
+    ⟩)
+
+  have hσ'' : ∀ (n : ℕ∪{∞}) (t : T'), t ∈ Set.range (σ n) → (i ≫ π ≫ fst _ _ ≫ σ n) t = t := by
+    intro n t ht
+    obtain ⟨s, hs⟩ := ht
+    rw (config := { occs := .pos [1]}) [←hs]
+    rw [
+        ←ConcreteCategory.comp_apply,
+        ←Category.assoc π,
+        ←Category.assoc i,
+        ←Category.assoc (σ n),
+    ]
+    erw [hσ]
+    rw [Category.id_comp, hs]
+
+  have coe_i : ∀ (t : T'), ↑t = i t := fun _ ↦ rfl
+  have σ_i : ∀ n, σ' n = σ n ≫ i := fun _ ↦ rfl
+
+  have hT' : ∀ (n : ℕ) t, t ∈ Set.range (σ n) ↔ (i ≫ π ≫ snd _ _) t = n := by
+    intro n t'
+    constructor <;> intro h
+    · obtain ⟨_, ht⟩ := h
+      rw [←ht, ←ConcreteCategory.comp_apply]
+      erw [hσ']
+    · rcases t'.2 with (fin | inf)
+      · rw [Set.mem_iUnion] at fin
+        obtain ⟨j, ⟨s, hs⟩⟩ := fin
+        suffices h' : j = n by
+          rw [h'] at hs
+          use s
+          exact Subtype.ext hs
+        rw [coe_i] at hs
+        rw [ConcreteCategory.comp_apply, ←hs, ←ConcreteCategory.comp_apply, hσ'] at h
+        rw [←OnePoint.coe_eq_coe]
+        exact h
+      · simp only [Set.mem_setOf_eq] at inf
+        erw [inf] at h
+        exact (Option.some_ne_none n (Eq.symm h)).elim
+
+  refine ⟨T', i, ?_, ?_, ?_⟩
+  · rw [LightProfinite.epi_iff_surjective]
+    rintro ⟨s, (n | n)⟩
+    obtain ⟨t, ht⟩ := (LightProfinite.epi_iff_surjective π).mp hepi ⟨s, none⟩
+    have : t ∈ space := by apply Or.inr; rw [Set.mem_setOf_eq, ConcreteCategory.comp_apply, ht]; rfl
+    use ⟨t, this⟩
+    rw [←ht]
+    rfl
+    · use σ n s
+      apply Prod.ext
+      change ConcreteCategory.hom (σ' n ≫ π ≫ fst _ _) s = s
+      rw [hσ]; rfl
+      change ConcreteCategory.hom (σ' n ≫ π ≫ snd _ _) s = (OnePoint.some n)
+      rw [hσ']
+  · rw [LightProfinite.epi_iff_surjective]
+    intro ⟨⟨t,t'⟩, ht⟩
+    simp only [Set.mem_setOf_eq] at ht
+    have proj_eq : (i ≫ π ≫ snd _ _) t = (i ≫ π ≫ snd _ _) t' := by
+      rw [←Category.assoc, ConcreteCategory.comp_apply, ht,
+        ←ConcreteCategory.comp_apply, Category.assoc
+      ]
+    by_cases h : (i ≫ π ≫ snd _ _) t = ∞
+    · let x : explicitPullback (fibre_incl ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) ≫ i ≫ π)
+        (fibre_incl ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) ≫ i ≫ π) :=
+        ⟨⟨⟨t, h⟩, ⟨t', by rw [Set.mem_preimage, Category.assoc, Set.mem_singleton_iff, ←proj_eq, h]⟩⟩,
+        by
+          simp only [Set.mem_setOf_eq]
+          rw [ConcreteCategory.comp_apply (fibre_incl _ _), ConcreteCategory.comp_apply (fibre_incl _ _)]
+          unfold fibre_incl
+          simp only [CompHausLike.hom_ofHom, ContinuousMap.coe_mk]
+          exact ht
+      ⟩
+      let p := coprod.inr (X := T') (Y := (explicitPullback _ _)) x
+      use coprod.inr (X := T') (Y := (explicitPullback _ _)) x
+      rw [smart_cover, ←ConcreteCategory.comp_apply]
+      simp only [coprod.inr_desc]
+      rfl
+    · rw [←ne_eq, OnePoint.ne_infty_iff_exists] at h
+      obtain ⟨n, hn⟩ := h
+      symm at hn
+      use coprod.inl (X := T') (Y := (explicitPullback _ _)) ((i ≫ π ≫ fst _ _ ≫ σ n) t)
+      simp only [smart_cover, ←ConcreteCategory.comp_apply, Category.assoc, coprod.inl_desc]
+      rw [
+        ←Category.assoc (fst _ _), ←Category.assoc π,  ←Category.assoc i,
+        ConcreteCategory.comp_apply
+      ]
+      rw [hσ'']
+      · apply Subtype.ext
+        apply Prod.ext (by rfl)
+        change t = t'
+        have hn' : (ConcreteCategory.hom (i ≫ π ≫ snd S ℕ∪{∞})) t' = n := by
+          rw [←proj_eq, hn]
+        rw [←hT'] at hn hn'
+        obtain ⟨s, hs⟩ := hn
+        obtain ⟨s', hs'⟩ := hn'
+        rw [←hs, ←hs']
+        apply congr_arg
+        rw [←ConcreteCategory.id_apply s, ←ConcreteCategory.id_apply s']
+        erw [←hσ n, σ_i]
+        simp only [Category.assoc]
+        erw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply (σ n),
+          hs, hs'
+        ]
+        erw [←Category.assoc, ConcreteCategory.comp_apply,
+          ConcreteCategory.comp_apply (i ≫ π), ht]
+        rfl
+      · exact (hT' _ _).mpr hn
   · have : σ ∞ ≫ i = σ' ∞ := rfl
 
     let σσ : S ⟶ fibre ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) :=
@@ -320,7 +501,7 @@ lemma prod_epi (X Y : LightProfinite.{u}) [hempty : Nonempty X] : Epi (snd X Y) 
   rw [LightProfinite.epi_iff_surjective]
   exact fun y ↦ ⟨⟨Classical.choice hempty, y⟩, rfl⟩
 
-lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
+private lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
   (f : (free R).obj (S).toCondensed ⟶ Y)
     : ∃ (T : LightProfinite) (π : T ⟶ S) (g : ((free R).obj T.toCondensed) ⟶ X), Epi π
       ∧ g ≫ p = (lightProfiniteToLightCondSet ⋙ (free R)).map π ≫ f := by
@@ -338,12 +519,10 @@ lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfin
   have comm : g ≫ p = (lightProfiniteToLightCondSet ⋙ (LightCondensed.free R)).map π ≫ f := by
     symm
     rw [
-        Functor.comp_map,
+      Functor.comp_map,
       ←Adjunction.homEquiv_naturality_left_square_iff (freeForgetAdjunction R),
-      Equiv.apply_symm_apply
-    ]
-    apply Sheaf.Hom.ext
-    rw [
+      Equiv.apply_symm_apply,
+      Sheaf.hom_ext_iff,
       (coherentTopology LightProfinite).yonedaEquiv_symm_naturality_right,
       hx,
       (coherentTopology LightProfinite).map_yonedaEquiv',
@@ -351,8 +530,7 @@ lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfin
     ]
     rfl
 
-  have : Epi π := (LightProfinite.epi_iff_surjective π).mpr hπ
-  use T, π, g
+  exact ⟨T, π, g, (LightProfinite.epi_iff_surjective π).mpr hπ, comm⟩
 
 instance : PreservesFiniteCoproducts (lightProfiniteToLightCondSet ⋙ (free R)) := by
   have : PreservesFiniteCoproducts lightProfiniteToLightCondSet :=
@@ -401,17 +579,16 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
           parallelPair_obj_one, ← map_comp_assoc, ← Functor.map_comp, coprod.desc_comp,
           colimit.ι_desc, BinaryCofan.mk_pt, BinaryCofan.ι_app_left, BinaryCofan.mk_inl]
         erw [PullbackCone.IsLimit.lift_fst]
-      · simp only [comp_obj, CompHausLike.coe_comp, Function.comp_apply, Set.coe_setOf,
-        Set.mem_setOf_eq, pair_obj_right, const_obj_obj, Functor.comp_map, BinaryCofan.mk_pt,
-        BinaryCofan.ι_app_right, BinaryCofan.mk_inr, smart_cover, parallelPair_obj_zero,
-        parallelPair_obj_one, parallelPair_map_left, parallelPair_map_right, const_obj_map,
-        Category.comp_id]
-        simp only [Category.assoc, ←Functor.map_comp, ←Functor.comp_map]
+      · simp only [comp_obj, pair_obj_right, const_obj_obj, Functor.comp_map,
+        BinaryCofan.mk_pt, BinaryCofan.ι_app_right, BinaryCofan.mk_inr,
+        smart_cover, parallelPair_obj_zero, parallelPair_obj_one, parallelPair_map_left,
+        parallelPair_map_right, const_obj_map, Category.comp_id]
+        simp only [←Functor.comp_map]
         simp only [←Category.assoc]
-        simp only [←Functor.map_comp, ←Functor.comp_map]
+        simp only [←Functor.map_comp]
         rw [coprod.inr_desc]
         simp only [Preadditive.comp_add, Preadditive.comp_sub, g_tilde]
-        simp [←Category.assoc, ←Functor.map_comp, ←Functor.comp_map]
+        simp [←Category.assoc, ←Functor.map_comp]
         rw [
           explicitPullback.map_fst, explicitPullback.map_snd,
           Category.assoc _ (fibre_incl ∞ (π ≫ snd _ _)) r_inf, hr, Category.comp_id,
@@ -429,7 +606,7 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
   }
 
 set_option maxHeartbeats 500000
-theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
+private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
     (f : (free R).obj (S ⊗ ℕ∪{∞}).toCondensed ⟶ Y) :
       ∃ (S' : LightProfinite)
         (ψ : S' ⟶ S)
@@ -446,7 +623,8 @@ theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
     infer_instance
 
   by_cases hS' : Nonempty S'
-  -- ⨯
+  -- The argument below only works if S' is non-empty. If S' is empty, the proof
+  -- is easier anyway.
   · let hc : IsColimit ((free R).mapCocone (explicitPullback.explicitRegular π')) := hc R π'
 
     let ι_inf := fibre_incl ∞ (π' ≫ snd _ _)
@@ -473,19 +651,15 @@ theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
         = fibre_incl ∞ (π' ≫ snd _ _) ≫ π'
           ≫ fst _ _
           ≫ lift (𝟙 _)
-            (CompHausLike.ofHom _ (ContinuousMap.const S' (∞ : ℕ∪{∞}))) := by
-      apply CartesianMonoidalCategory.hom_ext _ _ (by simp)
-      simp only [Category.assoc]
-      rw [fibre_condition ∞ (π' ≫ snd _ _)]
-      ext
-      simp
+            (CompHausLike.ofHom _ (ContinuousMap.const S' (∞ : ℕ∪{∞}))) :=
+      CartesianMonoidalCategory.hom_ext _ _ (by simp) (by ext; simp)
 
     have : c'.ι.app WalkingParallelPair.one ≫ p
       = (lightProfiniteToLightCondSet ⋙ (free R)).map (π' ≫ MonoidalCategoryStruct.tensorHom y' (𝟙 ℕ∪{∞})) ≫ f := by
         simp only [gg, comp_obj, parallelPair_obj_one, c, Functor.comp_map,
           const_obj_obj, Functor.map_comp, Category.assoc,
           Preadditive.comp_add, Preadditive.comp_sub, parallelPair.hom_app,
-          Preadditive.add_comp, Preadditive.sub_comp, ι_inf, c']
+          Preadditive.add_comp, Preadditive.sub_comp, c']
         rw [comm]
         simp only [←Functor.map_comp, ←Functor.comp_map, ←Category.assoc, ←comp]
         simp only [Category.assoc]
@@ -504,16 +678,12 @@ theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
         ]
         rfl
 
-    let abc : ((free R).obj (S' ⊗ ℕ∪{∞}).toCondensed) ⟶ X := hc.desc c'
-    refine ⟨abc, inferInstance, ?_⟩
+    let desc_map : ((free R).obj (S' ⊗ ℕ∪{∞}).toCondensed) ⟶ X := hc.desc c'
+    refine ⟨desc_map, inferInstance, ?_⟩
 
-    dsimp [abc]
-
-    have reg_eq : (free R).map ((regular π').ι.app WalkingParallelPair.one) = ((lightProfiniteToLightCondSet ⋙ (free R)).map π') := rfl
     rw [
       ←cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
-      ←Functor.comp_map, ←Functor.map_comp_assoc, ←reg_eq,
-      ←Category.assoc _ (hc.desc c')
+      ←Functor.comp_map, ←Functor.map_comp_assoc
     ]
     change _ = (((free R).mapCocone (explicitPullback.explicitRegular π')).ι.app one ≫ hc.desc c') ≫ p
     erw [hc.fac]
@@ -532,11 +702,11 @@ theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
     rw [←comp]
     simp
 
-theorem internallyProjective : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
+theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
   rw [free_lightProfinite_internallyProjective_iff_tensor_condition' R ℕ∪{∞}]
   intro X Y p hp S f
   obtain ⟨S', π, g, hπ, comm⟩ := proj_explicit R p f
   rw [LightProfinite.epi_iff_surjective] at hπ
   use S', π, hπ, g, comm
 
-#print axioms internallyProjective
+#print axioms internallyProjective_ℕinfty

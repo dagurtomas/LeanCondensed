@@ -5,6 +5,7 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Condensed.Light.Epi
 import LeanCondensed.LightCondensed.Yoneda
+import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.ChosenFiniteProducts
@@ -29,6 +30,16 @@ variable {C : Type*} [Category C] [MonoidalCategory C] [MonoidalClosed C]
 
 class InternallyProjective (P : C) : Prop where
   preserves_epi : (ihom P).PreservesEpimorphisms
+
+theorem ofRetract {X Y : C} (r : Retract Y X) (proj : InternallyProjective X)
+    : InternallyProjective Y :=
+  haveI : Retract (ihom Y) (ihom X) := {
+    i := MonoidalClosed.pre r.r
+    r := MonoidalClosed.pre r.i
+    retract := by
+      rw [←MonoidalClosed.pre_map, r.retract, MonoidalClosed.pre_id]
+  }
+  InternallyProjective.mk <| preservesEpi_ofRetract this proj.preserves_epi
 
 end InternallyProjective
 

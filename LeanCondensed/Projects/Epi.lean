@@ -73,7 +73,9 @@ instance : lightProfiniteToLightCondSet.PreservesEpimorphisms := {
 }
 
 lemma stupid {A : Type u} {s : Set A} {x y : A} {px : x ∈ s} {py : y ∈ s} (h : (⟨x, px⟩ : s) = ⟨y, py⟩) : x = y
-  := congr_arg (fun (a : s) ↦ (↑a : A)) h
+  := by
+    rw [Subtype.ext_iff] at h
+    exact h
 
 noncomputable def πpair {X Y : LightProfinite} (π : X ⟶ Y) : WalkingParallelPair ⥤ LightCondSet :=
   parallelPair

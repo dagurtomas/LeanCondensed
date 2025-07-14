@@ -39,6 +39,7 @@ def fibre : LightProfinite :=
 def fibre_incl : fibre y f ⟶ X :=
   CompHausLike.ofHom _ ⟨Subtype.val, continuous_subtype_val⟩
 
+@[simp]
 def fibre_condition
   : fibre_incl y f ≫ f = (CompHausLike.ofHom _  <| ContinuousMap.const (fibre y f) y)
     := by ext x; exact x.2
