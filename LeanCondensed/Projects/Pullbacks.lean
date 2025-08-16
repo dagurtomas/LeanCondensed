@@ -69,8 +69,7 @@ def fibreCone : PullbackCone (CompHausLike.ofHom _ <| ContinuousMap.const point 
       ContinuousMap.const_apply, ContinuousMap.coe_mk]; rw [x.2])
 
 def fibreConeIsLimit : IsLimit (fibreCone y f) := by
-  refine PullbackCone.IsLimit.mk ?_ ?_ ?_ ?_ ?_
-  · exact (fibreCone _ _).condition
+  refine PullbackCone.IsLimit.mk (fibreCone _ _).condition ?_ ?_ ?_ ?_
   · intro cone
     have : ∀ z : cone.pt, f (cone.snd z) = y := by
       intro z
@@ -86,7 +85,7 @@ def fibreConeIsLimit : IsLimit (fibreCone y f) := by
   repeat {exact fun cone ↦ rfl}
   · intro cone m hm hm'
     have := fibre_incl_mono y f
-    rw [←cancel_mono (fibre_incl y f), hm']
+    erw [←cancel_mono (fibre_incl y f), hm']
     rfl
 
 def fibreLift {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y) : Z ⟶ fibre y f :=
@@ -116,9 +115,8 @@ instance : IsClosed {⟨x,y⟩ : X × Y | f x = g y} := by
       g.1.continuous.isOpen_preimage _ hv,
       ha, hb, ?_
   ⟩
-  intro ⟨x, y⟩ ⟨hx, hy⟩
+  intro ⟨x, y⟩ ⟨hx, hy⟩ hxy
   simp only [Set.mem_preimage] at hx hy
-  intro hxy
   rw [hxy] at hx
   exact (Set.disjoint_iff (s := u) (t := v)).mp huv ⟨hx, hy⟩
 
@@ -143,36 +141,16 @@ namespace explicitPullback
 variable {X Y Z : LightProfinite} {f : X ⟶ Z} {g : Y ⟶ Z}
 
 def fst (f : X ⟶ Z) (g : Y ⟶ Z) : explicitPullback f g ⟶ X :=
-  CompHausLike.ofHom _
+  TopCat.ofHom
     ⟨
       (Prod.fst : X × Y → X) ∘ (Subtype.val : _ → X × Y),
       Continuous.comp continuous_fst continuous_subtype_val
     ⟩
 
 def snd (f : X ⟶ Z) (g : Y ⟶ Z) : explicitPullback f g ⟶ Y :=
-  let space := {⟨x,y⟩ : X × Y | f x = g y}
-  have : IsClosed space := by
-    apply IsClosed.mk
-    rw [isOpen_prod_iff]
-    intro a b hab
-    obtain ⟨u, v, hu, hv, ha, hb, huv⟩ := t2_separation hab
-    refine ⟨
-      f⁻¹'u, g⁻¹'v,
-      f.1.continuous.isOpen_preimage _ hu,
-      g.1.continuous.isOpen_preimage _ hv,
-      ha, hb, ?_
-    ⟩
-    intro ⟨x, y⟩ ⟨hx, hy⟩
-    simp only [Set.mem_preimage] at hx hy
-    intro hxy
-    rw [hxy] at hx
-    exact (Set.disjoint_iff (s := u) (t := v)).mp huv ⟨hx, hy⟩
-  have : IsCompact space := this.isCompact
-  have : CompactSpace space := by
-    exact isCompact_iff_compactSpace.mp this
-  CompHausLike.ofHom _
+  TopCat.ofHom
     ⟨
-      Prod.snd ∘ Subtype.val,
+      (Prod.snd : X × Y → Y) ∘ (Subtype.val : _ → X × Y),
       Continuous.comp continuous_snd continuous_subtype_val
     ⟩
 
@@ -222,19 +200,9 @@ def IsLimit : IsLimit (Cone f g) := by
       simp only [Set.mem_setOf_eq, space]
       rw [←ConcreteCategory.comp_apply, cone.condition]
       rfl
-    refine CompHausLike.ofHom _ ⟨fun z ↦ ⟨⟨cone.fst z, cone.snd z⟩, this z⟩, ?_⟩
-
+    refine TopCat.ofHom ⟨fun z ↦ ⟨⟨cone.fst z, cone.snd z⟩, this z⟩, ?_⟩
     rw [(IsInducing.continuous_iff IsEmbedding.subtypeVal.1)]
-    have : Continuous (fun z ↦ (⟨cone.fst z, cone.snd z⟩ : X × Y))
-      = Continuous
-        (Subtype.val ∘ fun z ↦ ⟨
-                                  ((ConcreteCategory.hom cone.fst) z,
-                                  (ConcreteCategory.hom cone.snd) z),
-                                  this z
-                                ⟩) := by
-      exact congr_arg (f := Continuous) (rfl)
-    rw [←this]
-    refine Continuous.prodMk cone.fst.1.continuous cone.snd.1.continuous
+    exact Continuous.prodMk cone.fst.1.continuous cone.snd.1.continuous
   repeat {intro cone; ext z; rfl}
   · intro cone m hm hm'
     ext z

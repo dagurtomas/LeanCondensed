@@ -15,7 +15,7 @@ instance {n : ℕ} (S : Fin n → LightProfinite.{u}) :
   have : HasColimitsOfSize.{u} (LightCondSet.{u}) :=
     inferInstanceAs (HasColimitsOfSize.{u} (Sheaf _ _))
   apply (config := { allowSynthFailures := true}) PreservesCoproduct.of_iso_comparison
-  rw [isIso_iff_isIso_coyoneda_map] -- or maybe `rw [isIso_iff_coyoneda_map_bijective]`
+  rw [isIso_iff_isIso_coyoneda_map]
   intro X
   rw [isIso_iff_bijective]
   have := instIsIsoPiComparison X.val (fun i ↦ ⟨S i⟩)

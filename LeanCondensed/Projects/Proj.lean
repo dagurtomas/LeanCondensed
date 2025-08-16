@@ -240,7 +240,7 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
           erw [hσ]
     ⟩⟩
 
-lemma xyz { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π]
+lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π]
     : ∃ (S' T' : LightProfinite) (y' : S' ⟶ S) (π' : T' ⟶ S' ⊗ ℕ∪{∞}) (g' : T' ⟶ T),
       Epi π'
         ∧ Epi y'
@@ -383,10 +383,7 @@ instance : PreservesFiniteCoproducts (lightProfiniteToLightCondSet ⋙ (free R))
 noncomputable def hc {S T : LightProfinite} (π : T ⟶ S) [Epi π]
     : IsColimit ((free R).mapCocone (explicitPullback.explicitRegular π)) := by
   have : IsLeftAdjoint (free R) := ⟨_, ⟨LightCondensed.freeForgetAdjunction R⟩⟩
-  exact isColimitOfPreserves _ (explicitPullback.explicitRegularIsColimit π)
-
-lemma eq_sub_self {G : Type} [AddGroup G] {a b : G} : a = a - b ↔ b = 0 := by
-  rw [←sub_eq_self (a := a), eq_comm]
+  exact isColimitOfPreserves _ (explicitPullback.explicitRegularIsColimit _)
 
 noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S ⊗ ℕ∪{∞}))
     [Epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smart_cover π)]
@@ -447,7 +444,7 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
         rfl
   }
 
-set_option maxHeartbeats 500000
+-- set_option maxHeartbeats 500000
 private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
     (f : (free R).obj (S ⊗ ℕ∪{∞}).toCondensed ⟶ Y) :
       ∃ (S' : LightProfinite)
@@ -456,7 +453,7 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
             ∧ ((free R).map (lightProfiniteToLightCondSet.map (MonoidalCategoryStruct.tensorHom ψ (𝟙 ℕ∪{∞}))) ≫ f = g ≫ p) := by
 
   obtain ⟨T, π, g, hπ, comm⟩ := comm_sq R p f
-  obtain ⟨S', T', y', π', g', hπ', hy', comp, ⟨⟨split⟩⟩, epi⟩ := xyz π
+  obtain ⟨S', T', y', π', g', hπ', hy', comp, ⟨⟨split⟩⟩, epi⟩ := refinedCover π
 
   use S', y'
 
