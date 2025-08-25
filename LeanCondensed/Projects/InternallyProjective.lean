@@ -31,15 +31,15 @@ variable {C : Type*} [Category C] [MonoidalCategory C] [MonoidalClosed C]
 class InternallyProjective (P : C) : Prop where
   preserves_epi : (ihom P).PreservesEpimorphisms
 
-theorem ofRetract {X Y : C} (r : Retract Y X) (proj : InternallyProjective X)
-    : InternallyProjective Y :=
+theorem ofRetract {X Y : C} (r : Retract Y X) (proj : InternallyProjective X) :
+    InternallyProjective Y :=
   haveI : Retract (ihom Y) (ihom X) := {
     i := MonoidalClosed.pre r.r
     r := MonoidalClosed.pre r.i
     retract := by
-      rw [←MonoidalClosed.pre_map, r.retract, MonoidalClosed.pre_id]
-  }
-  InternallyProjective.mk <| preservesEpi_ofRetract this proj.preserves_epi
+      rw [←MonoidalClosed.pre_map, r.retract, MonoidalClosed.pre_id] }
+  haveI _ := proj.preserves_epi
+  InternallyProjective.mk <| preservesEpi_ofRetract this
 
 end InternallyProjective
 

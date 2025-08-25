@@ -1,8 +1,13 @@
-import Mathlib
 import LeanCondensed.Projects.Epi
+import Mathlib.Condensed.Discrete.LocallyConstant
+import Mathlib.Topology.AlexandrovDiscrete
+import Mathlib.Topology.Compactness.Paracompact
+import Mathlib.Topology.GDelta.MetrizableSpace
+import Mathlib.Topology.Metrizable.Urysohn
+import Mathlib.Topology.Separation.CompletelyRegular
 
-open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
-  MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom Topology
+open CategoryTheory Functor Opposite LightProfinite Limits LightCondensed
+  MonoidalCategory WalkingParallelPair WalkingParallelPairHom Topology
 
 universe u
 
@@ -30,11 +35,9 @@ instance : TotallyDisconnectedSpace PUnit := by
   apply TotallySeparatedSpace.totallyDisconnectedSpace
 
 def fibre : LightProfinite :=
-  ⟨
-    TopCat.of (f ⁻¹' {y}),
+  ⟨TopCat.of (f ⁻¹' {y}),
     Subtype.totallyDisconnectedSpace,
-    TopologicalSpace.Subtype.secondCountableTopology (f ⁻¹' {y})
-  ⟩
+    TopologicalSpace.Subtype.secondCountableTopology (f ⁻¹' {y})⟩
 
 def fibre_incl : fibre y f ⟶ X :=
   CompHausLike.ofHom _ ⟨Subtype.val, continuous_subtype_val⟩
@@ -73,11 +76,7 @@ def fibreConeIsLimit : IsLimit (fibreCone y f) := by
   · intro cone
     have : ∀ z : cone.pt, f (cone.snd z) = y := by
       intro z
-      rw [
-        ←ConcreteCategory.comp_apply,
-        ←cone.condition,
-        ConcreteCategory.comp_apply
-      ]
+      rw [← ConcreteCategory.comp_apply, ← cone.condition, ConcreteCategory.comp_apply]
       rfl
     refine CompHausLike.ofHom _ <| ⟨fun z ↦ ⟨cone.snd z, this z⟩, ?_⟩
     rw [IsInducing.continuous_iff (fibre_incl_embedding y f).1]
@@ -94,11 +93,13 @@ def fibreLift {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y) : Z �
   have : IsCompact space := this.isCompact
   have : CompactSpace space := by
     exact isCompact_iff_compactSpace.mp this
-  CompHausLike.ofHom _ <| ⟨fun z ↦ ⟨g z, hg z⟩, by rw [IsInducing.continuous_iff (fibre_incl_embedding y f).1]; exact g.1.continuous⟩
+  CompHausLike.ofHom _ <| ⟨fun z ↦ ⟨g z, hg z⟩,
+    by rw [IsInducing.continuous_iff (fibre_incl_embedding y f).1]; exact g.1.continuous⟩
 
 @[simp]
-lemma fibreLift_comp {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y)
-  : fibreLift y f g hg ≫ fibre_incl y f = g := rfl
+lemma fibreLift_comp {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y) :
+    fibreLift y f g hg ≫ fibre_incl y f = g :=
+  rfl
 
 section
 
@@ -109,31 +110,24 @@ instance : IsClosed {⟨x,y⟩ : X × Y | f x = g y} := by
   rw [isOpen_prod_iff]
   intro a b hab
   obtain ⟨u, v, hu, hv, ha, hb, huv⟩ := t2_separation hab
-  refine ⟨
-      f⁻¹'u, g⁻¹'v,
-      f.1.continuous.isOpen_preimage _ hu,
-      g.1.continuous.isOpen_preimage _ hv,
-      ha, hb, ?_
-  ⟩
+  refine ⟨f⁻¹'u, g⁻¹'v, f.1.continuous.isOpen_preimage _ hu,
+    g.1.continuous.isOpen_preimage _ hv, ha, hb, ?_⟩
   intro ⟨x, y⟩ ⟨hx, hy⟩ hxy
   simp only [Set.mem_preimage] at hx hy
   rw [hxy] at hx
   exact (Set.disjoint_iff (s := u) (t := v)).mp huv ⟨hx, hy⟩
 
-instance : IsCompact {⟨x,y⟩ : X × Y | f x = g y} := by
+lemma isCompactExplicitPullback : IsCompact {⟨x,y⟩ : X × Y | f x = g y} := by
   apply IsClosed.isCompact
   infer_instance
 
 instance : CompactSpace {⟨x,y⟩ : X × Y | f x = g y} := by
   rw [←isCompact_iff_compactSpace]
-  exact
-    instIsCompactProdCarrierToTopAndTotallyDisconnectedSpaceSecondCountableTopologySetOfMatch_1PropEqCoeContinuousMapHomLightProfinite
-      f g
+  exact isCompactExplicitPullback f g
 
 end
 
-def explicitPullback {X Y Z : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) : LightProfinite
-    :=
+def explicitPullback {X Y Z : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) : LightProfinite :=
   ⟨TopCat.of {⟨x,y⟩ : X × Y | f x = g y}, inferInstance, inferInstance⟩
 
 namespace explicitPullback
@@ -178,12 +172,8 @@ def IsLimit : IsLimit (Cone f g) := by
     rw [isOpen_prod_iff]
     intro a b hab
     obtain ⟨u, v, hu, hv, ha, hb, huv⟩ := t2_separation hab
-    refine ⟨
-      f⁻¹'u, g⁻¹'v,
-      f.1.continuous.isOpen_preimage _ hu,
-      g.1.continuous.isOpen_preimage _ hv,
-      ha, hb, ?_
-    ⟩
+    refine ⟨f⁻¹'u, g⁻¹'v, f.1.continuous.isOpen_preimage _ hu,
+      g.1.continuous.isOpen_preimage _ hv, ha, hb, ?_⟩
     intro ⟨x, y⟩ ⟨hx, hy⟩
     simp only [Set.mem_preimage] at hx hy
     intro hxy
@@ -212,7 +202,7 @@ def IsLimit : IsLimit (Cone f g) := by
     rw [←ConcreteCategory.comp_apply, hm]
     rfl
     change snd _ _ (↑((ConcreteCategory.hom m) z)) = _
-    rw [←ConcreteCategory.comp_apply, hm']
+    rw [← ConcreteCategory.comp_apply, hm']
     rfl
 
 def diagonal (f : X ⟶ Y) : X ⟶ explicitPullback f f
@@ -227,33 +217,35 @@ def map {X' Y' Z' : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) (f' : X' ⟶ Z')
               PullbackCone.condition_assoc, Cone.snd_eq])
 
 lemma map_fst {X' Y' Z' : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) (f' : X' ⟶ Z')
-  (g' : Y' ⟶ Z') (i₁ : X ⟶ X') (i₂ : Y ⟶ Y') (i₃ : Z ⟶ Z')
-  (eq₁ : f ≫ i₃ = i₁ ≫ f') (eq₂ : g ≫ i₃ = i₂ ≫ g') : map f g f' g' i₁ i₂ i₃ eq₁ eq₂ ≫ fst f' g' = fst f g ≫ i₁ := rfl
+    (g' : Y' ⟶ Z') (i₁ : X ⟶ X') (i₂ : Y ⟶ Y') (i₃ : Z ⟶ Z')
+    (eq₁ : f ≫ i₃ = i₁ ≫ f') (eq₂ : g ≫ i₃ = i₂ ≫ g') :
+    map f g f' g' i₁ i₂ i₃ eq₁ eq₂ ≫ fst f' g' = fst f g ≫ i₁ :=
+  rfl
 
 lemma map_snd {X' Y' Z' : LightProfinite} (f : X ⟶ Z) (g : Y ⟶ Z) (f' : X' ⟶ Z')
-  (g' : Y' ⟶ Z') (i₁ : X ⟶ X') (i₂ : Y ⟶ Y') (i₃ : Z ⟶ Z')
-  (eq₁ : f ≫ i₃ = i₁ ≫ f') (eq₂ : g ≫ i₃ = i₂ ≫ g') : map f g f' g' i₁ i₂ i₃ eq₁ eq₂ ≫ snd f' g' = snd f g ≫ i₂ := rfl
+    (g' : Y' ⟶ Z') (i₁ : X ⟶ X') (i₂ : Y ⟶ Y') (i₃ : Z ⟶ Z')
+    (eq₁ : f ≫ i₃ = i₁ ≫ f') (eq₂ : g ≫ i₃ = i₂ ≫ g') :
+    map f g f' g' i₁ i₂ i₃ eq₁ eq₂ ≫ snd f' g' = snd f g ≫ i₂ :=
+  rfl
 
 def explicitPair  {X Y : LightProfinite} (π : X ⟶ Y) : WalkingParallelPair ⥤ LightCondSet
   := parallelPair
     (lightProfiniteToLightCondSet.map (fst π π)) (lightProfiniteToLightCondSet.map (snd π π))
 
-noncomputable def explicitPullbackIsoPullback {X Y : LightProfinite} (π : X ⟶ Y) : explicitPullback π π ≅ pullback π π :=
+noncomputable def explicitPullbackIsoPullback {X Y : LightProfinite} (π : X ⟶ Y) :
+    explicitPullback π π ≅ pullback π π :=
   Limits.IsLimit.conePointUniqueUpToIso (IsLimit (f := π) (g := π)) (pullback.isLimit π π)
 
-noncomputable def explicitPairIsoPair {X Y : LightProfinite} (π : X ⟶ Y) : explicitPair π ≅ πpair π :=
+noncomputable def explicitPairIsoPair {X Y : LightProfinite} (π : X ⟶ Y) :
+    explicitPair π ≅ πpair π :=
   parallelPair.ext
-    (lightProfiniteToLightCondSet.mapIso (explicitPullbackIsoPullback π) : (explicitPair π).obj zero ≅ (πpair π).obj zero)
+    (lightProfiniteToLightCondSet.mapIso (explicitPullbackIsoPullback π))
     (Iso.refl _)
-    (
-        by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl
-    )
-    (
-        by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl
-    )
+    (by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl)
+    (by simp [←Functor.map_comp, explicitPair, πpair, explicitPullbackIsoPullback]; rfl)
 
-def explicitRegular {X Y : LightProfinite} (π : X ⟶ Y)
-    : Cofork (lightProfiniteToLightCondSet.map <| fst π π)
+def explicitRegular {X Y : LightProfinite} (π : X ⟶ Y) :
+    Cofork (lightProfiniteToLightCondSet.map <| fst π π)
       (lightProfiniteToLightCondSet.map <| snd π π) :=
   Cofork.ofπ (lightProfiniteToLightCondSet.map π)
     (by simp only [←Functor.map_comp, condition])
@@ -261,10 +253,5 @@ def explicitRegular {X Y : LightProfinite} (π : X ⟶ Y)
 noncomputable def explicitRegularIsColimit {X Y : LightProfinite} (π : X ⟶ Y) [hepi : Epi π]
     : IsColimit (explicitRegular π) := by
   rw [LightProfinite.epi_iff_surjective, ←LightProfinite.effectiveEpi_iff_surjective] at hepi
-  exact (
-    IsColimit.equivOfNatIsoOfIso
-      (explicitPairIsoPair _)
-      _
-      (regular _)
-      (Cofork.ext (Iso.refl _) rfl)
-  ).symm (regular_IsColimit _)
+  exact (IsColimit.equivOfNatIsoOfIso (explicitPairIsoPair _) _ (regular _)
+    (Cofork.ext (Iso.refl _) rfl)).symm (regular_IsColimit _)

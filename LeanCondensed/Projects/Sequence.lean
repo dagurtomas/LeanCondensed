@@ -1,4 +1,11 @@
-import Mathlib
+import Mathlib.Algebra.Homology.ShortComplex.ShortExact
+import Mathlib.Combinatorics.Quiver.ReflQuiver
+import Mathlib.Condensed.Light.Functors
+import Mathlib.Condensed.Light.Module
+import Mathlib.Topology.Category.LightProfinite.Sequence
+import Mathlib.Topology.Compactness.PseudometrizableLindelof
+import Mathlib.Topology.Connected.Separation
+import Mathlib.Topology.Spectral.Prespectral
 
 open CategoryTheory Limits LightProfinite OnePoint
 
