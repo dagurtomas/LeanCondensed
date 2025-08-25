@@ -5,9 +5,9 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Algebra.Category.ModuleCat.Monoidal.Closed
 import Mathlib.CategoryTheory.Monoidal.Braided.Reflection
+import Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.CartesianClosed
-import LeanCondensed.Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import LeanCondensed.Mathlib.CategoryTheory.Sites.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Projects.SheafMonoidal

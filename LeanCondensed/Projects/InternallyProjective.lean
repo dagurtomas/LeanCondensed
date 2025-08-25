@@ -235,7 +235,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition (P : LightPr
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, Functor.OplaxMonoidal.δ_natural_right,
+      Functor.OplaxMonoidal.δ_natural_right,
       Category.assoc, Functor.Monoidal.δ_μ, Category.comp_id]
   · specialize h e S ((free R).map (Functor.Monoidal.μIso lightProfiniteToLightCondSet _ _).inv ≫ g)
     obtain ⟨S', π, hπ, g', hh⟩ := h
@@ -244,7 +244,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition (P : LightPr
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, ← Functor.LaxMonoidal.μ_natural_right, Category.assoc,
+      ← Functor.LaxMonoidal.μ_natural_right, Category.assoc,
       Functor.Monoidal.μ_δ, Category.comp_id]
 
 lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightProfinite.{u}) :
@@ -262,7 +262,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightP
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, Functor.OplaxMonoidal.δ_natural_left,
+      Functor.OplaxMonoidal.δ_natural_left,
       Category.assoc, Functor.Monoidal.δ_μ, Category.comp_id]
   · specialize h e S ((free R).map (Functor.Monoidal.μIso lightProfiniteToLightCondSet _ _).inv ≫ g)
     obtain ⟨S', π, hπ, g', hh⟩ := h
@@ -271,7 +271,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightP
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, ← Functor.LaxMonoidal.μ_natural_left, Category.assoc,
+      ← Functor.LaxMonoidal.μ_natural_left, Category.assoc,
       Functor.Monoidal.μ_δ, Category.comp_id]
 
 end LightCondensed
