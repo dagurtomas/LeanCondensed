@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Jonas van der Schaaf
+-/
 import Mathlib.Algebra.Homology.ShortComplex.ShortExact
 import Mathlib.Combinatorics.Quiver.ReflQuiver
 import Mathlib.Condensed.Light.Functors
