@@ -93,7 +93,7 @@ def coreMonoidalTransport {F G : C ⥤ D} [F.Monoidal] (i : F ≅ G) : G.CoreMon
     simp only [tensor_whiskerLeft, Functor.LaxMonoidal.associativity, Category.assoc,
       Iso.inv_hom_id_assoc]
     rw [← tensorHom_id, associator_naturality_assoc]
-    simp [← id_tensorHom, ← tensorHom_id, ← tensor_comp_assoc]
+    simp [← id_tensorHom, -tensorHom_id, ← tensor_comp_assoc]
   left_unitality X := by
     simp only [Iso.trans_hom, εIso_hom, Iso.app_hom, ← tensorHom_id, tensorIso_hom, Iso.symm_hom,
       μIso_hom, Category.assoc, ← tensor_comp_assoc, Iso.hom_inv_id_app, Category.comp_id,
@@ -310,7 +310,7 @@ noncomputable def functorCoremonoidalOfComp : F.CoreMonoidal where
       comp_whiskerRight, μNatIso_hom_app_app, Functor.CoreMonoidal.toMonoidal_toOplaxMonoidal,
       MonoidalCategory.whiskerLeft_comp, Category.assoc, Iso.map_inv_hom_id, Category.comp_id]
     simp only [← MonoidalCategory.tensorHom_id, ← MonoidalCategory.id_tensorHom,
-      ← MonoidalCategory.tensor_comp, Category.comp_id, ← MonoidalCategory.tensor_comp_assoc,
+      Category.comp_id, ← MonoidalCategory.tensor_comp_assoc,
       map_δ_μ_assoc, μ_δ, Functor.comp_obj]
     simp
   left_unitality X := by
