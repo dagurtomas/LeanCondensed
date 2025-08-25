@@ -3,7 +3,7 @@ Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Algebra.Equiv.TransferInstance
+import Mathlib.Algebra.Module.TransferInstance
 import Mathlib.CategoryTheory.Linear.FunctorCategory
 import Mathlib.CategoryTheory.Monoidal.Linear
 import Mathlib.CategoryTheory.Sites.Monoidal

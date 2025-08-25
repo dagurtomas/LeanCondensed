@@ -1,10 +1,11 @@
 /-
 Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Dagur Asgeirsson
+Authors: Dagur Asgeirsson, Jonas van der Schaaf
 -/
 import Mathlib.Condensed.Light.Epi
 import LeanCondensed.LightCondensed.Yoneda
+import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.ChosenFiniteProducts
@@ -30,6 +31,16 @@ variable {C : Type*} [Category C] [MonoidalCategory C] [MonoidalClosed C]
 class InternallyProjective (P : C) : Prop where
   preserves_epi : (ihom P).PreservesEpimorphisms
 
+theorem ofRetract {X Y : C} (r : Retract Y X) (proj : InternallyProjective X) :
+    InternallyProjective Y :=
+  haveI : Retract (ihom Y) (ihom X) := {
+    i := MonoidalClosed.pre r.r
+    r := MonoidalClosed.pre r.i
+    retract := by
+      rw [←MonoidalClosed.pre_map, r.retract, MonoidalClosed.pre_id] }
+  haveI _ := proj.preserves_epi
+  InternallyProjective.mk <| preservesEpi_ofRetract this
+
 end InternallyProjective
 
 open CategoryTheory LightProfinite OnePoint Limits LightCondensed MonoidalCategory MonoidalClosed
@@ -47,6 +58,9 @@ def ihomPoints (A B : LightCondMod.{u} R) (S : LightProfinite) :
   (LightCondensed.freeYoneda _ _ _).symm.trans ((ihom.adjunction A).homEquiv _ _).symm
 -- We have an `R`-module structure on `M ⟶ N` for condensed `R`-modules `M`, `N`,
 -- and this could be made an `≅`. But it's not needed in this proof.
+
+
+lemma tensorLeft_obj (X Y : LightCondMod.{u} R) : (tensorLeft X).obj Y = X ⊗ Y := rfl
 
 lemma ihom_map_val_app (A B P : LightCondMod.{u} R) (S : LightProfinite) (e : A ⟶ B) :
     ∀ x, ConcreteCategory.hom (((ihom P).map e).val.app ⟨S⟩) x =
@@ -221,7 +235,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition (P : LightPr
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, Functor.OplaxMonoidal.δ_natural_right,
+      Functor.OplaxMonoidal.δ_natural_right,
       Category.assoc, Functor.Monoidal.δ_μ, Category.comp_id]
   · specialize h e S ((free R).map (Functor.Monoidal.μIso lightProfiniteToLightCondSet _ _).inv ≫ g)
     obtain ⟨S', π, hπ, g', hh⟩ := h
@@ -230,7 +244,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition (P : LightPr
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, ← Functor.LaxMonoidal.μ_natural_right, Category.assoc,
+      ← Functor.LaxMonoidal.μ_natural_right, Category.assoc,
       Functor.Monoidal.μ_δ, Category.comp_id]
 
 lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightProfinite.{u}) :
@@ -248,7 +262,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightP
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, Functor.OplaxMonoidal.δ_natural_left,
+      Functor.OplaxMonoidal.δ_natural_left,
       Category.assoc, Functor.Monoidal.δ_μ, Category.comp_id]
   · specialize h e S ((free R).map (Functor.Monoidal.μIso lightProfiniteToLightCondSet _ _).inv ≫ g)
     obtain ⟨S', π, hπ, g', hh⟩ := h
@@ -257,7 +271,7 @@ lemma free_lightProfinite_internallyProjective_iff_tensor_condition' (P : LightP
     rw [Category.assoc, ← hh]
     simp only [← Category.assoc]
     simp only [← Functor.map_comp, Functor.Monoidal.μIso_hom, Functor.Monoidal.μIso_inv,
-      Functor.comp_map, ← Functor.LaxMonoidal.μ_natural_left, Category.assoc,
+      ← Functor.LaxMonoidal.μ_natural_left, Category.assoc,
       Functor.Monoidal.μ_δ, Category.comp_id]
 
 end LightCondensed

@@ -13,7 +13,7 @@ import LeanCondensed.Projects.LocalizedMonoidal
 
 universe v u
 
-open CategoryTheory MonoidalCategory
+open CategoryTheory MonoidalCategory Functor
 
 namespace CategoryTheory.Functor.Monoidal
 
@@ -37,11 +37,11 @@ variable {A B : Type*} [Category A] [Category B]
 
 attribute [local instance] monoidalCategory
 
--- noncomputable instance : (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
---   monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
+noncomputable instance : (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
+  monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
 
--- noncomputable instance : (composeAndSheafify J F).Monoidal :=
---   Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (Iso.refl _) _
+noncomputable instance : (composeAndSheafify J F).Monoidal :=
+  Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (Iso.refl _) _
 
 end
 

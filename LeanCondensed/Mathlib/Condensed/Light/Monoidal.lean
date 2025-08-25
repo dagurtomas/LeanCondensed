@@ -5,9 +5,9 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Algebra.Category.ModuleCat.Monoidal.Closed
 import Mathlib.CategoryTheory.Monoidal.Braided.Reflection
+import Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.CartesianClosed
-import LeanCondensed.Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import LeanCondensed.Mathlib.CategoryTheory.Sites.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Projects.SheafMonoidal
@@ -156,8 +156,8 @@ instance : (free R).Monoidal := by
               Functor.leftUnitor _
         · intros
           ext
-          simp [equivSmall, Equivalence.sheafCongr,
-            Equivalence.sheafCongr.functor, Equivalence.sheafCongr.inverse]
+          simp [Equivalence.sheafCongr, Equivalence.sheafCongr.functor,
+            Equivalence.sheafCongr.inverse]
       · refine ?_ ≪≫ (Functor.associator _ _ _)
         refine (Functor.associator _ _ _).symm ≪≫ ?_
         refine (Functor.associator _ _ _).symm ≪≫ ?_
@@ -182,7 +182,7 @@ instance : (free R).Monoidal := by
             Functor.associator_inv_app, Functor.associator_hom_app, Functor.id_obj, NatTrans.op_app,
             Functor.leftUnitor_hom_app, CategoryTheory.Functor.map_id, Category.comp_id,
             Category.id_comp, Category.assoc]
-          simp [← Functor.map_comp, ← Functor.map_comp_assoc]
+          simp [← Functor.map_comp]
   exact monoidalTransport i.symm
 
 attribute [local instance] monoidalCategory in

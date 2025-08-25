@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Projects.InternallyProjective
+import LeanCondensed.Projects.Proj
+import LeanCondensed.Projects.Sequence
 /-!
 
 # Project: light solid abelian groups
@@ -47,7 +49,7 @@ def shift : ℕ∪{∞} ⟶ ℕ∪{∞} := TopCat.ofHom {
     intro U h hU
     simp only [isOpen_iff_of_mem h, isClosed_discrete, isCompact_iff_finite, true_and] at hU
     refine ⟨sSup (Option.some ⁻¹' U)ᶜ + 1, fun n hn ↦ by
-      simpa using not_mem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩ }
+      simpa using notMem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩ }
 
 end LightProfinite
 
@@ -56,20 +58,10 @@ namespace LightCondensed
 variable (R : Type _) [CommRing R]
 -- might need some more assumptions eventually, finite type over `ℤ`?
 
-def P_map :
-    (free R).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
-  (lightProfiniteToLightCondSet ⋙ free R).map (TopCat.ofHom ⟨fun _ ↦ ∞, continuous_const⟩)
+instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) :=
+  internallyProjective_ℕinfty _
 
-def P : LightCondMod R := cokernel (P_map R)
-
-def P_proj : (free R).obj (ℕ∪{∞}).toCondensed ⟶ P R := cokernel.π _
-
-def P_homMk (A : LightCondMod R) (f : (free R).obj (ℕ∪{∞}).toCondensed ⟶ A)
-    (hf : P_map R ≫ f = 0) : P R ⟶ A := cokernel.desc _ f hf
-
-instance : InternallyProjective (P R) := sorry
-
-instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := sorry
+instance : InternallyProjective (P R) := ofRetract (P_retract _) inferInstance
 
 variable (R : Type) [CommRing R]
 
@@ -82,7 +74,9 @@ def oneMinusShift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (�
 
 def oneMinusShift : P R ⟶ P R := by
   refine P_homMk R _ (oneMinusShift' R) ?_ ≫ P_proj R
-  sorry
+  erw [Preadditive.comp_sub, Category.comp_id]
+  simp only [sub_eq_zero, P_map, ←Functor.map_comp]
+  rfl
 
 variable {R : Type} [CommRing R]
 
