@@ -74,64 +74,102 @@ def oneMinusShift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (�
 
 def oneMinusShift : P R ⟶ P R := by
   refine P_homMk R _ (oneMinusShift' R) ?_ ≫ P_proj R
-  erw [Preadditive.comp_sub, Category.comp_id]
-  simp only [sub_eq_zero, P_map, ←Functor.map_comp]
+  rw [oneMinusShift', Preadditive.comp_sub]
+  simp only [sub_eq_zero, P_map, ← Functor.map_comp]
   rfl
 
 variable {R : Type} [CommRing R]
 
-/-- A light condensed `R`-module `A` is *solid* if the shift map `ℕ∪∞ → ℕ∪∞` induces an isomorphism
-on internal homs into `A` -/
-class IsSolid (A : LightCondMod R) : Prop where
-  oneMinusShift_induces_iso : IsIso ((pre (oneMinusShift R)).app A)
+/-- A light condensed abelian group `A` is *solid* if the shift map `ℕ∪∞ → ℕ∪∞` induces an
+isomorphism on internal homs into `A` -/
+class IsSolid (A : LightCondAb) : Prop where
+  oneMinusShift_induces_iso : IsIso ((pre (oneMinusShift ℤ)).app A)
 
-structure Solid (R : Type) [CommRing R] where
-  toLightCondMod : LightCondMod R
-  [isSolid : IsSolid toLightCondMod]
+structure Solid where
+  toLightCondAb : LightCondAb
+  [isSolid : IsSolid toLightCondAb]
 
 namespace Solid
 
-def of (A : LightCondMod R) [IsSolid A] : Solid R := ⟨A⟩
+def of (A : LightCondAb) [IsSolid A] : Solid := ⟨A⟩
 
-instance category : Category (Solid R) :=
-  InducedCategory.category toLightCondMod
+instance category : Category Solid :=
+  InducedCategory.category toLightCondAb
 
-instance : IsSolid ((discrete (ModuleCat R)).obj (ModuleCat.of R R)) := sorry
+instance : IsSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := sorry
 
-instance : Inhabited (Solid R) := ⟨Solid.of ((discrete (ModuleCat R)).obj (ModuleCat.of R R))⟩
+instance : Inhabited Solid := ⟨Solid.of ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ))⟩
 
 @[simps!]
-def solidToCondensed (R : Type) [CommRing R] : Solid R ⥤ LightCondMod R :=
+def solidToCondensed : Solid ⥤ LightCondAb := inducedFunctor _
+
+instance : HasLimitsOfSize.{0, 0} Solid := sorry
+
+instance : HasColimitsOfSize.{0, 0} Solid := sorry
+
+instance : PreservesLimitsOfSize.{0, 0} solidToCondensed := sorry
+
+instance : PreservesColimitsOfSize.{0, 0} solidToCondensed := sorry
+
+instance : LocallySmall.{0} Solid where
+  hom_small X Y := inferInstanceAs (Small (X.1 ⟶ Y.1))
+
+section
+
+variable {C : Type u} [SmallCategory C] (J : GrothendieckTopology C)
+
+end
+
+def solidToCondensed' : ShrinkHoms Solid ⥤ ShrinkHoms LightCondAb :=
   inducedFunctor _
-
-instance : HasLimitsOfSize.{0, 0} (Solid R) := sorry
-
-instance : HasColimits (Solid R) := sorry
-
-instance : PreservesLimits (solidToCondensed R) := sorry
-
-instance : PreservesColimits (solidToCondensed R) := sorry
 
 -- TODO: define this property:
 -- instance : PreservesExtensions (solidToCondensed R) := sorry
 
-def solidification  (R : Type) [CommRing R] : LightCondMod R ⥤ Solid R := sorry
+instance : solidToCondensed.IsRightAdjoint := by
+  -- TODO: use construction of left adjoint for Bousfield localizations instead
+  let i : solidToCondensed ≅ (ShrinkHoms.equivalence.{0} Solid).functor ⋙
+      solidToCondensed' ⋙
+      (ShrinkHoms.equivalence.{0} LightCondAb).inverse := by
+    refine NatIso.ofComponents (fun _ ↦ Iso.refl _) ?_
+    intro X Y f
+    simp only [solidToCondensed_obj, ShrinkHoms.equivalence_functor, ShrinkHoms.equivalence_inverse,
+      Functor.comp_obj, ShrinkHoms.functor_obj, ShrinkHoms.inverse_obj,
+      solidToCondensed_map, Iso.refl_hom, Category.comp_id, Functor.comp_map,
+      ShrinkHoms.functor_map, ShrinkHoms.inverse_map, Category.id_comp]
+    erw [Equiv.apply_symm_apply]
+  have : HasLimits (ShrinkHoms Solid) :=
+    Adjunction.has_limits_of_equivalence (ShrinkHoms.equivalence _).inverse
+  have : HasLimits (ShrinkHoms LightCondAb) :=
+    Adjunction.has_limits_of_equivalence (ShrinkHoms.equivalence _).inverse
+  have : PreservesLimits solidToCondensed' := sorry
+  have : solidToCondensed'.IsRightAdjoint := by
+    apply isRightAdjoint_of_preservesLimits_of_solutionSetCondition
+    intro A
+    sorry
+  have : ((ShrinkHoms.equivalence.{0} Solid).functor ⋙
+      inducedFunctor _ ⋙
+      (ShrinkHoms.equivalence.{0} LightCondAb).inverse).IsRightAdjoint := by
+    apply (config := {allowSynthFailures := true}) Functor.isRightAdjoint_comp
+    apply (config := {allowSynthFailures := true}) Functor.isRightAdjoint_comp
+    exact this
+  apply Functor.isRightAdjoint_of_iso i.symm
 
-def _root_.LightCondMod.solidify (A : LightCondMod R) : Solid R := (solidification R).obj A
+def solidification : LightCondAb ⥤ Solid :=
+  solidToCondensed.leftAdjoint
 
-def val (A : Solid R) : LightCondMod R := A.toLightCondMod -- maybe unnecessary, `A.1` is fine.
+def _root_.LightCondAb.solidify (A : LightCondAb) : Solid := solidification.obj A
 
-def solidificationAdjunction (R : Type) [CommRing R] : solidification R ⊣ solidToCondensed R :=
-  sorry
+def val (A : Solid) : LightCondAb := A.toLightCondAb -- maybe unnecessary, `A.1` is fine.
 
-instance : (solidification R).IsLeftAdjoint := (solidificationAdjunction R).isLeftAdjoint
+def solidificationAdjunction : solidification ⊣ solidToCondensed := .ofIsRightAdjoint _
 
-instance : (solidToCondensed R).IsRightAdjoint := (solidificationAdjunction R).isRightAdjoint
+instance : solidification.IsLeftAdjoint := solidificationAdjunction.isLeftAdjoint
 
 open MonoidalCategory
 
 /- This is the monoidal structure on localized categories -/
-instance : MonoidalCategory (Solid R) := sorry
+instance : MonoidalCategory Solid := sorry
 
 instance : HasLimitsOfSize.{u, 0} Type := inferInstance
 

@@ -35,4 +35,6 @@ instance (X Y : LightCondensed.{u} C) : Small.{max u v} (X ⟶ Y) where
     ⟨(equivSmall C).functor.obj X ⟶ (equivSmall C).functor.obj Y,
       ⟨(equivSmall C).fullyFaithfulFunctor.homEquiv⟩⟩
 
+instance : LocallySmall.{max u v} (LightCondensed.{u} C) where
+
 end LightCondensed
