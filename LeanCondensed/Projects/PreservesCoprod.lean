@@ -8,7 +8,7 @@ import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
 import Mathlib.Combinatorics.Quiver.ReflQuiver
 import Mathlib.Condensed.Light.Explicit
 
-open CategoryTheory Functor Opposite LightProfinite Limits LightCondensed
+open CategoryTheory Functor Opposite LightProfinite Limits
   MonoidalCategory WalkingParallelPair WalkingParallelPairHom
   Topology Function
 
@@ -63,7 +63,7 @@ instance {n : ℕ} (S : Fin n → LightProfinite.{u}) :
   ext1 ⟨i⟩
   simp only [yoneda_obj_obj, Discrete.functor_obj_eq_as, coyoneda_obj_obj, Function.comp_apply,
     coyoneda_map_app, Quiver.Hom.unop_op, types_comp_apply, yoneda_obj_map, Category.assoc,
-    Iso.map_inv_hom_id_assoc, IsIso.inv_hom_id, yoneda_apply, CategoryTheory.id_apply]
+    Iso.map_inv_hom_id_assoc, IsIso.inv_hom_id, LightCondensed.yoneda_apply, CategoryTheory.id_apply]
 
   change
     (piComparison
@@ -84,8 +84,8 @@ instance {n : ℕ} (S : Fin n → LightProfinite.{u}) :
       (LightCondensed.yoneda (∐ S) X f))
   rw [piComparison_comp_π, ← X.val.map_comp, opCoproductIsoProduct_hom_comp_π,
     yoneda_obj_map, ← unop_comp_assoc, opCoproductIsoProduct_hom_comp_π,
-    Quiver.Hom.unop_op, ι_comp_sigmaComparison_assoc, ← yoneda_symm_naturality,
-    (yoneda _ _).symm_apply_apply]
+    Quiver.Hom.unop_op, ι_comp_sigmaComparison_assoc, ← LightCondensed.yoneda_symm_naturality,
+    (LightCondensed.yoneda _ _).symm_apply_apply]
 
 instance LightProfinite.preservesFiniteCoproductsToLightCondSet :
     PreservesFiniteCoproducts lightProfiniteToLightCondSet.{u} where

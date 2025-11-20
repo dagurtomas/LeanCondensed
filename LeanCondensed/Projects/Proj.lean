@@ -3,7 +3,7 @@ Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
-import LeanCondensed.Projects.Initial
+-- import LeanCondensed.Projects.Initial
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
@@ -464,19 +464,20 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
     change _ = (((free R).mapCocone (explicitPullback.explicitRegular π')).ι.app one ≫ hc.desc c') ≫ p
     erw [hc.fac]
     rw [this]
-  · have : ¬Nonempty (S' ⊗ ℕ∪{∞} : LightProfinite) := empty_map hS' (fst _ _)
-    have : IsIso π' := empty_iso this _
-    obtain ⟨π'inv, h, _⟩ := this
-    use (lightProfiniteToLightCondSet ⋙ (free R)).map (π'inv ≫ g') ≫ g
-    refine ⟨hy', ?_⟩
-    rw [←cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π')]
-    simp only [← Category.assoc, ← Functor.map_comp]
-    rw [h, Category.id_comp]
-    simp only [Category.assoc]
-    rw [comm]
-    simp only [← Category.assoc, ← Functor.map_comp]
-    rw [← comp]
-    simp
+  · have hh : IsEmpty (S' ⊗ ℕ∪{∞}) := { false a := IsEmpty.elim (by simpa using hS') (fst S' _ a) }
+    have : IsIso π' := by
+      refine ⟨CompHausLike.ofHom _ {
+        toFun y := hh.elim y
+        continuous_toFun := continuous_of_const fun x ↦ congrFun rfl }, ?_, ?_⟩
+      · ext x
+        exact hh.elim (π' x)
+      · ext x
+        all_goals exact hh.elim x
+    refine ⟨(lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, hy', ?_⟩
+    simp only [tensorHom_id, comp_obj, Functor.comp_map, Functor.map_comp, Functor.map_inv,
+      Category.assoc, comm, ← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
+      IsIso.hom_inv_id_assoc]
+    simp [← Category.assoc, ← Functor.map_comp, ← comp]
 
 theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
   rw [free_lightProfinite_internallyProjective_iff_tensor_condition' R ℕ∪{∞}]
@@ -484,5 +485,3 @@ theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ�
   obtain ⟨S', π, g, hπ, comm⟩ := proj_explicit R p f
   rw [LightProfinite.epi_iff_surjective] at hπ
   use S', π, hπ, g, comm
-
-#print axioms internallyProjective_ℕinfty

@@ -1,5 +1,6 @@
-import LeanCondensed.LightCondensed.Small
 import LeanCondensed.LightCondensed.Yoneda
+import LeanCondensed.Mathlib.CategoryTheory.Countable
+import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
 import LeanCondensed.Mathlib.CategoryTheory.Localization.Bifunctor
 import LeanCondensed.Mathlib.CategoryTheory.Localization.Monoidal.Braided
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
@@ -9,6 +10,7 @@ import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Mathlib.Condensed.Light.Small
 import LeanCondensed.Mathlib.Topology.Category.LightProfinite.ChosenFiniteProducts
+import LeanCondensed.Projects.Epi
 import LeanCondensed.Projects.FreeCondensed
 import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.IsLocalizedMonoidal
@@ -16,4 +18,8 @@ import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.LightSolid
 import LeanCondensed.Projects.LocalizedMonoidal
 import LeanCondensed.Projects.MonoidalLinear
+import LeanCondensed.Projects.PreservesCoprod
+import LeanCondensed.Projects.Proj
+import LeanCondensed.Projects.Pullbacks
+import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.SheafMonoidal
