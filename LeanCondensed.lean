@@ -20,6 +20,5 @@ import LeanCondensed.Projects.LocalizedMonoidal
 import LeanCondensed.Projects.MonoidalLinear
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Proj
-import LeanCondensed.Projects.Pullbacks
 import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.SheafMonoidal

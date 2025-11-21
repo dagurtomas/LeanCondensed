@@ -18,16 +18,31 @@ open Function CategoryTheory Limits Opposite
 
 universe u
 
+namespace CategoryTheory.regularTopology
+
+theorem EqualizerCondition.bijective_mapToEqualizer_pullback' {C : Type*} [Category C]
+    (P : Cᵒᵖ ⥤ Type*)
+    (hP : EqualizerCondition P) : ∀ (X B : C) (π : X ⟶ B) [EffectiveEpi π] (c : PullbackCone π π)
+        (_ : IsLimit c),
+    Function.Bijective (MapToEqualizer P π c.fst c.snd c.condition) := by
+  intro X B π _ c hc
+  -- have : HasPullback π π := ⟨c, hc⟩
+  specialize hP π _ hc
+  rw [Types.type_equalizer_iff_unique] at hP
+  rw [Function.bijective_iff_existsUnique]
+  intro ⟨b, hb⟩
+  obtain ⟨a, ha₁, ha₂⟩ := hP b hb
+  refine ⟨a, ?_, ?_⟩
+  · simpa [MapToEqualizer] using ha₁
+  · simpa [MapToEqualizer] using ha₂
+
+end CategoryTheory.regularTopology
+
 lemma surj_pullback' {X Y Z : LightProfinite.{u}} (f : X ⟶ Z) {g : Y ⟶ Z}
-    (hf : Function.Surjective f) : Function.Surjective ↑(pullback.snd f g) := by
+    (hf : Function.Surjective f) : Function.Surjective ↑(CompHausLike.pullback.snd f g) := by
   intro y
-  let point : LightProfinite.{u} := LightProfinite.of PUnit
-  let point_map : point ⟶ Y := TopCat.ofHom ⟨fun _ ↦ y, continuous_const⟩
-  rcases hf (g y) with ⟨z, hz⟩
-  let point_map' : point ⟶ X := TopCat.ofHom ⟨fun _ ↦ z, continuous_const⟩
-  use pullback.lift point_map' point_map (by ext; erw [hz]; rfl) PUnit.unit
-  rw [← ConcreteCategory.comp_apply, pullback.lift_snd]
-  rfl
+  obtain ⟨x, hx⟩ := hf (g y)
+  refine ⟨⟨⟨x, y⟩, hx⟩, rfl⟩
 
 instance surj_widePullback {J : Type*} (B : LightProfinite.{u}) (objs : J → LightProfinite)
   (arrows: (j : J) → (objs j ⟶ B)) (hepi : ∀ j, Epi (arrows j)) [HasWidePullback B objs arrows] :
@@ -61,53 +76,53 @@ instance surj_widePullback {J : Type*} (B : LightProfinite.{u}) (objs : J → Li
 
 instance : lightProfiniteToLightCondSet.PreservesEpimorphisms := {
   preserves f hf := (LightCondSet.epi_iff_locallySurjective_on_lightProfinite _).mpr
-    fun _ g ↦ ⟨pullback f g,
-      pullback.snd _ _,
+    fun _ g ↦ ⟨CompHausLike.pullback f g,
+      CompHausLike.pullback.snd _ _,
       surj_pullback' f ((LightProfinite.epi_iff_surjective f).mp hf),
-      pullback.fst _ _,
-      pullback.condition⟩ }
+      CompHausLike.pullback.fst _ _,
+      CompHausLike.pullback.condition _ _⟩ }
 
 noncomputable def πpair {X Y : LightProfinite} (π : X ⟶ Y) : WalkingParallelPair ⥤ LightCondSet :=
   parallelPair
-    (lightProfiniteToLightCondSet.map <| pullback.fst π π)
-    (lightProfiniteToLightCondSet.map <| pullback.snd π π)
+    (lightProfiniteToLightCondSet.map <| CompHausLike.pullback.fst π π)
+    (lightProfiniteToLightCondSet.map <| CompHausLike.pullback.snd π π)
 
 noncomputable def regular {X Y : LightProfinite} (π : X ⟶ Y) :
-    Cofork (lightProfiniteToLightCondSet.map <| pullback.fst π π)
-      (lightProfiniteToLightCondSet.map <| pullback.snd π π) :=
+    Cofork (lightProfiniteToLightCondSet.map <| CompHausLike.pullback.fst π π)
+      (lightProfiniteToLightCondSet.map <| CompHausLike.pullback.snd π π) :=
   Cofork.ofπ (lightProfiniteToLightCondSet.map <| π) (by
     rw [← lightProfiniteToLightCondSet.map_comp, ← lightProfiniteToLightCondSet.map_comp,
-      pullback.condition])
+      CompHausLike.pullback.condition])
 
 def cfork {X Y : LightProfinite} (π : X ⟶ Y) :=
-  Cofork (lightProfiniteToLightCondSet.map (pullback.fst π π))
-    (lightProfiniteToLightCondSet.map (pullback.snd π π))
+  Cofork (lightProfiniteToLightCondSet.map (CompHausLike.pullback.fst π π))
+    (lightProfiniteToLightCondSet.map (CompHausLike.pullback.snd π π))
 
 noncomputable def regularLiftElem {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π]
     (cone : cfork π) : cone.pt.val.obj (op Y) :=
   let fX := yonedaEquiv cone.π.val
-  have : cone.pt.val.map (pullback.fst π π).op fX = cone.pt.val.map (pullback.snd π π).op fX := by
-    have this : (lightProfiniteToLightCondSet.map (pullback.fst π π) ≫ cone.π).val =
-      (yoneda.map (pullback.fst π π) ≫ cone.π.val) := rfl
-    have this' : (lightProfiniteToLightCondSet.map (pullback.snd π π) ≫ cone.π).val =
-      (yoneda.map (pullback.snd π π) ≫ cone.π.val) := rfl
-    erw [yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (pullback.fst π π),
-      yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (pullback.snd π π),
+  have : cone.pt.val.map (CompHausLike.pullback.fst π π).op fX = cone.pt.val.map (CompHausLike.pullback.snd π π).op fX := by
+    have this : (lightProfiniteToLightCondSet.map (CompHausLike.pullback.fst π π) ≫ cone.π).val =
+      (yoneda.map (CompHausLike.pullback.fst π π) ≫ cone.π.val) := rfl
+    have this' : (lightProfiniteToLightCondSet.map (CompHausLike.pullback.snd π π) ≫ cone.π).val =
+      (yoneda.map (CompHausLike.pullback.snd π π) ≫ cone.π.val) := rfl
+    erw [yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (CompHausLike.pullback.fst π π),
+      yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (CompHausLike.pullback.snd π π),
       ← this, ← this', cone.condition]
   LightCondensed.equalizerCondition cone.pt
-    |>.bijective_mapToEqualizer_pullback _ _ _ π
+    |>.bijective_mapToEqualizer_pullback' _ _ _ π _ (CompHausLike.pullback.isLimit π π)
     |>.surjective ⟨fX, this⟩
     |>.choose
 
 private lemma cone_elem {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] (cone : cfork π) :
-    cone.pt.val.map (pullback.fst π π).op (yonedaEquiv cone.π.val) =
-      cone.pt.val.map (pullback.snd π π).op (yonedaEquiv cone.π.val) := by
-  have this : (lightProfiniteToLightCondSet.map (pullback.fst π π) ≫ cone.π).val =
-    (yoneda.map (pullback.fst π π) ≫ cone.π.val) := rfl
-  have this' : (lightProfiniteToLightCondSet.map (pullback.snd π π) ≫ cone.π).val =
-    (yoneda.map (pullback.snd π π) ≫ cone.π.val) := rfl
-  rw [yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (pullback.fst π π),
-    yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (pullback.snd π π),
+    cone.pt.val.map (CompHausLike.pullback.fst π π).op (yonedaEquiv cone.π.val) =
+      cone.pt.val.map (CompHausLike.pullback.snd π π).op (yonedaEquiv cone.π.val) := by
+  have this : (lightProfiniteToLightCondSet.map (CompHausLike.pullback.fst π π) ≫ cone.π).val =
+    (yoneda.map (CompHausLike.pullback.fst π π) ≫ cone.π.val) := rfl
+  have this' : (lightProfiniteToLightCondSet.map (CompHausLike.pullback.snd π π) ≫ cone.π).val =
+    (yoneda.map (CompHausLike.pullback.snd π π) ≫ cone.π.val) := rfl
+  rw [yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (CompHausLike.pullback.fst π π),
+    yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (CompHausLike.pullback.snd π π),
     ← this, ← this', cone.condition]
 
 noncomputable def regularLift {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π]
@@ -117,13 +132,13 @@ noncomputable def regularLift {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEp
 private lemma regularLift_prop {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π]
     (cone : cfork π) :
     regularTopology.MapToEqualizer cone.pt.val π
-      (pullback.fst π π)
-      (pullback.snd π π)
-      pullback.condition
+      (CompHausLike.pullback.fst π π)
+      (CompHausLike.pullback.snd π π)
+      (CompHausLike.pullback.condition _ _)
       (regularLiftElem π cone) =
     ⟨yonedaEquiv cone.π.val, cone_elem π cone⟩ :=
   LightCondensed.equalizerCondition cone.pt
-    |>.bijective_mapToEqualizer_pullback _ _ _ π
+    |>.bijective_mapToEqualizer_pullback' _ _ _ π _ (CompHausLike.pullback.isLimit π π)
     |>.surjective ⟨yonedaEquiv cone.π.val, cone_elem π cone⟩
     |>.choose_spec
 
@@ -144,17 +159,20 @@ noncomputable abbrev regular_IsColimit {X Y : LightProfinite} (π : X ⟶ Y)
     [EffectiveEpi π] : IsColimit (regular π) :=
   Cofork.IsColimit.mk _ (regularLift π) (regularLift_comp π) (regularLift_unique π)
 
-noncomputable abbrev regular_RegularEpi {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] :
+noncomputable def explicitRegularIsColimit {X Y : LightProfinite} (π : X ⟶ Y) [hepi : Epi π] :
+    IsColimit (regular π) := by
+  rw [LightProfinite.epi_iff_surjective, ←LightProfinite.effectiveEpi_iff_surjective] at hepi
+  exact regular_IsColimit π
+
+noncomputable instance {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] :
     RegularEpi (lightProfiniteToLightCondSet.map π) where
-  W := lightProfiniteToLightCondSet.obj (pullback π π)
-  left := lightProfiniteToLightCondSet.map (pullback.fst π π)
-  right := lightProfiniteToLightCondSet.map (pullback.snd π π)
+  W := lightProfiniteToLightCondSet.obj (CompHausLike.pullback π π)
+  left := lightProfiniteToLightCondSet.map (CompHausLike.pullback.fst π π)
+  right := lightProfiniteToLightCondSet.map (CompHausLike.pullback.snd π π)
   w := by
     rw [← lightProfiniteToLightCondSet.map_comp, ← lightProfiniteToLightCondSet.map_comp,
-      pullback.condition]
+      CompHausLike.pullback.condition]
   isColimit := regular_IsColimit π
 
 instance : lightProfiniteToLightCondSet.PreservesEffectiveEpis where
-  preserves π _ :=
-    have : RegularEpi (lightProfiniteToLightCondSet.map π) := regular_RegularEpi π
-    inferInstance
+  preserves _ _ := inferInstance
