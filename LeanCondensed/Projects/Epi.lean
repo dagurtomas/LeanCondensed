@@ -21,25 +21,20 @@ universe u
 namespace CategoryTheory.regularTopology
 
 theorem EqualizerCondition.bijective_mapToEqualizer_pullback' {C : Type*} [Category C]
-    (P : Cᵒᵖ ⥤ Type*)
-    (hP : EqualizerCondition P) : ∀ (X B : C) (π : X ⟶ B) [EffectiveEpi π] (c : PullbackCone π π)
-        (_ : IsLimit c),
+    (P : Cᵒᵖ ⥤ Type*) (hP : EqualizerCondition P) (X B : C) (π : X ⟶ B) [EffectiveEpi π]
+    (c : PullbackCone π π) (hc : IsLimit c) :
     Function.Bijective (MapToEqualizer P π c.fst c.snd c.condition) := by
-  intro X B π _ c hc
-  -- have : HasPullback π π := ⟨c, hc⟩
   specialize hP π _ hc
   rw [Types.type_equalizer_iff_unique] at hP
   rw [Function.bijective_iff_existsUnique]
   intro ⟨b, hb⟩
   obtain ⟨a, ha₁, ha₂⟩ := hP b hb
-  refine ⟨a, ?_, ?_⟩
-  · simpa [MapToEqualizer] using ha₁
-  · simpa [MapToEqualizer] using ha₂
+  exact ⟨a, by simpa [MapToEqualizer] using ha₁, by simpa [MapToEqualizer] using ha₂⟩
 
 end CategoryTheory.regularTopology
 
 lemma surj_pullback' {X Y Z : LightProfinite.{u}} (f : X ⟶ Z) {g : Y ⟶ Z}
-    (hf : Function.Surjective f) : Function.Surjective ↑(CompHausLike.pullback.snd f g) := by
+    (hf : Function.Surjective f) : Function.Surjective (CompHausLike.pullback.snd f g) := by
   intro y
   obtain ⟨x, hx⟩ := hf (g y)
   refine ⟨⟨⟨x, y⟩, hx⟩, rfl⟩
