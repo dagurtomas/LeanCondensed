@@ -6,22 +6,23 @@ Authors: Dagur Asgeirsson
 
 import Mathlib.CategoryTheory.Sites.Coherent.CoherentSheaves
 import Mathlib.CategoryTheory.Sites.Adjunction
+import Mathlib.CategoryTheory.Sites.Canonical
 
 universe u
 
 noncomputable section
 
-open CategoryTheory Functor Sheaf
+open CategoryTheory Functor Sheaf GrothendieckTopology
 
 namespace coherentTopology
 
-variable {C : Type u} [Category C] [Precoherent C]
+variable {C : Type u} [Category C] {J : GrothendieckTopology C} [Subcanonical J]
 
-variable (S S' : C) {A A' : (Sheaf (coherentTopology C)) (Type _)}
+variable (S S' : C) {A A' : (Sheaf J (Type _))}
 
 @[simps! apply]
 def yoneda (A) :
-    ((coherentTopology C).yoneda.obj S ⟶ A) ≃ A.val.obj ⟨S⟩ :=
+    (J.yoneda.obj S ⟶ A) ≃ A.val.obj ⟨S⟩ :=
   (fullyFaithfulSheafToPresheaf _ _).homEquiv.trans yonedaEquiv
 
 @[simp]
@@ -29,7 +30,7 @@ lemma yoneda_symm_apply_val_app (a : A.val.obj ⟨S⟩) (Y : Cᵒᵖ) (f : Y.uno
       ((yoneda S A).symm a).val.app Y f = A.val.map f.op a := rfl
 
 lemma yoneda_symm_naturality {S' : C} (f : S' ⟶ S)
-    (x : A.val.obj ⟨S⟩) : (coherentTopology C).yoneda.map f ≫ (yoneda S A).symm x =
+    (x : A.val.obj ⟨S⟩) : J.yoneda.map f ≫ (yoneda S A).symm x =
       (yoneda S' A).symm ((A.val.map f.op) x) := by
   apply Sheaf.hom_ext
   simp only [Sheaf.comp_val]
@@ -47,32 +48,30 @@ lemma yoneda_symm_conaturality (f : A ⟶ A')
   exact NatTrans.naturality_apply (φ := f.val) (Y := T) _ _
 
 lemma yoneda_conaturality (f : A ⟶ A')
-    (g : (coherentTopology C).yoneda.obj S ⟶ A)
+    (g : J.yoneda.obj S ⟶ A)
   : f.val.app ⟨S⟩ (yoneda S A g) = yoneda S A' (g ≫ f) := rfl
 
 variable {D : Type*} [Category D] {FD : D → D → Type*} {DD : D → Type*}
   [∀ X Y, FunLike (FD X Y) (DD X) (DD Y)] [ConcreteCategory D FD]
   {free : Type _ ⥤ D} (adj : free ⊣ HasForget.forget)
-  [HasWeakSheafify (coherentTopology C) D]
-  [(coherentTopology C).HasSheafCompose (HasForget.forget (C := D))]
+  [HasWeakSheafify J D]
+  [J.HasSheafCompose (HasForget.forget (C := D))]
 
 variable (S S' : C)
 
-variable (A A' : (Sheaf (coherentTopology C)) D)
-
-def forget' := sheafCompose (coherentTopology C) (HasForget.forget (C := D))
+variable (A A' : (Sheaf J) D)
 
 abbrev forgetYoneda :
-    ((coherentTopology C).yoneda.obj S ⟶ (sheafCompose (coherentTopology C) (HasForget.forget (C := D))).obj A)
+    (J.yoneda.obj S ⟶ (sheafCompose J (HasForget.forget (C := D))).obj A)
       ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
   := yoneda _ _
 
 def freeYoneda :
-    (((coherentTopology C).yoneda ⋙ (composeAndSheafify (coherentTopology C) free)).obj S ⟶ A) ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
+    ((J.yoneda ⋙ (composeAndSheafify J free)).obj S ⟶ A) ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
   := ((adjunction _ adj).homEquiv _ _).trans (yoneda _ _)
 
 lemma freeYoneda_symm_naturality {S S'} (f : S' ⟶ S)
-    (x : (A.val ⋙ HasForget.forget).obj ⟨S⟩) : ((coherentTopology C).yoneda ⋙ composeAndSheafify (coherentTopology C) free).map f ≫
+    (x : (A.val ⋙ HasForget.forget).obj ⟨S⟩) : (J.yoneda ⋙ composeAndSheafify J free).map f ≫
       (freeYoneda adj S A).symm x = (freeYoneda adj S' A).symm ((A.val.map f.op) x) := by
   simp only [Functor.comp_obj, freeYoneda, Equiv.symm_trans_apply]
   erw [Adjunction.homEquiv_counit, Adjunction.homEquiv_counit]
@@ -85,12 +84,12 @@ lemma freeYoneda_symm_conaturality (f : A ⟶ A')
     (freeYoneda adj S A).symm x ≫ f = (freeYoneda adj S A').symm (f.val.app ⟨S⟩ x) := by
   simp only [freeYoneda, Equiv.symm_trans_apply]
   erw [←yoneda_symm_conaturality S
-    (A := (sheafCompose (coherentTopology C) (HasForget.forget (C := D))).obj A)
-    (f := (sheafCompose (coherentTopology C) (HasForget.forget (C := D))).map f)
+    (A := (sheafCompose J (HasForget.forget (C := D))).obj A)
+    (f := (sheafCompose J (HasForget.forget (C := D))).map f)
   ]
   erw [Adjunction.homEquiv_counit, Adjunction.homEquiv_counit]
   simp only [Category.assoc, Functor.comp_obj, Functor.map_comp]
-  erw [Adjunction.counit_naturality (adjunction (coherentTopology C) adj) f]
+  erw [Adjunction.counit_naturality (adjunction J adj) f]
   rfl
 
 end coherentTopology
