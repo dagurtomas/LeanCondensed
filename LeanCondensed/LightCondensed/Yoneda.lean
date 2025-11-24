@@ -63,7 +63,8 @@ variable (A A' : (Sheaf (coherentTopology C)) D)
 def forget' := sheafCompose (coherentTopology C) (HasForget.forget (C := D))
 
 abbrev forgetYoneda :
-    ((coherentTopology C).yoneda.obj S ⟶ forget'.obj A) ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
+    ((coherentTopology C).yoneda.obj S ⟶ (sheafCompose (coherentTopology C) (HasForget.forget (C := D))).obj A)
+      ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
   := yoneda _ _
 
 def freeYoneda :
