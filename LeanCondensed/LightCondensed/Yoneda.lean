@@ -14,7 +14,7 @@ noncomputable section
 
 open CategoryTheory Functor Sheaf GrothendieckTopology
 
-namespace coherentTopology
+namespace Subcanonical
 
 variable {C : Type u} [Category C] {J : GrothendieckTopology C} [Subcanonical J]
 
@@ -54,8 +54,7 @@ lemma yoneda_conaturality (f : A ⟶ A')
 variable {D : Type*} [Category D] {FD : D → D → Type*} {DD : D → Type*}
   [∀ X Y, FunLike (FD X Y) (DD X) (DD Y)] [ConcreteCategory D FD]
   {free : Type _ ⥤ D} (adj : free ⊣ HasForget.forget)
-  [HasWeakSheafify J D]
-  [J.HasSheafCompose (HasForget.forget (C := D))]
+  [HasWeakSheafify J D] [J.HasSheafCompose (HasForget.forget (C := D))]
 
 variable (S S' : C)
 
@@ -67,11 +66,11 @@ abbrev forgetYoneda :
   := yoneda _ _
 
 def freeYoneda :
-    ((J.yoneda ⋙ (composeAndSheafify J free)).obj S ⟶ A) ≃ ((A.val ⋙ HasForget.forget).obj ⟨S⟩)
+    ((J.yoneda ⋙ (composeAndSheafify J free)).obj S ⟶ A) ≃ (DD (A.val.obj ⟨S⟩))
   := ((adjunction _ adj).homEquiv _ _).trans (yoneda _ _)
 
 lemma freeYoneda_symm_naturality {S S'} (f : S' ⟶ S)
-    (x : (A.val ⋙ HasForget.forget).obj ⟨S⟩) : (J.yoneda ⋙ composeAndSheafify J free).map f ≫
+    (x : DD (A.val.obj ⟨S⟩)) : (J.yoneda ⋙ composeAndSheafify J free).map f ≫
       (freeYoneda adj S A).symm x = (freeYoneda adj S' A).symm ((A.val.map f.op) x) := by
   simp only [Functor.comp_obj, freeYoneda, Equiv.symm_trans_apply]
   erw [Adjunction.homEquiv_counit, Adjunction.homEquiv_counit]
@@ -80,7 +79,7 @@ lemma freeYoneda_symm_naturality {S S'} (f : S' ⟶ S)
   rfl
 
 lemma freeYoneda_symm_conaturality (f : A ⟶ A')
-    (x : ((A.val ⋙ HasForget.forget).obj ⟨S⟩)) :
+    (x : DD (A.val.obj ⟨S⟩)) :
     (freeYoneda adj S A).symm x ≫ f = (freeYoneda adj S A').symm (f.val.app ⟨S⟩ x) := by
   simp only [freeYoneda, Equiv.symm_trans_apply]
   erw [←yoneda_symm_conaturality S
@@ -92,4 +91,4 @@ lemma freeYoneda_symm_conaturality (f : A ⟶ A')
   erw [Adjunction.counit_naturality (adjunction J adj) f]
   rfl
 
-end coherentTopology
+end Subcanonical

@@ -43,7 +43,8 @@ theorem ofRetract {X Y : C} (r : Retract Y X) (proj : InternallyProjective X) :
 
 end InternallyProjective
 
-open CategoryTheory LightProfinite OnePoint Limits LightCondensed MonoidalCategory MonoidalClosed
+open CategoryTheory LightProfinite OnePoint Limits LightCondensed MonoidalCategory
+  MonoidalClosed Subcanonical Functor
 
 section Condensed
 
@@ -51,11 +52,12 @@ attribute [local instance] Types.instConcreteCategory Types.instFunLike
 
 variable (R : Type u) [CommRing R]
 
-variable (A : LightCondMod R) (S : LightProfinite)
+instance : (coherentTopology LightProfinite).HasSheafCompose (forget (ModuleCat.{u} R)) :=
+  hasSheafCompose_of_preservesLimitsOfSize _
 
 def ihomPoints (A B : LightCondMod.{u} R) (S : LightProfinite) :
     ((ihom A).obj B).val.obj ⟨S⟩ ≃ ((A ⊗ ((free R).obj S.toCondensed)) ⟶ B) :=
-  (LightCondensed.freeYoneda _ _ _).symm.trans ((ihom.adjunction A).homEquiv _ _).symm
+  (freeYoneda (ModuleCat.adj.{u} R) _ _).symm.trans ((ihom.adjunction A).homEquiv _ _).symm
 -- We have an `R`-module structure on `M ⟶ N` for condensed `R`-modules `M`, `N`,
 -- and this could be made an `≅`. But it's not needed in this proof.
 
@@ -67,12 +69,29 @@ lemma ihom_map_val_app (A B P : LightCondMod.{u} R) (S : LightProfinite) (e : A 
         (ihomPoints R P B S).symm (ihomPoints R P A S x ≫ e) := by
   intro x
   apply (ihomPoints R P B S).injective
-  simp only [ihomPoints, freeYoneda, curriedTensor_obj_obj, Equiv.trans_apply,
+  simp only [ihomPoints, freeYoneda]
+  change ((((freeForgetAdjunction R).homEquiv S.toCondensed _).trans
+            (Subcanonical.yoneda S ((LightCondensed.forget R).obj _))).symm.trans
+      ((ihom.adjunction P).homEquiv _ _).symm)
+    ((ConcreteCategory.hom (((ihom P).map e).val.app (Opposite.op S))) x) =
+  ((((freeForgetAdjunction R).homEquiv S.toCondensed ((ihom P).obj B)).trans
+            (Subcanonical.yoneda S ((LightCondensed.forget R).obj ((ihom P).obj B)))).symm.trans
+      ((ihom.adjunction P).homEquiv ((free R).obj S.toCondensed) B).symm)
+    (((((freeForgetAdjunction R).homEquiv S.toCondensed ((ihom P).obj B)).trans
+                (Subcanonical.yoneda S ((LightCondensed.forget R).obj ((ihom P).obj B)))).symm.trans
+          ((ihom.adjunction P).homEquiv ((free R).obj S.toCondensed) B).symm).symm
+      (((((freeForgetAdjunction R).homEquiv S.toCondensed ((ihom P).obj A)).trans
+                  (Subcanonical.yoneda S ((LightCondensed.forget R).obj ((ihom P).obj A)))).symm.trans
+            ((ihom.adjunction P).homEquiv ((free R).obj S.toCondensed) A).symm)
+          x ≫
+        e))
+  simp only [curriedTensor_obj_obj, Equiv.trans_apply,
     Equiv.symm_trans_apply, Equiv.symm_symm, Equiv.symm_apply_apply]
   erw [← Adjunction.homEquiv_naturality_right_symm]
   erw [← Adjunction.homEquiv_naturality_right_symm]
-  simp only [LightCondensed.yoneda, sheafToPresheaf_obj, Equiv.symm_trans_apply,
+  simp only [Subcanonical.yoneda, sheafToPresheaf_obj, Equiv.symm_trans_apply,
     curriedTensor_obj_obj, EmbeddingLike.apply_eq_iff_eq]
+  change (fullyFaithfulSheafToPresheaf _ _).homEquiv.symm _ = _ ≫ _
   apply (fullyFaithfulSheafToPresheaf _ _).map_injective
   erw [Functor.FullyFaithful.homEquiv_symm_apply, Functor.FullyFaithful.homEquiv_symm_apply]
   ext
@@ -84,7 +103,10 @@ lemma ihomPoints_symm_comp (B P : LightCondMod.{u} R) (S S' : LightProfinite) (�
     (ihomPoints R P B S).symm (P ◁ (free R).map (lightProfiniteToLightCondSet.map π) ≫ f) =
       ConcreteCategory.hom (((ihom P).obj B).val.map π.op) ((ihomPoints R P B S').symm f) := by
   simp only [ihomPoints, Equiv.symm_trans_apply, Equiv.symm_symm]
-  simp only [freeYoneda, LightCondensed.yoneda, sheafToPresheaf_obj, Equiv.trans_apply]
+  simp only [freeYoneda, Subcanonical.yoneda, sheafToPresheaf_obj, Equiv.trans_apply]
+  change ((fullyFaithfulSheafToPresheaf _ _).homEquiv.trans _)
+    (((freeForgetAdjunction R).homEquiv _ _)
+      (((ihom.adjunction P).homEquiv _ _) _)) = _
   erw [Adjunction.homEquiv_apply, Adjunction.homEquiv_apply, Adjunction.homEquiv_apply,
     Adjunction.homEquiv_apply]
   simp only [Functor.comp_obj, ihom.ihom_adjunction_unit, Functor.map_comp]
