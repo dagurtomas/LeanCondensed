@@ -4,10 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
 import LeanCondensed.LightCondensed.Yoneda
-import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
-import Mathlib.CategoryTheory.Sites.Canonical
+import Mathlib.CategoryTheory.Sites.Limits
 import Mathlib.Combinatorics.Quiver.ReflQuiver
-import Mathlib.Condensed.Light.Explicit
+import Mathlib.Condensed.Light.Functors
 
 open CategoryTheory Functor Opposite Limits Function GrothendieckTopology
 
@@ -21,8 +20,6 @@ attribute [local instance] Types.instFunLike Types.instConcreteCategory
 
 instance {n : ℕ} (S : Fin n → C) :
     PreservesColimit (Discrete.functor S) J.yoneda := by
-  have : HasColimitsOfSize.{u} (LightCondSet.{u}) :=
-    inferInstanceAs (HasColimitsOfSize.{u} (Sheaf _ _))
   apply (config := { allowSynthFailures := true}) PreservesCoproduct.of_iso_comparison
   rw [isIso_iff_isIso_coyoneda_map]
   intro X
@@ -90,10 +87,14 @@ instance {n : ℕ} (S : Fin n → C) :
     Quiver.Hom.unop_op, ι_comp_sigmaComparison_assoc, ← Subcanonical.yoneda_symm_naturality,
     (Subcanonical.yoneda _ _).symm_apply_apply]
 
-instance LightProfinite.preservesFiniteCoproductsToLightCondSet :
+instance Subcanonical.preservesFiniteCoproductsYoneda :
     PreservesFiniteCoproducts J.yoneda where
   preserves n :=
     { preservesColimit {S} := by
         let i : S ≅ Discrete.functor (fun i ↦ S.obj ⟨i⟩) := Discrete.natIso (fun _ ↦ Iso.refl _)
         exact preservesColimit_of_iso_diagram J.yoneda i.symm
     }
+
+instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet := by
+  apply (config := { allowSynthFailures := true}) Subcanonical.preservesFiniteCoproductsYoneda
+  sorry
