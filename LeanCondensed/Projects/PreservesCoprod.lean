@@ -6,7 +6,9 @@ Authors: Jonas van der Schaaf
 import LeanCondensed.LightCondensed.Yoneda
 import Mathlib.CategoryTheory.Sites.Limits
 import Mathlib.Combinatorics.Quiver.ReflQuiver
+import Mathlib.Condensed.Light.Explicit
 import Mathlib.Condensed.Light.Functors
+import Mathlib.Topology.Category.LightProfinite.Limits
 
 open CategoryTheory Functor Opposite Limits Function GrothendieckTopology
 
@@ -95,6 +97,8 @@ instance Subcanonical.preservesFiniteCoproductsYoneda :
         exact preservesColimit_of_iso_diagram J.yoneda i.symm
     }
 
-instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet := by
-  apply (config := { allowSynthFailures := true}) Subcanonical.preservesFiniteCoproductsYoneda
-  sorry
+instance : PreservesFiniteCoproducts lightProfiniteToLightCondSet.{u} := by
+  have : HasFiniteCoproducts LightProfinite.{u} :=
+    CompHausLike.instHasFiniteCoproductsOfHasExplicitFiniteCoproducts.{u, u}
+      (P := fun X ↦ TotallyDisconnectedSpace X ∧ SecondCountableTopology X)
+  apply Subcanonical.preservesFiniteCoproductsYoneda
