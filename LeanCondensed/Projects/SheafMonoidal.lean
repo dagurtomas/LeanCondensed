@@ -5,11 +5,11 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
+import Mathlib.CategoryTheory.Localization.Monoidal.Functor
 import Mathlib.CategoryTheory.Sites.CartesianMonoidal
 import Mathlib.CategoryTheory.Sites.LeftExact
 import Mathlib.CategoryTheory.Sites.Monoidal
 import Mathlib.CategoryTheory.Sites.PreservesSheafification
-import LeanCondensed.Projects.LocalizedMonoidal
 
 universe v u
 
@@ -38,10 +38,15 @@ variable {A B : Type*} [Category A] [Category B]
 attribute [local instance] monoidalCategory
 
 noncomputable instance : (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
-  monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
+  Functor.Monoidal.transport (presheafToSheafCompComposeAndSheafifyIso J F).symm
+
+noncomputable instance : Localization.Lifting (presheafToSheaf J A) J.W
+    (presheafToSheaf _ _ ⋙ composeAndSheafify J F) (composeAndSheafify J F) where
+  iso := Iso.refl _
 
 noncomputable instance : (composeAndSheafify J F).Monoidal :=
-  Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (Iso.refl _) _
+  Localization.Monoidal.functorMonoidalOfComp (presheafToSheaf _ _) J.W (composeAndSheafify J F)
+    (presheafToSheaf _ _ ⋙ composeAndSheafify J F) --(Iso.refl _) _
 
 end
 
@@ -56,7 +61,7 @@ noncomputable instance :
     letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
     (presheafToSheaf _ _ ⋙ composeAndSheafify J F).Monoidal :=
   letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
-  monoidalTransport (presheafToSheafCompComposeAndSheafifyIso J F).symm
+  Functor.Monoidal.transport (presheafToSheafCompComposeAndSheafifyIso J F).symm
 
 noncomputable instance foo :
     letI : MonoidalCategory (Sheaf J A) := monoidalCategory J A
