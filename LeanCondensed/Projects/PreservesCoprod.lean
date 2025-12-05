@@ -9,12 +9,13 @@ import Mathlib.Condensed.Light.Functors
 
 open CategoryTheory Functor Opposite Limits Function GrothendieckTopology
 
-universe w v u
+universe v u
 
 variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C} [Subcanonical J]
   [∀ X : Sheaf J (Type v), PreservesFiniteProducts X.val]
   [HasWeakSheafify J (Type v)]
 
+-- TODO: more general version for `yonedaULift`
 instance {n : ℕ} (S : Fin n → C) :
     PreservesColimit (Discrete.functor S) J.yoneda where
   preserves {c} hc := ⟨by
