@@ -3,7 +3,7 @@ Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
-import Mathlib.CategoryTheory.EffectiveEpi.RegularEpi
+import Mathlib.CategoryTheory.Limits.Shapes.RegularMono
 import Mathlib.Combinatorics.Quiver.ReflQuiver
 import Mathlib.Condensed.Light.Epi
 import Mathlib.Condensed.Light.Explicit
@@ -17,21 +17,6 @@ import LeanCondensed.Mathlib.CategoryTheory.Countable
 open Function CategoryTheory Limits Opposite
 
 universe u
-
-namespace CategoryTheory.regularTopology
-
-theorem EqualizerCondition.bijective_mapToEqualizer_pullback' {C : Type*} [Category C]
-    (P : Cᵒᵖ ⥤ Type*) (hP : EqualizerCondition P) (X B : C) (π : X ⟶ B) [EffectiveEpi π]
-    (c : PullbackCone π π) (hc : IsLimit c) :
-    Function.Bijective (MapToEqualizer P π c.fst c.snd c.condition) := by
-  specialize hP π _ hc
-  rw [Types.type_equalizer_iff_unique] at hP
-  rw [Function.bijective_iff_existsUnique]
-  intro ⟨b, hb⟩
-  obtain ⟨a, ha₁, ha₂⟩ := hP b hb
-  exact ⟨a, by simpa [MapToEqualizer] using ha₁, by simpa [MapToEqualizer] using ha₂⟩
-
-end CategoryTheory.regularTopology
 
 lemma surj_pullback' {X Y Z : LightProfinite.{u}} (f : X ⟶ Z) {g : Y ⟶ Z}
     (hf : Function.Surjective f) : Function.Surjective (CompHausLike.pullback.snd f g) := by
@@ -105,7 +90,7 @@ noncomputable def regularLiftElem {X Y : LightProfinite} (π : X ⟶ Y) [Effecti
       yonedaEquiv_naturality (F := cone.pt.val) cone.π.val (CompHausLike.pullback.snd π π),
       ← this, ← this', cone.condition]
   LightCondensed.equalizerCondition cone.pt
-    |>.bijective_mapToEqualizer_pullback' _ _ _ π _ (CompHausLike.pullback.isLimit π π)
+    |>.bijective_mapToEqualizer_pullback' _ (CompHausLike.pullback.isLimit π π)
     |>.surjective ⟨fX, this⟩
     |>.choose
 
@@ -126,14 +111,14 @@ noncomputable def regularLift {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEp
 
 private lemma regularLift_prop {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π]
     (cone : cfork π) :
-    regularTopology.MapToEqualizer cone.pt.val π
+    regularTopology.mapToEqualizer cone.pt.val π
       (CompHausLike.pullback.fst π π)
       (CompHausLike.pullback.snd π π)
       (CompHausLike.pullback.condition _ _)
       (regularLiftElem π cone) =
     ⟨yonedaEquiv cone.π.val, cone_elem π cone⟩ :=
   LightCondensed.equalizerCondition cone.pt
-    |>.bijective_mapToEqualizer_pullback' _ _ _ π _ (CompHausLike.pullback.isLimit π π)
+    |>.bijective_mapToEqualizer_pullback' _ (CompHausLike.pullback.isLimit π π)
     |>.surjective ⟨yonedaEquiv cone.π.val, cone_elem π cone⟩
     |>.choose_spec
 
@@ -160,14 +145,14 @@ noncomputable def explicitRegularIsColimit {X Y : LightProfinite} (π : X ⟶ Y)
   exact regular_IsColimit π
 
 noncomputable instance {X Y : LightProfinite} (π : X ⟶ Y) [EffectiveEpi π] :
-    RegularEpi (lightProfiniteToLightCondSet.map π) where
+    IsRegularEpi (lightProfiniteToLightCondSet.map π) := ⟨⟨{
   W := lightProfiniteToLightCondSet.obj (CompHausLike.pullback π π)
   left := lightProfiniteToLightCondSet.map (CompHausLike.pullback.fst π π)
   right := lightProfiniteToLightCondSet.map (CompHausLike.pullback.snd π π)
   w := by
     rw [← lightProfiniteToLightCondSet.map_comp, ← lightProfiniteToLightCondSet.map_comp,
       CompHausLike.pullback.condition]
-  isColimit := regular_IsColimit π
+  isColimit := regular_IsColimit π }⟩⟩
 
 instance : lightProfiniteToLightCondSet.PreservesEffectiveEpis where
   preserves _ _ := inferInstance

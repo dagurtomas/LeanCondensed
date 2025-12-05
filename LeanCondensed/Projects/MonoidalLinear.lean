@@ -124,7 +124,7 @@ def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.
       refine Eq.trans ?_ (((eX.inv ⊗ₘ eY.inv) ≫= this =≫ (eX.hom ⊗ₘ eZ.hom)).trans ?_)
       · rw [← id_tensorHom, ← id_tensorHom, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
         simp [eZ, eY]
-      · simp [eX, eY, eZ, ← MonoidalCategory.id_tensorHom, ← MonoidalCategory.tensor_comp]
+      · simp [eX, eY, eZ, ← MonoidalCategory.id_tensorHom]
     rw [← Functor.map_smul, map_whiskerLeft', map_whiskerLeft']
     simp
   · intro r Y Z f X
@@ -136,7 +136,7 @@ def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.
       refine Eq.trans ?_ (((eY.inv ⊗ₘ eX.inv) ≫= this =≫ (eZ.hom ⊗ₘ eX.hom)).trans ?_)
       · rw [← tensorHom_id, ← tensorHom_id, ← tensor_comp_assoc, ← Functor.map_smul, ← tensor_comp]
         simp [eZ, eY]
-      · simp [eX, eY, eZ, ← MonoidalCategory.tensorHom_id, ← MonoidalCategory.tensor_comp]
+      · simp [eX, eY, eZ, ← MonoidalCategory.tensorHom_id]
     rw [← Functor.map_smul, map_whiskerRight', map_whiskerRight']
     simp
 

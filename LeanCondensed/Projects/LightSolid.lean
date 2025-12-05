@@ -3,7 +3,13 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Projects.InternallyProjective
+import Mathlib.Condensed.Light.Epi
+import LeanCondensed.Projects.MonoidalLinear
+import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
+import LeanCondensed.Mathlib.Condensed.Light.Limits
+import Mathlib.Condensed.Light.Monoidal
+import Mathlib.CategoryTheory.Preadditive.Projective.Internal
+import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.Proj
 import LeanCondensed.Projects.Sequence
 /-!
@@ -61,7 +67,7 @@ variable (R : Type _) [CommRing R]
 instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) :=
   internallyProjective_ℕinfty _
 
-instance : InternallyProjective (P R) := ofRetract (P_retract _) inferInstance
+instance : InternallyProjective (P R) := .ofRetract (P_retract _)
 
 variable (R : Type) [CommRing R]
 
