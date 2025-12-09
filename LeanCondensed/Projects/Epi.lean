@@ -12,7 +12,7 @@ import Mathlib.Topology.Compactness.PseudometrizableLindelof
 import Mathlib.Topology.Connected.Separation
 import Mathlib.Topology.Spectral.Prespectral
 
-import LeanCondensed.Mathlib.CategoryTheory.Countable
+-- TODO: remove this file when #32627 is merged into mathlib.
 
 open Function CategoryTheory Limits Opposite
 
@@ -38,36 +38,6 @@ lemma surj_pullback' {X Y Z : LightProfinite.{u}} (f : X ⟶ Z) {g : Y ⟶ Z}
   intro y
   obtain ⟨x, hx⟩ := hf (g y)
   refine ⟨⟨⟨x, y⟩, hx⟩, rfl⟩
-
-instance surj_widePullback {J : Type*} (B : LightProfinite.{u}) (objs : J → LightProfinite)
-  (arrows: (j : J) → (objs j ⟶ B)) (hepi : ∀ j, Epi (arrows j)) [HasWidePullback B objs arrows] :
-    ∀ j, Epi (WidePullback.π arrows j) := by
-  classical
-  intro i
-  simp only [LightProfinite.epi_iff_surjective] at ⊢ hepi
-  intro xi
-  let point : LightProfinite.{u} := LightProfinite.of PUnit
-  let base_pt : B := arrows i xi
-  have choice : ∀ j, ∃ xj, arrows j xj = base_pt := fun j ↦ hepi j base_pt
-  let point_maps : (j : J) → (point ⟶ objs j) := (fun j ↦
-    if h : i = j then CompHausLike.ofHom _ (ContinuousMap.const point (h ▸ xi))
-    else (CompHausLike.ofHom _ (ContinuousMap.const point (choice j).choose)))
-  let lift : point ⟶ widePullback B objs arrows :=
-    WidePullback.lift (CompHausLike.ofHom _ (ContinuousMap.const point base_pt)) point_maps
-      (by
-        intro j
-        unfold point_maps
-        by_cases h : i = j
-        · rw [dif_pos h]
-          subst h
-          rfl
-        · rw [dif_neg h]
-          ext x
-          simp only [ConcreteCategory.comp_apply, CompHausLike.hom_ofHom, ContinuousMap.const_apply]
-          exact (choice j).choose_spec)
-  use lift PUnit.unit
-  rw [← ConcreteCategory.comp_apply, WidePullback.lift_π]
-  simp [point_maps]
 
 instance : lightProfiniteToLightCondSet.PreservesEpimorphisms := {
   preserves f hf := (LightCondSet.epi_iff_locallySurjective_on_lightProfinite _).mpr

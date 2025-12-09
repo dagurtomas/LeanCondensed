@@ -7,6 +7,7 @@ import LeanCondensed.Projects.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Epi
+import LeanCondensed.Mathlib.CategoryTheory.Countable
 
 open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
   MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom
@@ -226,14 +227,44 @@ lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hep
       rw [fibreLift_comp ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) (σ ∞) (by exact hσ' ∞)]
       erw [hσ]⟩⟩
 
+instance {J : Type*} [DecidableEq J] (B : LightProfinite.{u}) (objs : J → LightProfinite)
+  (arrows: (j : J) → (objs j ⟶ B)) [hepi : ∀ j, Epi (arrows j)] [HasWidePullback B objs arrows] :
+    ∀ j, Epi (WidePullback.π arrows j) := by
+  intro i
+  simp only [LightProfinite.epi_iff_surjective] at ⊢ hepi
+  intro xi
+  let point : LightProfinite.{u} := LightProfinite.of PUnit
+  let base_pt : B := arrows i xi
+  have choice : ∀ j, ∃ xj, arrows j xj = base_pt := fun j ↦ hepi j base_pt
+  let point_maps : (j : J) → (point ⟶ objs j) := (fun j ↦
+    if h : i = j then CompHausLike.ofHom _ (ContinuousMap.const point (h ▸ xi))
+    else (CompHausLike.ofHom _ (ContinuousMap.const point (choice j).choose)))
+  let lift : point ⟶ widePullback B objs arrows :=
+    WidePullback.lift (CompHausLike.ofHom _ (ContinuousMap.const point base_pt)) point_maps
+      (by
+        intro j
+        unfold point_maps
+        by_cases h : i = j
+        · rw [dif_pos h]
+          subst h
+          rfl
+        · rw [dif_neg h]
+          ext x
+          simp only [ConcreteCategory.comp_apply, CompHausLike.hom_ofHom, ContinuousMap.const_apply]
+          exact (choice j).choose_spec)
+  use lift PUnit.unit
+  rw [← ConcreteCategory.comp_apply, WidePullback.lift_π]
+  simp [point_maps]
+
+instance : DecidableEq (ℕ∪{∞}).toTop := inferInstanceAs (DecidableEq <| Option ℕ)
+
 lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
     ∃ (S' T' : LightProfinite) (y' : S' ⟶ S) (π' : T' ⟶ S' ⊗ ℕ∪{∞}) (g' : T' ⟶ T),
       Epi π' ∧ Epi y' ∧ π' ≫ MonoidalCategoryStruct.tensorHom y' (𝟙 _) = g' ≫ π ∧
         IsSplitEpi (fibre_incl ∞ (π' ≫ snd S' ℕ∪{∞}) ≫ π' ≫ fst S' ℕ∪{∞}) ∧
           Epi (smart_cover π') := by
-  have : Countable (WidePullbackShape ↑ℕ∪{∞}.toTop) := by
-    have : Countable ℕ∪{∞} := Option.instCountable
-    apply Option.instCountable
+  have : Countable (WidePullbackShape ↑ℕ∪{∞}.toTop) :=
+    inferInstanceAs (Countable <| Option (Option _))
   let S' := widePullback S (fun (n : ℕ∪{∞}) ↦ fibre n (π ≫ snd _ _))
     (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _)
   let y' : S' ⟶ S := WidePullback.base (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _)
@@ -278,8 +309,6 @@ lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi 
       change (ConcreteCategory.hom (π ≫ fst S ℕ∪{∞})) t = s
       rw [ConcreteCategory.comp_apply, ht]
       rfl
-    have := surj_widePullback S (fun (n : ℕ∪{∞}) ↦ fibre n (π ≫ snd _ _))
-      (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _) this
     apply epi_comp
   simp only [π_tilde, Category.assoc, CompHausLike.pullback.condition]
 
