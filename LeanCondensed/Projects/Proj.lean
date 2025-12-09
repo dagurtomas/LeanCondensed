@@ -3,7 +3,8 @@ Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
-import LeanCondensed.Projects.InternallyProjective
+-- import LeanCondensed.Projects.InternallyProjective
+import Mathlib.Condensed.Light.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Epi

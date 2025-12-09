@@ -3,7 +3,8 @@ Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Projects.LocalizedMonoidal
+import Mathlib.CategoryTheory.Localization.Monoidal.Functor
+import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 
 open CategoryTheory Localization.Monoidal MonoidalCategory
 
@@ -28,8 +29,11 @@ def equivLocalizedMonoidal : D ≌ LocalizedMonoidal L W ε := CategoryTheory.Eq
 open Functor.Monoidal Functor.LaxMonoidal Functor.OplaxMonoidal
 
 instance [L.Monoidal] : (equivLocalizedMonoidal L W ε).inverse.Monoidal :=
-  letI : (L ⋙ (equivLocalizedMonoidal L W ε).inverse).Monoidal := inferInstanceAs L.Monoidal
-  functorMonoidalOfComp L W ε _
+  letI : (L' ⋙ (equivLocalizedMonoidal L W ε).inverse).Monoidal := inferInstanceAs L.Monoidal
+  letI : Localization.Lifting L W (L' ⋙ (equivLocalizedMonoidal L W ε).inverse)
+    (equivLocalizedMonoidal L W ε).inverse  := ⟨Iso.refl _⟩
+  functorMonoidalOfComp L' W (equivLocalizedMonoidal L W ε).inverse
+    (L' ⋙ (equivLocalizedMonoidal L W ε).inverse)
 
 instance [L.Monoidal] : (equivLocalizedMonoidal L W ε).functor.Monoidal :=
   (equivLocalizedMonoidal L W ε).symm.inverseMonoidal
