@@ -55,9 +55,7 @@ def CategoryTheory.Limits.parallelPairNatTrans {C : Type*} [Category C]
     {F G : WalkingParallelPair ⥤ C} (f0 : F.obj zero ⟶ G.obj zero)
     (f1 : F.obj one ⟶ G.obj one) (wl : F.map left ≫ f1 = f0 ≫ G.map left)
     (wr : F.map right ≫ f1 = f0 ≫ G.map right) : F ⟶ G where
-  app j := match j with
-  | zero => f0
-  | one => f1
+  app | zero => f0 | one => f1
   naturality := by rintro _ _ ⟨_⟩ <;> simp [wl, wr]
 
 lemma isClosed_fibres {T : LightProfinite} (f : T ⟶ ℕ∪{∞}) (s : ℕ → Set T)
@@ -261,7 +259,7 @@ instance : DecidableEq (ℕ∪{∞}).toTop := inferInstanceAs (DecidableEq <| Op
 
 lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
     ∃ (S' T' : LightProfinite) (y' : S' ⟶ S) (π' : T' ⟶ S' ⊗ ℕ∪{∞}) (g' : T' ⟶ T),
-      Epi π' ∧ Epi y' ∧ π' ≫ MonoidalCategoryStruct.tensorHom y' (𝟙 _) = g' ≫ π ∧
+      Epi π' ∧ Epi y' ∧ π' ≫ (y' ▷ ℕ∪{∞}) = g' ≫ π ∧
         IsSplitEpi (fibre_incl ∞ (π' ≫ snd S' ℕ∪{∞}) ≫ π' ≫ fst S' ℕ∪{∞}) ∧
           Epi (smart_cover π') := by
   have : Countable (WidePullbackShape ↑ℕ∪{∞}.toTop) :=
@@ -271,7 +269,7 @@ lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi 
   let y' : S' ⟶ S := WidePullback.base (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _)
 
 
-  let Ttilde := CompHausLike.pullback π (MonoidalCategoryStruct.tensorHom y' (𝟙 ℕ∪{∞}))
+  let Ttilde := CompHausLike.pullback π (y' ▷ ℕ∪{∞})
   let π_tilde : Ttilde ⟶ S' ⊗ ℕ∪{∞} := CompHausLike.pullback.snd _ _
 
   let σ' : ℕ∪{∞} → (S' ⟶ Ttilde) := fun n ↦
@@ -284,8 +282,8 @@ lemma refinedCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi 
         · simp [y']
         · ext
           simp only [Category.assoc, fibre_incl, ← CompHausLike.pullback.condition,
-            tensorHom_id, lift_whiskerRight,
-            Category.id_comp, lift_snd, CompHausLike.hom_ofHom, ContinuousMap.const_apply]
+            lift_whiskerRight, Category.id_comp, lift_snd, CompHausLike.hom_ofHom,
+            ContinuousMap.const_apply]
           rfl)
   have hσ : ∀ n, σ' n ≫ π_tilde ≫ fst _ _ = 𝟙 _ := by
     intro n
@@ -395,7 +393,7 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
       ∃ (S' : LightProfinite) (ψ : S' ⟶ S) (g : (free R).obj (S' ⊗ ℕ∪{∞}).toCondensed ⟶ X),
         Epi ψ ∧
           ((free R).map (lightProfiniteToLightCondSet.map
-            (MonoidalCategoryStruct.tensorHom ψ (𝟙 ℕ∪{∞}))) ≫ f = g ≫ p) := by
+            (ψ ▷ ℕ∪{∞})) ≫ f = g ≫ p) := by
   obtain ⟨T, π, g, hπ, comm⟩ := comm_sq R p f
   obtain ⟨S', T', y', π', g', hπ', hy', comp, ⟨⟨split⟩⟩, epi⟩ := refinedCover π
   refine ⟨S', y', ?_⟩
@@ -445,7 +443,7 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
       · ext x
         all_goals exact hh.elim x
     refine ⟨(lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, hy', ?_⟩
-    simp only [tensorHom_id, comp_obj, Functor.comp_map, Functor.map_comp, Functor.map_inv,
+    simp only [comp_obj, Functor.comp_map, Functor.map_comp, Functor.map_inv,
       Category.assoc, comm, ← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
       IsIso.hom_inv_id_assoc]
     simp [← Category.assoc, ← Functor.map_comp, ← comp]
