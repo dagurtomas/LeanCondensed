@@ -313,12 +313,9 @@ instance (X Y : LightProfinite.{u}) [Nonempty X] : Epi (snd X Y) := by
   rw [LightProfinite.epi_iff_surjective]
   exact fun y ↦ ⟨⟨Nonempty.some inferInstance, y⟩, rfl⟩
 
-private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
-    (f : (free R).obj (S ⊗ ℕ∪{∞}).toCondensed ⟶ Y) :
-      ∃ (S' : LightProfinite) (ψ : S' ⟶ S) (g : (free R).obj (S' ⊗ ℕ∪{∞}).toCondensed ⟶ X),
-        Epi ψ ∧
-          ((free R).map (lightProfiniteToLightCondSet.map
-            (ψ ▷ ℕ∪{∞})) ≫ f = g ≫ p) := by
+theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
+  rw [free_lightProfinite_internallyProjective_iff_tensor_condition' R ℕ∪{∞}]
+  intro X Y p hp S f
   obtain ⟨T, π, g, hπ, comm⟩ := comm_sq R p f
   obtain ⟨S', T', y', π', g', hπ', hy', comp, ⟨⟨split⟩⟩, epi⟩ := refinedCover π
   refine ⟨S', y', ?_⟩
@@ -332,8 +329,9 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
       obtain ⟨_, hx⟩ := (LightProfinite.epi_iff_surjective _).mp this ∞
       refine ⟨⟨(), _⟩, hx.symm⟩
     obtain ⟨r_inf, hr⟩ := Injective.factors (𝟙 _) (fibre_incl ∞ (π' ≫ snd _ _))
-    refine ⟨(hc R π').desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
-      r_inf split.section_ hr), inferInstance, ?_⟩
+    refine ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
+      (hc R π').desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
+      r_inf split.section_ hr), ?_⟩
     rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
       ← Functor.comp_map, ← Functor.map_comp_assoc]
     change _ = (((free R).mapCocone _).ι.app one ≫ (hc R π').desc (c R π' _ r_inf split.section_ hr)) ≫ p
@@ -356,15 +354,9 @@ private theorem proj_explicit {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] 
   · have hh : IsEmpty (S' ⊗ ℕ∪{∞}) := { false a := IsEmpty.elim (by simpa using hS') (fst S' _ a) }
     have : IsIso π' := ⟨CompHausLike.ofHom _ ⟨(hh.elim ·), continuous_of_const <| by aesop⟩,
       by ext x; exact hh.elim (π' x), by ext x; all_goals exact hh.elim x⟩
-    refine ⟨(lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, hy', ?_⟩
+    refine ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
+      (lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, ?_⟩
     simp only [comp_obj, Functor.comp_map, Functor.map_comp, Functor.map_inv,
       Category.assoc, ← comm, ← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
       IsIso.hom_inv_id_assoc]
     simp [← Category.assoc, ← Functor.map_comp, ← comp]
-
-theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) := by
-  rw [free_lightProfinite_internallyProjective_iff_tensor_condition' R ℕ∪{∞}]
-  intro X Y p hp S f
-  obtain ⟨S', π, g, hπ, comm⟩ := proj_explicit R p f
-  rw [LightProfinite.epi_iff_surjective] at hπ
-  exact ⟨S', π, hπ, g, comm⟩
