@@ -3,12 +3,12 @@ Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
--- import LeanCondensed.Projects.InternallyProjective
 import Mathlib.Condensed.Light.InternallyProjective
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Epi
 import LeanCondensed.Mathlib.CategoryTheory.Countable
+import LeanCondensed.Mathlib.Topology.Category.CompHausLike.Limits
 
 open CategoryTheory Functor Opposite LightProfinite OnePoint Limits LightCondensed
   MonoidalCategory MonoidalClosed WalkingParallelPair WalkingParallelPairHom
@@ -21,34 +21,23 @@ section
 variable {X Y : LightProfinite} (y : Y) (f : X ⟶ Y)
 
 def fibre : LightProfinite :=
-  CompHausLike.pullback (CompHausLike.const (LightProfinite.of PUnit) y) f
+  haveI : CompactSpace (f ⁻¹' {y}) :=
+    isCompact_iff_compactSpace.mp (IsClosed.preimage (by fun_prop) isClosed_singleton).isCompact
+  CompHausLike.of _ (f ⁻¹' {y})
 
-def fibre_incl : fibre y f ⟶ X :=
-  CompHausLike.pullback.snd (CompHausLike.const (LightProfinite.of PUnit) y) f
+def fibre_incl : fibre y f ⟶ X := ⟨{ toFun := Subtype.val }⟩
 
-def fibreLift {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y) : Z ⟶ fibre y f :=
-  CompHausLike.pullback.lift _ _ (CompHausLike.const _ ()) g (by cat_disch)
+variable {Z : LightProfinite} {f : X ⟶ Z} {g : Y ⟶ Z}
 
-@[simp]
-lemma fibreLift_comp {Z : LightProfinite} (g : Z ⟶ X) (hg : ∀ z, f (g z) = y) :
-    fibreLift y f g hg ≫ fibre_incl y f = g :=
-  rfl
-
-variable {X Y Z : LightProfinite} {f : X ⟶ Z} {g : Y ⟶ Z}
-
-instance epi_pullback [hepi : Epi f] : Epi (CompHausLike.pullback.snd f g) := by
-  rw [LightProfinite.epi_iff_surjective] at hepi ⊢
+instance [h : Epi f] : Epi (CompHausLike.pullback.snd f g) := by
+  rw [LightProfinite.epi_iff_surjective] at h ⊢
   intro y
-  obtain ⟨x, hx⟩ := hepi (g y)
+  obtain ⟨x, hx⟩ := h (g y)
   exact ⟨⟨⟨x, y⟩, hx⟩, rfl⟩
 
 end
 
 variable (R : Type) [CommRing R]
-
-instance : TotallyDisconnectedSpace PUnit := by
-  have := TotallySeparatedSpace.of_discrete
-  apply TotallySeparatedSpace.totallyDisconnectedSpace
 
 @[simps!]
 def CategoryTheory.Limits.parallelPairNatTrans {C : Type*} [Category C]
@@ -58,187 +47,147 @@ def CategoryTheory.Limits.parallelPairNatTrans {C : Type*} [Category C]
   app | zero => f0 | one => f1
   naturality := by rintro _ _ ⟨_⟩ <;> simp [wl, wr]
 
-lemma isClosed_fibres {T : LightProfinite} (f : T ⟶ ℕ∪{∞}) (s : ℕ → Set T)
-  (hs : ∀ n (x : s n), f x = n) (hs' : ∀ n, IsClosed (s n)) :
-    IsClosed ({t | f t = ∞} ∪ ⋃ n, s n) := by
-  apply IsClosed.mk
-  have clopen (n : ℕ) : IsClopen (f ⁻¹' {(n : ℕ∪{∞})}) := by
-    refine .preimage ⟨isClosed_singleton, ?_⟩ f.1.continuous
-    exact ⟨fun h ↦ by simp_all, trivial⟩
-  convert isOpen_iUnion (fun i ↦ IsOpen.inter (hs' i).1 (clopen i).2)
+def fibresOfOption {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T) : Set T :=
+  {t : T | (π t).2 = none} ∪ (⋃ (x : X), Set.range (σ x))
+
+lemma fibresOfOption_closed {S T X : Type*} [TopologicalSpace S] [TopologicalSpace T]
+    [TopologicalSpace X] [DiscreteTopology X] [T2Space T] [CompactSpace S]
+    (π : T → S × OnePoint X) (hπ : Continuous π)
+    (σ : Option X → S → T) (hσ : ∀ x, Continuous (σ x))
+    (hσ' : ∀ (x : Option X) (s : S), (π (σ x s)).2 = x) :
+    IsClosed (fibresOfOption π σ) := IsClosed.mk <| by
+  have : IsOpen (⋃ i, (Set.range (σ (Option.some i)))ᶜ ∩ (Prod.snd ∘ π) ⁻¹' {(i : OnePoint X)}) := by
+    refine isOpen_iUnion fun i ↦ IsOpen.inter ?_ ?_
+    · simpa using IsCompact.isClosed (isCompact_range (hσ i))
+    · refine .preimage (continuous_snd.comp hπ) ⟨fun h ↦ by simp_all, ?_⟩
+      convert isOpen_discrete {i}
+      aesop
+  convert this
   ext x
-  simp only [Set.compl_union, Set.compl_iUnion, Set.mem_inter_iff, Set.mem_compl_iff,
-    Set.mem_setOf_eq, Set.mem_iInter, Set.mem_iUnion, Set.mem_preimage, Set.mem_singleton_iff]
-  constructor
-  · intro ⟨h₁, h₂⟩
-    obtain ⟨n, hn⟩ := Option.ne_none_iff_exists'.mp h₁
+  simp only [fibresOfOption, Set.compl_union, Set.compl_iUnion, Set.mem_inter_iff,
+    Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iInter, Set.mem_range, not_exists, Set.mem_iUnion,
+    Set.mem_preimage, Function.comp_apply, Set.mem_singleton_iff]
+  refine ⟨fun ⟨h₁, h₂⟩ ↦ ?_, fun ⟨n, hn, hn'⟩ ↦ ?_⟩
+  · obtain ⟨n, hn⟩ := Option.ne_none_iff_exists'.mp h₁
     exact ⟨n, h₂ n, hn⟩
-  · intro ⟨n, hn, hn'⟩
-    exact ⟨by simp [hn'], fun i hx ↦ by simp_all [hs i ⟨x, hx⟩]⟩
+  · refine ⟨by simpa [hn'] using Option.isSome_iff_ne_none.mp rfl, fun i s h ↦ hn s ?_⟩
+    rw [← h, hσ'] at hn'
+    rw [← h, Option.some_injective _ hn'.symm]
 
+def π_r {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T) :
+    fibresOfOption π σ → S × Option X :=
+  fun x ↦ π x
 
+def fibreInclGeneral {S T : Type*} (y : T) (f : S → T) : f ⁻¹' {y} → S := fun x ↦ x
 
-noncomputable def smart_cover {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) :
-    coprod T (CompHausLike.pullback (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)
-      (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)) ⟶ CompHausLike.pullback π π :=
-  coprod.desc (CompHausLike.pullback.lift _ _ (𝟙 T) (𝟙 _) (by simp))
-    (CompHausLike.pullback.lift _ _ (CompHausLike.pullback.fst _ _ ≫ fibre_incl _ _)
-    (CompHausLike.pullback.snd _ _ ≫ fibre_incl _ _)
-    (by simp [CompHausLike.pullback.condition]))
+def fibreIncl {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T) :
+    (Prod.snd ∘ π_r π σ) ⁻¹' {none} → fibresOfOption π σ :=
+  fibreInclGeneral none (Prod.snd ∘ π_r π σ)
 
--- lemma subspaceCover_unbundled {S T X : Type*}
+lemma fibresOfOption_surjective {S T X : Type*}
+    (π : T → S × Option X) (hπ : π.Surjective) (σ : Option X → S → T)
+    (hσ : ∀ (x : Option X) s, (π (σ x s)).1 = s)
+    (hσ' : ∀ (x : Option  X) (s : S), (π (σ x s)).2 = x) :
+    (fun (x : fibresOfOption π σ) ↦ π x).Surjective := by
+  rintro ⟨s, (rfl | x)⟩
+  · obtain ⟨y, hy⟩ := hπ (s, none)
+    exact ⟨⟨y, by simp [fibresOfOption, hy]⟩, hy⟩
+  · exact ⟨⟨σ x s, by simp [fibresOfOption]⟩, Prod.ext (by grind) (by grind)⟩
 
-lemma subspaceCover { S T : LightProfinite } (π : T ⟶ S ⊗ ℕ∪{∞}) [hepi : Epi π]
-    {σ' : ℕ∪{∞} → (S ⟶ T)} (hσ : ∀ n, σ' n ≫ π ≫ fst _ _ = 𝟙 _)
-    (hσ' : ∀ n (s : S), (σ' n ≫ π ≫ snd S ℕ∪{∞}) s = n) : ∃ (T' : LightProfinite) (i : T' ⟶ T),
-      Epi (i ≫ π) ∧ Epi (smart_cover (i ≫ π)) ∧ IsSplitEpi
-        (fibre_incl ∞ ((i ≫ π) ≫ snd _ _) ≫ i ≫ π ≫ fst S ℕ∪{∞}) := by
-  have : IsClosed ({t : T | (π ≫ snd _ _) t = ∞} ∪ (⋃ (n : ℕ), Set.range (σ' n))) :=
-    isClosed_fibres _ _
-      (fun n ⟨x, ⟨s, hs⟩⟩ ↦ by simp only [← hs, ← ConcreteCategory.comp_apply, hσ' _ _])
-      (fun n ↦ IsCompact.isClosed (isCompact_range (σ' n).1.continuous))
-  have compactSpace := isCompact_iff_compactSpace.mp this.isCompact
-  let T' : LightProfinite := LightProfinite.of
-      ({t : T | (π ≫ snd _ _) t = ∞} ∪ (⋃ (n : ℕ), Set.range (σ' n)) : Set T)
-  let i : T' ⟶ T := CompHausLike.ofHom _ ⟨Subtype.val, continuous_subtype_val⟩
-  have hht (n : ℕ) (t : T') (hn : n = (π t).2) : σ' n (π t).1 = t := by
+abbrev smartCoverToFun {S T X Y : Type*} (i : Y → T) (π : T → S × Option X) :
+    T ⊕ {xy : Y × Y // π (i xy.1) = π (i xy.2)} → {xy : T × T // π xy.1 = π xy.2} :=
+  Sum.elim (fun t ↦ ⟨(t, t), rfl⟩) (fun xy ↦ ⟨(i xy.val.1, i xy.val.2), xy.prop⟩)
+
+lemma smartCoverToFun_surjective {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T)
+    (hσ : ∀ (x : Option X) s, (π (σ x s)).1 = s) (hσ' : ∀ (x : Option X) (s : S), (π (σ x s)).2 = x) :
+    Function.Surjective (smartCoverToFun (fibreIncl π σ) (π_r π σ)) := by
+  intro ⟨⟨t, t'⟩, ht⟩
+  dsimp [π_r] at ht
+  have hht (x : X) (t : fibresOfOption π σ) (hn : x = (π t).2) : σ x (π t).1 = t := by
     have ht' := t.prop
-    rw [Set.mem_union] at ht'
+    simp only [fibresOfOption, Set.mem_union] at ht'
     obtain (ht' | ht') := ht'
-    · have ht' : (π t).2 = ∞ := by dsimp at ht'; simp [← ht']; rfl
+    · have ht' : (π t).2 = none := by dsimp at ht'; simp [← ht']
       simp_all
     · simp only [Set.mem_iUnion, Set.mem_range] at ht'
       obtain ⟨m, s, ht'⟩ := ht'
-      nth_rw 1 [← ht']
-      have : (π (σ' m s)).1 = s := ConcreteCategory.hom_ext_iff.mp (hσ m) s
-      convert ht'
-      suffices (n : ℕ∪{∞}) = m by simpa using this
-      rw [hn, ← ht']
-      nth_rw 2 [← hσ' m s ]
-      rfl
-  refine ⟨T', i, ?_, ?_, ?_⟩
-  · rw [LightProfinite.epi_iff_surjective]
-    rintro ⟨s, (rfl | n)⟩
-    · obtain ⟨t, ht⟩ := (LightProfinite.epi_iff_surjective π).mp hepi ⟨s, none⟩
-      exact ⟨⟨t, Or.inl <| by simp [ht]; rfl⟩, ht⟩
-    · refine ⟨⟨σ' n s, by simp⟩, ?_⟩
-      apply Prod.ext
-      · change ConcreteCategory.hom (σ' n ≫ π ≫ fst _ _) s = s
-        simp [hσ]
-      · change ConcreteCategory.hom (σ' n ≫ π ≫ snd _ _) s = n
-        rw [hσ']
-  · rw [LightProfinite.epi_iff_surjective]
-    intro ⟨⟨t, t'⟩, ht⟩
-    replace ht : π t = π t' := by simpa [i] using ht
-    by_cases h : (i ≫ π ≫ snd _ _) t = ∞
-    · have : (i ≫ π ≫ snd _ _) t' = ∞ := by simp [← h, i, ht]
-      let x : CompHausLike.pullback (fibre_incl ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) ≫ i ≫ π)
-        (fibre_incl ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) ≫ i ≫ π) :=
-        ⟨⟨⟨⟨(), t⟩, by simp [CompHausLike.const, i, ← this, ht]⟩, ⟨⟨(), t'⟩,
-          by simp [CompHausLike.const, ← this]⟩⟩,
-          by
-            simp only [Set.mem_setOf_eq]
-            rw [ConcreteCategory.comp_apply (fibre_incl _ _), ConcreteCategory.comp_apply
-              (fibre_incl _ _)]
-            unfold fibre_incl
-            simp only [CompHausLike.const, CompHausLike.hom_ofHom]
-            exact ht⟩
-      let p := coprod.inr (X := T') (Y := (CompHausLike.pullback _ _)) x
-      use coprod.inr (X := T') (Y := (CompHausLike.pullback _ _)) x
-      rw [smart_cover, ← ConcreteCategory.comp_apply]
-      simp
-      rfl
-    · rw [← ne_eq, OnePoint.ne_infty_iff_exists] at h
-      obtain ⟨n, hn⟩ := h
-      have hn : n = (π t).2 := by simpa using hn
-      refine ⟨coprod.inl (X := T') (Y := (CompHausLike.pullback _ _)) ⟨σ' n (π (i t)).1, by simp⟩, ?_⟩
-      simp only [smart_cover, ← ConcreteCategory.comp_apply, coprod.inl_desc]
-      dsimp [CompHausLike.pullback.lift, i]
-      apply Subtype.ext
-      apply Prod.ext
-      · apply Subtype.ext
-        exact hht _ _ hn
-      · apply Subtype.ext
-        rw [ht] at hn
-        simp only [ht]
-        exact hht _ _ hn
-  · let σ : (S ⟶ T') := CompHausLike.ofHom _ ⟨fun s ↦ ⟨σ' ∞ s, Or.inl (hσ' ∞ s)⟩, by continuity⟩
-    have hhh := hσ' ∞
-    refine ⟨fibreLift ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) σ (by exact hσ' ∞), ?_⟩
-    simp only [← Category.assoc]
-    rw [fibreLift_comp ∞ ((i ≫ π) ≫ snd S ℕ∪{∞}) σ (by exact hσ' ∞), show σ ≫ i = σ' ∞ from rfl,
-     Category.assoc, hσ]
+      rw [← ht', hσ m s, ← hσ' m s, hn, ← ht']
+  by_cases h : (π t).2 = none
+  · exact ⟨Sum.inr ⟨(⟨t, by grind [π_r]⟩, ⟨t', by grind [π_r]⟩),
+      by simp [fibreIncl, fibreInclGeneral, π_r, ht]⟩,
+      by simp [smartCoverToFun, fibreIncl, fibreInclGeneral]⟩
+  · rw [← ne_eq, Option.ne_none_iff_exists'] at h
+    obtain ⟨n, hn⟩ := h
+    refine ⟨Sum.inl ⟨σ n (π_r π σ t).1, by simp [fibresOfOption]⟩, ?_⟩
+    simp only [Sum.elim_inl, Subtype.mk.injEq, Prod.mk.injEq]
+    refine ⟨Subtype.ext <| hht _ _ hn.symm, ?_⟩
+    rw [ht] at hn
+    simpa [π_r, ht] using Subtype.ext <| hht _ _ hn.symm
 
-instance {J : Type*} [DecidableEq J] (B : LightProfinite.{u}) (objs : J → LightProfinite)
-  (arrows: (j : J) → (objs j ⟶ B)) [hepi : ∀ j, Epi (arrows j)] [HasWidePullback B objs arrows] :
-    ∀ j, Epi (WidePullback.π arrows j) := by
-  intro i
-  simp only [LightProfinite.epi_iff_surjective] at ⊢ hepi
-  intro xi
-  let point : LightProfinite.{u} := LightProfinite.of PUnit
-  let base_pt : B := arrows i xi
-  have choice : ∀ j, ∃ xj, arrows j xj = base_pt := fun j ↦ hepi j base_pt
-  let point_maps : (j : J) → (point ⟶ objs j) := (fun j ↦
-    if h : i = j then CompHausLike.ofHom _ (ContinuousMap.const point (h ▸ xi))
-    else (CompHausLike.ofHom _ (ContinuousMap.const point (choice j).choose)))
-  let lift : point ⟶ widePullback B objs arrows :=
-    WidePullback.lift (CompHausLike.ofHom _ (ContinuousMap.const point base_pt)) point_maps
-      (by
-        intro j
-        unfold point_maps
-        by_cases h : i = j
-        · rw [dif_pos h]
-          subst h
-          rfl
-        · rw [dif_neg h]
-          ext x
-          simp only [ConcreteCategory.comp_apply, CompHausLike.hom_ofHom, ContinuousMap.const_apply]
-          exact (choice j).choose_spec)
-  use lift PUnit.unit
-  rw [← ConcreteCategory.comp_apply, WidePullback.lift_π]
-  simp [point_maps]
+abbrev smartCoverNew {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) :
+    (CompHausLike.of _ (T ⊕ (CompHausLike.pullback (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)
+      (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)))) ⟶ CompHausLike.pullback π π := ⟨{
+  toFun := smartCoverToFun _ _
+  continuous_toFun := by simpa using by fun_prop }⟩
 
-instance : DecidableEq ℕ∪{∞} := inferInstanceAs (DecidableEq <| Option ℕ)
+def sectionOfFibreIncl {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T)
+    (hσ' : ∀ (x : Option X) (s : S), (π (σ x s)).2 = x) : S → (Prod.snd ∘ π_r π σ) ⁻¹' {none} :=
+  fun s ↦ ⟨⟨σ none s, by simp [fibresOfOption, hσ']⟩, by simp [hσ', π_r]⟩
 
 lemma refinedCover {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
     ∃ (S' T' : LightProfinite) (y' : S' ⟶ S) (π' : T' ⟶ S' ⊗ ℕ∪{∞}) (g' : T' ⟶ T),
       Epi π' ∧ Epi y' ∧ π' ≫ (y' ▷ ℕ∪{∞}) = g' ≫ π ∧
         IsSplitEpi (fibre_incl ∞ (π' ≫ snd S' ℕ∪{∞}) ≫ π' ≫ fst S' ℕ∪{∞}) ∧
-          Epi (smart_cover π') := by
-  have : Countable (WidePullbackShape ↑ℕ∪{∞}.toTop) :=
-    inferInstanceAs (Countable <| Option (Option _))
-  let S' := widePullback S (fun (n : ℕ∪{∞}) ↦ fibre n (π ≫ snd _ _))
-    (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _)
-  let y' : S' ⟶ S := WidePullback.base (fun n ↦ fibre_incl n (π ≫ snd _ _) ≫ π ≫ fst _ _)
+          Epi (smartCoverNew π') := by
+  have : Countable ℕ∪{∞} := inferInstanceAs (Countable <| Option _)
+  have : CompactSpace
+      {x : (n : ℕ∪{∞}) → fibre n (π ≫ snd _ _) | ∀ n m, (π (x n).val).1 = (π (x m).val).1} := by
+    rw [← isCompact_iff_compactSpace, show
+      {x : (n : ℕ∪{∞}) → fibre n (π ≫ snd _ _) | ∀ n m, (π (x n).val).1 = (π (x m).val).1} =
+      ⋂ (n : ℕ∪{∞}) (m : ℕ∪{∞}), {x | (π (x n).val).1 = (π (x m).val).1} by aesop]
+    refine (isClosed_iInter fun n ↦ isClosed_iInter fun m ↦ isClosed_eq ?_ ?_).isCompact
+    all_goals exact continuous_fst.comp (Continuous.comp (by fun_prop) (continuous_subtype_val.comp
+        ((continuous_apply _).comp (by fun_prop))))
+  let S' : LightProfinite := LightProfinite.of
+    {x : (n : ℕ∪{∞}) → fibre n (π ≫ snd _ _) | ∀ n m, (π (x n).val).1 = (π (x m).val).1}
+  let S'π (n : ℕ∪{∞}) : S' ⟶ fibre n (π ≫ snd _ _) :=
+    ⟨{ toFun x := x.val n, continuous_toFun := by refine (continuous_apply _).comp ?_; fun_prop }⟩
+  let y' : S' ⟶ S := CompHausLike.ofHom _ {
+    toFun x := (π (x.val none).val).1
+    continuous_toFun := continuous_fst.comp <| Continuous.comp (by fun_prop) <|
+      continuous_subtype_val.comp <| (continuous_apply _).comp <| by fun_prop }
   let Ttilde := CompHausLike.pullback π (y' ▷ ℕ∪{∞})
   let π_tilde : Ttilde ⟶ S' ⊗ ℕ∪{∞} := CompHausLike.pullback.snd _ _
-  let σ' : ℕ∪{∞} → (S' ⟶ Ttilde) := fun n ↦
-    CompHausLike.pullback.lift _ _
-      ((WidePullback.π _ n) ≫ fibre_incl n (π ≫ snd _ _))
-      (lift (𝟙 S') (CompHausLike.ofHom _ <| ContinuousMap.const S' n))
-      (by
-        simp only [Category.assoc, limit.cone_x]
-        apply CartesianMonoidalCategory.hom_ext
-        · simp [y']
-        · ext
-          simp only [Category.assoc, fibre_incl, ← CompHausLike.pullback.condition,
-            lift_whiskerRight, Category.id_comp, lift_snd, CompHausLike.hom_ofHom,
-            ContinuousMap.const_apply]
-          rfl)
-  obtain ⟨T', i, _, _, split⟩ := subspaceCover π_tilde (σ' := σ')
-    (fun _ ↦ by simp [σ', π_tilde]) (fun _ _ ↦ by simp [σ', π_tilde])
-  refine ⟨S', T', y', i ≫ π_tilde, i ≫ CompHausLike.pullback.fst _ _, inferInstance, ?_,
-    by simp [π_tilde, CompHausLike.pullback.condition], split,
-    inferInstance⟩
-  dsimp [y']
-  rw [← WidePullback.π_arrow _ (OnePoint.some 0)]
-  have (j : ℕ∪{∞}) :Epi (fibre_incl j (π ≫ snd S ℕ∪{∞}) ≫ π ≫ fst S ℕ∪{∞}) := by
-    rw [LightProfinite.epi_iff_surjective]
-    intro s
-    have : Function.Surjective π := by rw [← LightProfinite.epi_iff_surjective]; infer_instance
-    obtain ⟨t, ht⟩ := this ⟨s, j⟩
-    exact ⟨⟨⟨(), t⟩, by simp [ht]; rfl⟩, (Prod.ext_iff.mp ht).1⟩
-  infer_instance
+  let σ' : ℕ∪{∞} → S' → Ttilde := fun n ↦ CompHausLike.pullback.lift _ _
+    (S'π n ≫ fibre_incl _ _) (lift (𝟙 S') (CompHausLike.const _ n)) <| by
+      apply CartesianMonoidalCategory.hom_ext
+      · ext x; exact x.prop n none
+      · ext x; exact (x.val n).prop
+  have hσ (x : ℕ∪{∞}) (s : S') : (π_tilde (σ' x s)).1 = s := by simp [σ', π_tilde]; rfl
+  have hσ' (x : ℕ∪{∞}) (s : S') : (π_tilde (σ' x s)).2 = x := by simp [σ', π_tilde]; rfl
+  have : CompactSpace (fibresOfOption π_tilde σ') := isCompact_iff_compactSpace.mp
+    (fibresOfOption_closed π_tilde (by fun_prop) σ' (by fun_prop) hσ').isCompact
+  refine ⟨S', LightProfinite.of (fibresOfOption π_tilde σ'), y',
+    ⟨⟨Subtype.val, by fun_prop⟩⟩ ≫ π_tilde,
+    ⟨⟨Subtype.val, by fun_prop⟩⟩ ≫ CompHausLike.pullback.fst _ _, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [LightProfinite.epi_iff_surjective]
+    refine fibresOfOption_surjective _ ?_ _ hσ hσ'
+    rw [← LightProfinite.epi_iff_surjective]
+    dsimp [π_tilde]
+    infer_instance
+  · rw [LightProfinite.epi_iff_surjective]
+    intro y
+    have : Function.Surjective π := by rwa [← LightProfinite.epi_iff_surjective]
+    let p (s : S) (n : ℕ∪{∞}) : T := (this (s, n)).choose
+    have hp (s : S) (n : ℕ∪{∞}) : π (p s n) = (s, n) := (this (s, n)).choose_spec
+    refine ⟨⟨fun n ↦ ⟨p y n, ?_⟩, ?_⟩, ?_⟩
+    · simp [hp]; rfl
+    · simp [hp]
+    · simp [y', hp]
+  · simp [π_tilde, CompHausLike.pullback.condition]
+  · exact ⟨⟨⟨sectionOfFibreIncl π_tilde σ' hσ', .subtype_mk (.subtype_mk (by fun_prop) _) _⟩⟩, rfl⟩
+  · rw [LightProfinite.epi_iff_surjective]
+    exact smartCoverToFun_surjective _ _ hσ hσ'
 
 private lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
     (f : (free R).obj (S).toCondensed ⟶ Y) :
@@ -260,7 +209,6 @@ private lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : Lig
     ← (coherentTopology LightProfinite).yonedaEquiv_symm_naturality_right]
   rfl
 
-
 instance : IsLeftAdjoint (free R) := ⟨_, ⟨LightCondensed.freeForgetAdjunction R⟩⟩
 
 noncomputable def hc {S T : LightProfinite} (π : T ⟶ S) [Epi π] :
@@ -268,7 +216,7 @@ noncomputable def hc {S T : LightProfinite} (π : T ⟶ S) [Epi π] :
   isColimitOfPreserves _ (explicitRegularIsColimit _)
 
 noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S ⊗ ℕ∪{∞}))
-    [Epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smart_cover π)]
+    [Epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smartCoverNew π)]
     (g : ((lightProfiniteToLightCondSet ⋙ free R).obj T) ⟶ X)
     (r_inf : T ⟶ (fibre ∞ (π ≫ snd _ _))) (σ : S ⟶ (fibre ∞ (π ≫ snd _ _)))
     (hr : fibre_incl ∞ (π ≫ snd _ _) ≫ r_inf = 𝟙 (fibre ∞ (π ≫ snd _ _))) :
@@ -282,32 +230,26 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
         (lightProfiniteToLightCondSet ⋙ (free R)).map
           (r_inf ≫ fibre_incl ∞ (π ≫ snd _ _) ≫ π ≫ fst _ _ ≫ σ ≫ fibre_incl ∞ (π ≫ snd _ _)) ≫ g
     refine parallelPairNatTrans (_ ≫ g_tilde) g_tilde ?_ rfl
-    rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smart_cover π)]
-    apply (isColimitOfHasBinaryCoproductOfPreservesColimit
-      (lightProfiniteToLightCondSet ⋙ (free R)) T
-      (CompHausLike.pullback (fibre_incl ∞ (π ≫ snd _ _) ≫ π)
-      (fibre_incl ∞ (π ≫ snd _ _) ≫ π))).hom_ext
+    rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smartCoverNew π)]
+    apply (isColimitOfPreserves (lightProfiniteToLightCondSet ⋙ (free R))
+        (CompHausLike.coprod.isColimit _ _)).hom_ext
     rintro ⟨⟨⟩⟩
-    · simp [← Functor.map_comp_assoc, ← Functor.map_comp, smart_cover]
-    · -- simp? [← map_comp_assoc, ← Functor.map_comp]:
-      simp only [comp_obj, pair_obj_right, const_obj_obj, Functor.comp_map, BinaryCofan.mk_pt,
-        BinaryCofan.mk_inr, parallelPair_obj_zero, parallelPair_obj_one, parallelPair_map_left,
-        ← map_comp_assoc, ← Functor.map_comp, parallelPair_map_right, const_obj_map,
-        Category.comp_id]
-      -- simp? [smart_cover, g_tilde]:
-      simp only [smart_cover, coprod.desc_comp, CompHausLike.pullback.lift_fst, colimit.ι_desc,
-        BinaryCofan.mk_pt, BinaryCofan.mk_inr, Functor.map_comp, comp_obj, Functor.comp_map,
-        Category.assoc, Preadditive.comp_add, Preadditive.comp_sub, CompHausLike.pullback.lift_snd,
-        g_tilde]
-      -- simp? [← Functor.comp_map, ← Category.assoc, ← Functor.map_comp, hr]:
-      simp only [← Functor.comp_map, ← Category.assoc, ← Functor.map_comp, hr, Category.id_comp,
-        sub_self, zero_add]
-      conv =>
-        simp only [Category.assoc, Functor.comp_map]
-        enter [1, 1, 2, 2]
-        slice 1 3
-        rw [CompHausLike.pullback.condition]
+    · simp [← Functor.map_comp_assoc, ← Functor.map_comp]
       rfl
+    · simp only [comp_obj, pair_obj_right, const_obj_obj, mapCocone_pt, BinaryCofan.mk_pt,
+        mapCocone_ι_app, BinaryCofan.mk_inr, Functor.comp_map, parallelPair_obj_zero,
+        parallelPair_obj_one, parallelPair_map_left, ← map_comp_assoc, ← Functor.map_comp,
+        parallelPair_map_right, const_obj_map, Category.comp_id]
+      have : smartCoverNew π =
+          CompHausLike.coprod.desc (CompHausLike.pullback.lift _ _ (𝟙 T) (𝟙 T) (by simp))
+            (CompHausLike.pullback.lift _ _ ((CompHausLike.pullback.fst _ _) ≫ fibre_incl _ _)
+              ((CompHausLike.pullback.snd _ _) ≫ fibre_incl _ _)
+              (by simp [CompHausLike.pullback.condition])) := rfl
+      simp only [this, CompHausLike.coprod.inr_desc_assoc, CompHausLike.pullback.lift_fst, comp_obj,
+        Functor.comp_map, Preadditive.comp_add, Preadditive.comp_sub, ← map_comp_assoc,
+        ← Functor.map_comp, Category.assoc, CompHausLike.pullback.lift_snd, g_tilde]
+      simp only [← Functor.comp_map, ← Category.assoc, hr, Category.id_comp, sub_self, zero_add]
+      simp [CompHausLike.pullback.condition]
 
 instance (X Y : LightProfinite.{u}) [Nonempty X] : Epi (snd X Y) := by
   rw [LightProfinite.epi_iff_surjective]
@@ -322,12 +264,12 @@ theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ�
   by_cases hS' : Nonempty S'
   · have : Mono (fibre_incl ∞ (π' ≫ snd _ _)) := by
       rw [CompHausLike.mono_iff_injective]
-      rintro ⟨⟨⟨⟩, _⟩, _⟩ _ rfl
-      rfl
+      simp [fibre_incl]
+      exact Subtype.val_injective
     have : Nonempty (fibre ∞ (π' ≫ snd _ _)) := by
       have : Epi (π' ≫ snd S' ℕ∪{∞}) := inferInstance
-      obtain ⟨_, hx⟩ := (LightProfinite.epi_iff_surjective _).mp this ∞
-      refine ⟨⟨(), _⟩, hx.symm⟩
+      obtain ⟨x, hx⟩ := (LightProfinite.epi_iff_surjective _).mp this ∞
+      refine ⟨x, by simpa using hx⟩
     obtain ⟨r_inf, hr⟩ := Injective.factors (𝟙 _) (fibre_incl ∞ (π' ≫ snd _ _))
     refine ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
       (hc R π').desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
@@ -347,9 +289,10 @@ theorem internallyProjective_ℕinfty : InternallyProjective ((free R).obj (ℕ�
     simp only [Category.assoc]
     have : fibre_incl ∞ (π' ≫ snd _ _) ≫ π' = fibre_incl ∞ (π' ≫ snd _ _) ≫ π' ≫ fst _ _ ≫
         lift (𝟙 _) (CompHausLike.const S' (∞ : ℕ∪{∞})) := by
-      apply CartesianMonoidalCategory.hom_ext <;>
-      simp [fibre_incl, ← CompHausLike.pullback.condition]
-      rfl
+      apply CartesianMonoidalCategory.hom_ext
+      · simp [fibre_incl]
+      · ext a
+        exact a.prop
     rw [reassoc_of% this, reassoc_of% split.id]
   · have hh : IsEmpty (S' ⊗ ℕ∪{∞}) := { false a := IsEmpty.elim (by simpa using hS') (fst S' _ a) }
     have : IsIso π' := ⟨CompHausLike.ofHom _ ⟨(hh.elim ·), continuous_of_const <| by aesop⟩,
