@@ -4,6 +4,7 @@ import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+import LeanCondensed.Mathlib.Topology.Category.CompHausLike.Limits
 import LeanCondensed.Projects.Epi
 import LeanCondensed.Projects.FreeCondensed
 import LeanCondensed.Projects.IsLocalizedMonoidal
