@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
 import Mathlib.Condensed.Light.InternallyProjective
+import Mathlib.Topology.FiberPartition
 import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Epi
@@ -180,16 +181,14 @@ lemma refinedCover {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π
     have : Function.Surjective π := by rwa [← LightProfinite.epi_iff_surjective]
     let p (s : S) (n : ℕ∪{∞}) : T := (this (s, n)).choose
     have hp (s : S) (n : ℕ∪{∞}) : π (p s n) = (s, n) := (this (s, n)).choose_spec
-    refine ⟨⟨fun n ↦ ⟨p y n, ?_⟩, ?_⟩, ?_⟩
-    · simp [hp]; rfl
-    · simp [hp]
-    · simp [y', hp]
+    exact ⟨⟨fun n ↦ ⟨p y n, by simp [hp]; rfl⟩, by simp [hp]⟩, by simp [y', hp]⟩
   · simp [π_tilde, CompHausLike.pullback.condition]
-  · exact ⟨⟨⟨sectionOfFibreIncl π_tilde σ' hσ', .subtype_mk (.subtype_mk (by fun_prop) _) _⟩⟩, rfl⟩
+  · exact ⟨TopCat.ofHom ⟨(sectionOfFibreIncl π_tilde σ' hσ'),
+      (.subtype_mk (.subtype_mk (by fun_prop) _) _)⟩, rfl⟩
   · rw [LightProfinite.epi_iff_surjective]
     exact smartCoverToFun_surjective _ _ hσ hσ'
 
-private lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
+lemma comm_sq {X Y : LightCondMod R} (p : X ⟶ Y) [hp : Epi p] {S : LightProfinite}
     (f : (free R).obj (S).toCondensed ⟶ Y) :
       ∃ (T : LightProfinite) (π : T ⟶ S) (g : ((free R).obj T.toCondensed) ⟶ X),
         Epi π ∧ (lightProfiniteToLightCondSet ⋙ (free R)).map π ≫ f = g ≫ p := by
@@ -232,22 +231,23 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
     refine parallelPairNatTrans (_ ≫ g_tilde) g_tilde ?_ rfl
     rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smartCoverNew π)]
     apply (isColimitOfPreserves (lightProfiniteToLightCondSet ⋙ (free R))
-        (CompHausLike.coprod.isColimit _ _)).hom_ext
+        (CompHausLike.coproductIsColimit _ _)).hom_ext
     rintro ⟨⟨⟩⟩
     · simp [← Functor.map_comp_assoc, ← Functor.map_comp]
       rfl
-    · simp only [comp_obj, pair_obj_right, const_obj_obj, mapCocone_pt, BinaryCofan.mk_pt,
-        mapCocone_ι_app, BinaryCofan.mk_inr, Functor.comp_map, parallelPair_obj_zero,
-        parallelPair_obj_one, parallelPair_map_left, ← map_comp_assoc, ← Functor.map_comp,
-        parallelPair_map_right, const_obj_map, Category.comp_id]
-      have : smartCoverNew π =
-          CompHausLike.coprod.desc (CompHausLike.pullback.lift _ _ (𝟙 T) (𝟙 T) (by simp))
-            (CompHausLike.pullback.lift _ _ ((CompHausLike.pullback.fst _ _) ≫ fibre_incl _ _)
-              ((CompHausLike.pullback.snd _ _) ≫ fibre_incl _ _)
-              (by simp [CompHausLike.pullback.condition])) := rfl
-      simp only [this, CompHausLike.coprod.inr_desc_assoc, CompHausLike.pullback.lift_fst, comp_obj,
-        Functor.comp_map, Preadditive.comp_add, Preadditive.comp_sub, ← map_comp_assoc,
-        ← Functor.map_comp, Category.assoc, CompHausLike.pullback.lift_snd, g_tilde]
+    · simp only [comp_obj, pair_obj_right, const_obj_obj, mapCocone_pt, mapCocone_ι_app,
+        Functor.comp_map, parallelPair_obj_zero, parallelPair_obj_one, parallelPair_map_left,
+        ← map_comp_assoc, ← Functor.map_comp, parallelPair_map_right, const_obj_map, Category.comp_id]
+      have : smartCoverNew π = (BinaryCofan.IsColimit.desc' (CompHausLike.coproductIsColimit _ _)
+          (CompHausLike.pullback.lift _ _ (𝟙 T) (𝟙 T) (by simp))
+          (CompHausLike.pullback.lift _ _ ((CompHausLike.pullback.fst _ _) ≫ fibre_incl _ _)
+            ((CompHausLike.pullback.snd _ _) ≫ fibre_incl _ _)
+            (by simp [CompHausLike.pullback.condition]))).val := rfl
+      simp only [this, pair_obj_left, const_obj_obj, pair_obj_right,
+        BinaryCofan.IsColimit.desc'_coe, IsColimit.fac_assoc, BinaryCofan.mk_pt, BinaryCofan.mk_inr,
+        CompHausLike.pullback.lift_fst, comp_obj, Functor.comp_map, Preadditive.comp_add,
+        Preadditive.comp_sub, ← map_comp_assoc, ← Functor.map_comp, Category.assoc,
+        CompHausLike.pullback.lift_snd, g_tilde]
       simp only [← Functor.comp_map, ← Category.assoc, hr, Category.id_comp, sub_self, zero_add]
       simp [CompHausLike.pullback.condition]
 
