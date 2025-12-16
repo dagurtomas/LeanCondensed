@@ -178,7 +178,7 @@ lemma mem_S'_iff {S T X : Type*} (π : T → S × OnePoint X)
 def y {S T X : Type*} (π : T → S × OnePoint X) : S' π → S :=
   fun x ↦ (π (x.val ∞).val).1
 
-@[simp]
+@[grind =]
 lemma y_apply {S T X : Type*} (π : T → S × OnePoint X) (x : S' π) : y π x = (π (x.val ∞).val).1 :=
   rfl
 
@@ -187,6 +187,13 @@ lemma y_continuous {S T X : Type*} [TopologicalSpace S] [TopologicalSpace T]
     Continuous (y π) :=
   continuous_fst.comp <| hπ.comp <| continuous_subtype_val.comp <|
     (continuous_apply _).comp (by fun_prop)
+
+lemma y_surjective {S T X : Type*} (π : T → S × OnePoint X) (hπ : π.Surjective) :
+    (y π).Surjective := by
+  intro s
+  let p (s : S) (n : OnePoint X) : T := (hπ (s, n)).choose
+  have hp (s : S) (n : OnePoint X) : π (p s n) = (s, n) := (hπ (s, n)).choose_spec
+  exact ⟨⟨fun n ↦ ⟨p s n, by grind⟩, by grind⟩, by grind⟩
 
 lemma S'_compactSpace {S T X : Type*} [TopologicalSpace S] [T2Space S] [TopologicalSpace T]
     [CompactSpace T] [TopologicalSpace X] [T1Space (OnePoint X)]
@@ -267,11 +274,8 @@ lemma aux {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
     dsimp [π']
     infer_instance
   · rw [LightProfinite.epi_iff_surjective]
-    intro y
-    have : Function.Surjective π := by rwa [← LightProfinite.epi_iff_surjective]
-    let p (s : S) (n : ℕ∪{∞}) : T := (this (s, n)).choose
-    have hp (s : S) (n : ℕ∪{∞}) : π (p s n) = (s, n) := (this (s, n)).choose_spec
-    exact ⟨⟨fun n ↦ ⟨p y n, by grind⟩, by grind⟩, by simp [y', hp]⟩
+    apply y_surjective
+    rwa [← LightProfinite.epi_iff_surjective]
   · simp [π', CompHausLike.pullback.condition]
   · exact ⟨ConcreteCategory.ofHom ⟨(sectionOfFibreIncl π' σ' hσ'),
       (.subtype_mk (.subtype_mk (by fun_prop) _) _)⟩, rfl⟩
