@@ -222,7 +222,7 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
   apply (isColimitOfPreserves (lightProfiniteToLightCondSet ⋙ (free R))
       (coproductIsColimit _ _)).hom_ext
   rintro ⟨⟨⟩⟩
-  · simp [← Functor.map_comp_assoc, -Functor.map_comp]
+  · simp [← map_comp_assoc, -Functor.map_comp]
     rfl
   · -- simp? [← map_comp_assoc, -Functor.map_comp]:
     simp only [comp_obj, pair_obj_right, mapCocone_pt, const_obj_obj, mapCocone_ι_app,
@@ -301,7 +301,7 @@ theorem LightCondensed.internallyProjective_free_natUnionInfty :
       hc.desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
       r_inf split.section_ hr), ?_⟩
     rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
-      ← Functor.comp_map, ← Functor.map_comp_assoc]
+      ← Functor.comp_map, ← map_comp_assoc]
     change _ = (((free R).mapCocone _).ι.app .one ≫ hc.desc (c R π' _ r_inf split.section_ hr)) ≫ p
     rw [hc.fac]
     -- simp? [← comm]:
@@ -316,13 +316,8 @@ theorem LightCondensed.internallyProjective_free_natUnionInfty :
         lift (𝟙 _) (const S' (∞ : ℕ∪{∞})) :=
       CartesianMonoidalCategory.hom_ext _ _ rfl (by ext a; exact a.prop)
     rw [reassoc_of% this, reassoc_of% split.id]
-  · have hh : IsEmpty (S' ⊗ ℕ∪{∞}) := isEmpty_prod.mpr <| Or.inl <| by simpa using hS'
-    have : IsIso π' := ⟨ConcreteCategory.ofHom ⟨(hh.elim ·), continuous_of_const <| by aesop⟩,
-      by ext x; exact hh.elim (π' x), by ext x; all_goals exact hh.elim x⟩
-    refine ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
-      (lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, ?_⟩
-    -- simp? [← comm, ← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π')]:
-    simp only [comp_obj, Functor.comp_map, Functor.map_comp, Functor.map_inv, assoc,
-      ← comm, ← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
-      IsIso.hom_inv_id_assoc]
-    simp [← assoc, ← Functor.map_comp, ← comp]
+  · have h : IsEmpty (S' ⊗ ℕ∪{∞}) := isEmpty_prod.mpr <| Or.inl <| by simpa using hS'
+    have : IsIso π' := ⟨ConcreteCategory.ofHom ⟨(h.elim ·), continuous_of_const <| by aesop⟩,
+      by ext x; exact h.elim (π' x), by ext x; all_goals exact h.elim x⟩
+    exact ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
+      (lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, by grind⟩
