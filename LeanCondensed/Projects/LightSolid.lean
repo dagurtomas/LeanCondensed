@@ -65,7 +65,7 @@ variable (R : Type _) [CommRing R]
 -- might need some more assumptions eventually, finite type over `ℤ`?
 
 instance : InternallyProjective ((free R).obj (ℕ∪{∞}).toCondensed) :=
-  internallyProjective_ℕinfty _
+  internallyProjective_free_natUnionInfty _
 
 instance : InternallyProjective (P R) := .ofRetract (P_retract _)
 
