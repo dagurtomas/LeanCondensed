@@ -11,8 +11,8 @@ import LeanCondensed.Projects.Epi
 import LeanCondensed.Mathlib.CategoryTheory.Countable
 import LeanCondensed.Mathlib.Topology.Category.CompHausLike.Limits
 
-open CategoryTheory Category Functor Opposite LightProfinite OnePoint LightCondensed
-  MonoidalCategory CartesianMonoidalCategory Topology CompHausLike
+open CategoryTheory Category Functor LightProfinite OnePoint LightCondensed
+  MonoidalCategory CartesianMonoidalCategory CompHausLike
 
 universe u
 
