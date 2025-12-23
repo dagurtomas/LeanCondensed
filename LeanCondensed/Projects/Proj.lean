@@ -70,6 +70,10 @@ variable {Z : LightProfinite} {f : X ⟶ Z} {g : Y ⟶ Z}
 
 end
 
+/- Given a map `π : T → S ⨯ Option X` and maps `σ : Option X → S → T`,
+  `fibresOfOption` gives the set containing union of the images of `σ (Some x)`
+  for all `x : X`, together with the fibre over `None : Option X` of the
+  composition `T → S ⨯ Option X → Option X `. -/
 def fibresOfOption {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T) : Set T :=
   {t : T | (π t).2 = none} ∪ (⋃ (x : X), Set.range (σ x))
 
@@ -155,6 +159,11 @@ lemma smartCoverToFun_surjective {S T X : Type*} (π : T → S × Option X) (σ 
   · obtain ⟨n, hn⟩ := Option.ne_none_iff_exists'.mp h
     exact ⟨Sum.inl ⟨σ n (π t).1, by grind⟩, by grind⟩
 
+/- This object is used to show that a certain map `T ⟶ X` descends
+   to a map `S ⊗ N∪{∞} → X`. Because epimorphisms in `LightProfinite`
+   are effective, it does so if the two maps `pullback π π → T → S ⊗ N∪{∞}`
+   are equal. This can be checked by precomposing with an epimorphism,
+   which is given by this morphism. -/
 def smartCoverNew {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) :
     (of _ (T ⊕ (pullback (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)
       (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)))) ⟶ pullback π π := ⟨{
@@ -165,6 +174,18 @@ def sectionOfFibreIncl {S T X : Type*} (π : T → S × Option X) (σ : Option X
     (hσ' : ∀ (x : Option X) (s : S), (π (σ x s)).2 = x) : S → (Prod.snd ∘ π_r π σ) ⁻¹' {none} :=
   fun s ↦ ⟨⟨σ none s, by grind⟩, by grind⟩
 
+/- Given a map `π : T → S × OnePoint X`, define a new space `S'` and a map
+   `y : S' ⟶ S` which has the property that in the Cartesian diagram
+   ``
+   T' -> S' ⨯ OnePoint X
+   |         |
+   v         v
+   T  -> S  ⨯ OnePoint X
+   ``
+   there are maps `σ x : S' ⟶ T'` for each `x : OnePoint X` such that
+   `S' ⨯ OnePoint X ⟶ S' ⟶ T' ⟶ S' ⨯ OnePoint X` is the identity for
+   all points `⟨s, x⟩ : S' ⨯ OnePoint X`.
+   -/
 def S' {S T X : Type*} (π : T → S × OnePoint X) :
     Set (∀ x : OnePoint X, (Prod.snd ∘ π) ⁻¹' {x}) :=
   {x | ∀ n m, (π (x n).val).1 = (π (x m).val).1}
@@ -205,9 +226,16 @@ lemma S'_compactSpace {S T X : Type*} [TopologicalSpace S] [T2Space S] [Topologi
   refine (isClosed_iInter fun n ↦ isClosed_iInter fun m ↦ isClosed_eq ?_ ?_).isCompact
   all_goals fun_prop
 
+/- Given a map `π : T ⟶ S ⊗ ℕ∪{∞}` and map `g : (free R) T.toCondensed ⟶ X`,
+   the corresponding map of free condensed R modules, construct a cocone
+   for the parallel pair of both projections of the pullback, which will
+   descend down to a map `S ⊗ ℕ∪{∞} ⟶ X` by the universal property of
+   effective epimorphisms. The cocone is constructed by modifying `g` at the
+   at the fibre over `∞` using the retraction `r_inf`.
+   -/
 open Limits in
 @[simps! pt ι_app]
-noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S ⊗ ℕ∪{∞}))
+noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞})
     [Epi ((lightProfiniteToLightCondSet ⋙ (free R)).map <| smartCoverNew π)]
     (g : ((lightProfiniteToLightCondSet ⋙ free R).obj T) ⟶ X)
     (r_inf : T ⟶ (fibre ∞ (π ≫ snd _ _))) (σ : S ⟶ (fibre ∞ (π ≫ snd _ _)))
@@ -242,11 +270,26 @@ noncomputable def c {X : LightCondMod R} {S T : LightProfinite} (π : T ⟶ (S �
     simp only [← assoc, hr, id_comp, sub_self, zero_add]
     simp [pullback.condition]
 
+/- Given a surjective map of light profinite spaces `T ⟶ S ⊗ ℕ∪{∞}`,
+   construct a (non-cartesian) commutative square
+   ```
+   T' -> S' ⨯ OnePoint X
+   |         |
+   v         v
+   T  -> S  ⨯ OnePoint X
+   ```
+   where every map is epi. The map
+   `(π ≫ Prod.snd) ⁻¹' ∞ ⟶ T' ⟶ S' ⨯ ℕ∪{∞}` is split epi and `smartCoverNew`
+   is epi. The argument of (TODO cite) is modified here and `S'` is constructed
+   in one step by immediate ly taking `S'` to be the pullback of all the fibres.
+   instead of first over `ℕ` and then taking the fibre at `∞`. -/
 lemma aux {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
     ∃ (S' T' : LightProfinite) (y' : S' ⟶ S) (π' : T' ⟶ S' ⊗ ℕ∪{∞}) (g' : T' ⟶ T),
       Epi π' ∧ Epi y' ∧ π' ≫ (y' ▷ ℕ∪{∞}) = g' ≫ π ∧
         IsSplitEpi (fibre_incl ∞ (π' ≫ snd S' ℕ∪{∞}) ≫ π' ≫ fst S' ℕ∪{∞}) ∧
           Epi (smartCoverNew π') := by
+  -- Construct the space `S'` space which has functions `σ'` we can plug into
+  -- `fibresOfOption`.
   have := S'_compactSpace π (by fun_prop)
   let S'π (n : ℕ∪{∞}) : LightProfinite.of (S' π) ⟶ fibre n (π ≫ snd _ _) :=
     ⟨{ toFun x := x.val n, continuous_toFun := by refine (continuous_apply _).comp ?_; fun_prop }⟩
@@ -257,6 +300,9 @@ lemma aux {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
       apply CartesianMonoidalCategory.hom_ext<;> ext x; exacts [x.prop n ∞, (x.val n).prop]
   have hσ (x : ℕ∪{∞}) (s : LightProfinite.of (S' π)) : (π' (σ' x s)).1 = s := rfl
   have hσ' (x : ℕ∪{∞}) (s : LightProfinite.of (S' π)) : (π' (σ' x s)).2 = x := rfl
+  -- The space `T'` is given by the union of the images of the `σ'` together
+  -- with the whole fibre over `∞`. Here `smartCoverNew` is an epimorphism
+  -- because the projection is an isomorphism away from the fibre at `∞`.
   have : CompactSpace (fibresOfOption π' σ') := isCompact_iff_compactSpace.mp
     (fibresOfOption_closed π' (by fun_prop) σ' (by fun_prop) hσ').isCompact
   refine ⟨LightProfinite.of (S' π), LightProfinite.of (fibresOfOption π' σ'), y',
@@ -286,9 +332,19 @@ theorem LightCondensed.internallyProjective_free_natUnionInfty :
   intro X Y p hp S f
   obtain ⟨T, π, g, hπ, comm⟩ := comm_sq R p f
   obtain ⟨S', T', y', π', g', hπ', hy', comp, ⟨⟨split⟩⟩, epi⟩ := aux π
-  refine ⟨S', y', ?_⟩
+  refine ⟨S', y', (LightProfinite.epi_iff_surjective _).mp inferInstance, ?_⟩
+  -- There is a commutative square
+  -- T' -> S' ⊗ ℕ∪{∞}
+  -- |        |
+  -- v        v
+  -- X  ->    Y
+  -- and the goal is a diagonal map such that the lower right triangle
+  -- commutes. The diagonal map is obtained by using the cone `c` and the fact
+  -- that T' -> S' ⊗ N∪{∞} is an effective epimorphism.
   by_cases hS' : Nonempty S'
-  · have : Mono (fibre_incl ∞ (π' ≫ snd _ _)) := by
+  · -- First construct a splitting of the fibre inclusion using injectivity
+    -- of light profinite sets.
+    have : Mono (fibre_incl ∞ (π' ≫ snd _ _)) := by
       rw [CompHausLike.mono_iff_injective]
       exact Subtype.val_injective
     have : Nonempty (fibre ∞ (π' ≫ snd _ _)) := by
@@ -296,13 +352,16 @@ theorem LightCondensed.internallyProjective_free_natUnionInfty :
         ((LightProfinite.epi_iff_surjective _).mp hπ') : ((snd S' ℕ∪{∞}) ∘ π').Surjective) ∞
       exact ⟨x, by simpa using hx⟩
     obtain ⟨r_inf, hr⟩ := Injective.factors (𝟙 _) (fibre_incl ∞ (π' ≫ snd _ _))
+    -- Use the effective epimorphism to descend the map from `T'` to `S' ⊗ ℕ∪{∞}`
     have hc := Limits.isColimitOfPreserves (free R) (explicitRegularIsColimit π')
-    refine ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
-      hc.desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
+    refine ⟨ hc.desc (c R π' ((lightProfiniteToLightCondSet ⋙ (free R)).map g' ≫ g)
       r_inf split.section_ hr), ?_⟩
     rw [← cancel_epi ((lightProfiniteToLightCondSet ⋙ (free R)).map π'),
       ← Functor.comp_map, ← map_comp_assoc]
     change _ = (((free R).mapCocone _).ι.app .one ≫ hc.desc (c R π' _ r_inf split.section_ hr)) ≫ p
+    -- Because the top in the square above is epic, proving that the lower
+    -- triangle commutes is equivalent to proving that the upper triangle
+    -- commutes, which is true by the universal property of the colimit.
     rw [hc.fac]
     -- simp? [← comm]:
     simp only [comp_obj, Limits.parallelPair_obj_one, Functor.comp_map, Functor.map_comp,
@@ -319,5 +378,5 @@ theorem LightCondensed.internallyProjective_free_natUnionInfty :
   · have h : IsEmpty (S' ⊗ ℕ∪{∞}) := isEmpty_prod.mpr <| Or.inl <| by simpa using hS'
     have : IsIso π' := ⟨ConcreteCategory.ofHom ⟨(h.elim ·), continuous_of_const <| by aesop⟩,
       by ext x; exact h.elim (π' x), by ext x; all_goals exact h.elim x⟩
-    exact ⟨(LightProfinite.epi_iff_surjective _).mp inferInstance,
+    exact ⟨
       (lightProfiniteToLightCondSet ⋙ (free R)).map (inv π' ≫ g') ≫ g, by grind⟩
