@@ -8,7 +8,12 @@ import Mathlib.Combinatorics.Quiver.ReflQuiver
 import Mathlib.Condensed.Light.Epi
 import Mathlib.Condensed.Light.Explicit
 import Mathlib.Condensed.Light.Functors
-import Mathlib.Topology.Compactness.PseudometrizableLindelof
+import Mathlib.Data.Finset.Attr
+import Mathlib.Tactic.Common
+import Mathlib.Tactic.Continuity
+import Mathlib.Tactic.Finiteness.Attr
+import Mathlib.Tactic.SetLike
+import Mathlib.Util.CompileInductive
 import Mathlib.Topology.Connected.Separation
 import Mathlib.Topology.Spectral.Prespectral
 

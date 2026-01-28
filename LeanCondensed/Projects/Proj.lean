@@ -4,12 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
 import Mathlib.Condensed.Light.InternallyProjective
+import Mathlib.Topology.Category.CompHausLike.Cartesian
+import Mathlib.Topology.Category.LightProfinite.Injective
 import Mathlib.Topology.FiberPartition
-import LeanCondensed.Projects.LightProfiniteInjective
 import LeanCondensed.Projects.PreservesCoprod
 import LeanCondensed.Projects.Epi
 import LeanCondensed.Mathlib.CategoryTheory.Countable
-import LeanCondensed.Mathlib.Topology.Category.CompHausLike.Limits
 
 open CategoryTheory Category Functor LightProfinite OnePoint LightCondensed
   MonoidalCategory CartesianMonoidalCategory CompHausLike
@@ -64,7 +64,7 @@ def fibre : LightProfinite :=
     isCompact_iff_compactSpace.mp (IsClosed.preimage (by fun_prop) isClosed_singleton).isCompact
   of (f ⁻¹' {y})
 
-def fibre_incl : fibre y f ⟶ X := ⟨{ toFun := Subtype.val }⟩
+def fibre_incl : fibre y f ⟶ X := ⟨⟨{ toFun := Subtype.val }⟩⟩
 
 variable {Z : LightProfinite} {f : X ⟶ Z} {g : Y ⟶ Z}
 
@@ -166,9 +166,9 @@ lemma smartCoverToFun_surjective {S T X : Type*} (π : T → S × Option X) (σ 
    which is given by this morphism. -/
 def smartCoverNew {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) :
     (of _ (T ⊕ (pullback (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)
-      (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)))) ⟶ pullback π π := ⟨{
+      (fibre_incl ∞ (π ≫ snd S ℕ∪{∞}) ≫ π)))) ⟶ pullback π π := ⟨⟨{
   toFun := smartCoverToFun _ _
-  continuous_toFun := by dsimp [smartCoverToFun]; fun_prop }⟩
+  continuous_toFun := by dsimp [smartCoverToFun]; fun_prop }⟩⟩
 
 def sectionOfFibreIncl {S T X : Type*} (π : T → S × Option X) (σ : Option X → S → T)
     (hσ' : ∀ (x : Option X) (s : S), (π (σ x s)).2 = x) : S → (Prod.snd ∘ π_r π σ) ⁻¹' {none} :=
@@ -292,7 +292,7 @@ lemma aux {S T : LightProfinite} (π : T ⟶ S ⊗ ℕ∪{∞}) [Epi π] :
   -- `fibresOfOption`.
   have := S'_compactSpace π (by fun_prop)
   let S'π (n : ℕ∪{∞}) : LightProfinite.of (S' π) ⟶ fibre n (π ≫ snd _ _) :=
-    ⟨{ toFun x := x.val n, continuous_toFun := by refine (continuous_apply _).comp ?_; fun_prop }⟩
+    ⟨⟨{ toFun x := x.val n, continuous_toFun := by refine (continuous_apply _).comp ?_; fun_prop }⟩⟩
   let y' : LightProfinite.of (S' π) ⟶ S := ConcreteCategory.ofHom ⟨y π, y_continuous π⟩
   let π' := pullback.snd π (y' ▷ ℕ∪{∞})
   let σ' : ℕ∪{∞} → LightProfinite.of (S' π) → pullback π (y' ▷ ℕ∪{∞}) := fun n ↦
