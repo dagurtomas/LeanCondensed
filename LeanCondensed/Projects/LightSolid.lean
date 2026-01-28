@@ -8,6 +8,7 @@ import LeanCondensed.Projects.Proj
 import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.AdjointFunctorTheorem
 import Mathlib.Algebra.Order.Ring.Star
+import Mathlib.CategoryTheory.Localization.Bousfield
 import Mathlib.Condensed.Light.Small
 /-!
 
@@ -83,37 +84,47 @@ def oneMinusShift : P R ⟶ P R := by
 
 variable {R : Type} [CommRing R]
 
+def isSolid : ObjectProperty LightCondAb :=
+  fun A ↦ IsIso ((MonoidalClosed.pre (oneMinusShift ℤ)).app A)
+
 /-- A light condensed abelian group `A` is *solid* if the identity minus the map induced by the
 shift map `ℕ∪∞ → ℕ∪∞` is an isomorphism on internal homs into `A` -/
-class IsSolid (A : LightCondAb) : Prop where
-  oneMinusShift_induces_iso : IsIso ((MonoidalClosed.pre (oneMinusShift ℤ)).app A)
+abbrev IsSolid (A : LightCondAb) := isSolid.Is A
 
-structure Solid where
-  toLightCondAb : LightCondAb
-  [isSolid : IsSolid toLightCondAb]
+abbrev Solid : Type _ := isSolid.FullSubcategory
+
+-- structure Solid where
+--   toLightCondAb : LightCondAb
+--   [isSolid : IsSolid toLightCondAb]
 
 namespace Solid
 
-def of (A : LightCondAb) [IsSolid A] : Solid := ⟨A⟩
+-- def of (A : LightCondAb) [IsSolid A] : Solid := ⟨A, inferInstance⟩
 
-instance category : Category Solid := InducedCategory.instCategory (F := toLightCondAb)
+instance category : Category Solid := ObjectProperty.FullSubcategory.category _
 
-instance : IsSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := sorry
+lemma isSolid_int : isSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := sorry
 
-instance : Inhabited Solid := ⟨Solid.of ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ))⟩
+instance : Inhabited Solid := ⟨((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)), isSolid_int⟩
 
-@[simps!]
-def solidToCondensed : Solid ⥤ LightCondAb := inducedFunctor _
+-- @[simps!]
+-- def solidToCondensed : Solid ⥤ LightCondAb := isSolid.ι
 
-instance : PreservesLimitsOfSize.{0, 0} solidToCondensed := sorry
+-- def fullyFaithfulSolidToCondensed : solidToCondensed.FullyFaithful := isSolid.fullyFaithfulι
 
-instance : PreservesColimitsOfSize.{0, 0} solidToCondensed := sorry
+-- instance : solidToCondensed.Full := fullyFaithfulSolidToCondensed.full
+
+-- instance : solidToCondensed.Faithful := fullyFaithfulSolidToCondensed.faithful
+
+instance : PreservesLimitsOfSize.{0, 0} isSolid.ι := sorry
+
+instance : PreservesColimitsOfSize.{0, 0} isSolid.ι := sorry
 
 instance : HasLimitsOfSize.{0, 0} Solid := sorry
 
 instance : HasColimitsOfSize.{0, 0} Solid := sorry
 
-instance : Functor.IsAccessible.{0} solidToCondensed where
+instance : Functor.IsAccessible.{0} isSolid.ι where
   exists_cardinal :=
     have := Cardinal.fact_isRegular_aleph0
     ⟨.aleph0, inferInstance, { preservesColimitOfShape := inferInstance }⟩
@@ -132,23 +143,72 @@ end
 -- TODO: define this property:
 -- instance : PreservesExtensions (solidToCondensed R) := sorry
 
-instance : solidToCondensed.IsRightAdjoint := by infer_instance
+instance : isSolid.ι.IsRightAdjoint := by infer_instance
 
 def solidification : LightCondAb ⥤ Solid :=
-  solidToCondensed.leftAdjoint
+  isSolid.ι.leftAdjoint
 
 def _root_.LightCondAb.solidify (A : LightCondAb) : Solid := solidification.obj A
 
-def val (A : Solid) : LightCondAb := A.toLightCondAb -- maybe unnecessary, `A.1` is fine.
+def val (A : Solid) : LightCondAb := A.1 -- maybe unnecessary, `A.1` is fine.
 
-def solidificationAdjunction : solidification ⊣ solidToCondensed := .ofIsRightAdjoint _
+def solidificationAdjunction : solidification ⊣ isSolid.ι := .ofIsRightAdjoint _
 
 instance : solidification.IsLeftAdjoint := solidificationAdjunction.isLeftAdjoint
 
 open MonoidalCategory
 
+instance : solidification.IsLocalization isSolid.isLocal := by
+  convert ObjectProperty.isLocalization_isLocal solidificationAdjunction
+  ext A
+  simp only [Set.mem_range, ObjectProperty.ι_obj]
+  constructor
+  · intro h
+    refine ⟨⟨A, h⟩, rfl⟩
+  · rintro ⟨A, rfl⟩
+    exact A.property
+
+def ihomHomEquiv {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C]
+    [MonoidalClosed C] (X Y Z : C) : (X ⟶ ((ihom Y).obj Z)) ≃ (Y ⟶ ((ihom X).obj Z)) :=
+  ((ihom.adjunction _).homEquiv _ _).symm.trans <|
+    ((yoneda.obj Z).mapIso (β_ X Y).op).toEquiv.trans ((ihom.adjunction _).homEquiv _ _)
+
+def ihomAdjunctionIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C]
+    [MonoidalClosed C] (X Y Z : C) :
+    (ihom (X ⊗ Y)).obj Z ≅ (ihom Y).obj ((ihom X).obj Z) := by
+  sorry
+
+def ihomFlipIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C]
+    [MonoidalClosed C] (X Y Z : C) :
+    (ihom X).obj ((ihom Y).obj Z) ≅ (ihom Y).obj ((ihom X).obj Z) := by
+  refine (ihomAdjunctionIso _ _ _).symm ≪≫
+    (MonoidalClosed.internalHom.flip.obj Z).mapIso (β_ X Y).op ≪≫ ihomAdjunctionIso _ _ _
+
+lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom A).obj B) := by
+  sorry
+
+instance : isSolid.isLocal.IsMonoidal := by
+  apply MorphismProperty.IsMonoidal.mk'
+  intro X₁ X₂ Y₁ Y₂ f g hf hg Z hZ
+  have h₁ := (ihom.adjunction X₁).homEquiv Y₁ Z |>.symm.bijective
+  have h₂ := (ihom.adjunction X₂).homEquiv Y₂ Z |>.bijective
+  convert h₁.comp (Function.Bijective.comp (g := ?map) ?bij h₂)
+  case map =>
+    exact (fun x ↦ g ≫ x) ∘ ihomHomEquiv _ _ _ ∘ (fun x ↦ f ≫ x) ∘ ihomHomEquiv _ _ _
+  case bij =>
+    refine (hg _ (isSolid_internalHom _ _ hZ)).comp ((Equiv.bijective _).comp
+      ((hf _ (isSolid_internalHom _ _ hZ)).comp (Equiv.bijective _)))
+  ext1 x
+  simp only [curriedTensor_obj_obj, ihomHomEquiv, op_tensorObj, yoneda_obj_obj, unop_tensorObj,
+    op_braiding, Equiv.coe_trans, Iso.toEquiv_fun, Functor.mapIso_hom, Function.comp_apply,
+    Equiv.symm_apply_apply, yoneda_obj_map, unop_hom_braiding]
+  erw [Adjunction.homEquiv_apply, Adjunction.homEquiv_apply, Adjunction.homEquiv_symm_apply,
+    Adjunction.homEquiv_symm_apply]
+  simp [tensorHom_def, whisker_exchange_assoc]
+
 /- This is the monoidal structure on localized categories -/
-instance : MonoidalCategory Solid := sorry
+instance : MonoidalCategory Solid :=
+  inferInstanceAs <| MonoidalCategory <| LocalizedMonoidal solidification isSolid.isLocal (.refl _)
 
 instance : HasLimitsOfSize.{u, 0} Type := inferInstance
 
