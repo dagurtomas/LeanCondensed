@@ -82,16 +82,15 @@ variable {C : Type u₁} {D : Type u₂} {E : Type u₃}
     [Category.{v₁} C] [Category.{v₂} D] [Category.{v₃} E]
 
 instance (F : C ⥤ D) (G : D ⥤ E) [IsAccessible.{w} F] [IsAccessible.{w} G] :
-    IsAccessible.{w} (F ⋙ G) where
-  exists_cardinal := by
-    obtain ⟨κF, _, hF⟩ := IsAccessible.exists_cardinal (F := F)
-    obtain ⟨κG, _, hG⟩ := IsAccessible.exists_cardinal (F := G)
-    have h₁ : κF ≤ κF ⊔ κG := by simp
-    have h₂ : κG ≤ κF ⊔ κG := by simp
-    have : Fact <| (κF ⊔ κG).IsRegular := ⟨iteInduction (fun a ↦ Fact.out) (fun a ↦ Fact.out)⟩
-    replace hF := isCardinalAccessible_of_le F h₁
-    replace hG := isCardinalAccessible_of_le G h₂
-    exact ⟨κF ⊔ κG, inferInstance, inferInstance⟩
+    IsAccessible.{w} (F ⋙ G) := by
+  obtain ⟨κF, _, hF⟩ := IsAccessible.exists_cardinal (F := F)
+  obtain ⟨κG, _, hG⟩ := IsAccessible.exists_cardinal (F := G)
+  have h₁ : κF ≤ κF ⊔ κG := by simp
+  have h₂ : κG ≤ κF ⊔ κG := by simp
+  have : Fact <| (κF ⊔ κG).IsRegular := ⟨iteInduction (fun a ↦ Fact.out) (fun a ↦ Fact.out)⟩
+  replace hF := isCardinalAccessible_of_le F h₁
+  replace hG := isCardinalAccessible_of_le G h₂
+  exact isAccessible_of_isCardinalAccessible (F ⋙ G) (κF ⊔ κG)
 
 lemma isCardinalAccessibleCategory_for_arbitrarily_large_cardinals
     {κ κ' : Cardinal.{w}} [Fact κ.IsRegular] [Fact κ'.IsRegular] [IsCardinalAccessibleCategory C κ]
@@ -160,7 +159,7 @@ instance (κ : Cardinal.{w}) [Fact κ.IsRegular] (A : C) :
 
 instance (A : C) : IsAccessible.{w} ((Functor.const C).obj A) := by
   have : Fact Cardinal.aleph0.IsRegular := Cardinal.fact_isRegular_aleph0
-  refine ⟨Cardinal.aleph0, inferInstance, inferInstance⟩
+  exact ⟨Cardinal.aleph0, inferInstance, inferInstance⟩
 
 lemma solutionSetCondition_of_isAccessible (R : C ⥤ D) [IsAccessible.{w} R] :
     SolutionSetCondition.{w} R := by

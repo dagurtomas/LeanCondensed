@@ -105,13 +105,13 @@ instance : Inhabited Solid := ⟨Solid.of ((discrete (ModuleCat ℤ)).obj (Modul
 @[simps!]
 def solidToCondensed : Solid ⥤ LightCondAb := inducedFunctor _
 
-instance : HasLimitsOfSize.{0, 0} Solid := sorry
-
-instance : HasColimitsOfSize.{0, 0} Solid := sorry
-
 instance : PreservesLimitsOfSize.{0, 0} solidToCondensed := sorry
 
 instance : PreservesColimitsOfSize.{0, 0} solidToCondensed := sorry
+
+instance : HasLimitsOfSize.{0, 0} Solid := sorry
+
+instance : HasColimitsOfSize.{0, 0} Solid := sorry
 
 instance : Functor.IsAccessible.{0} solidToCondensed where
   exists_cardinal :=
