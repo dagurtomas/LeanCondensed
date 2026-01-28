@@ -30,7 +30,9 @@ def profiniteComponent (S : LightProfinite.{0}) (c : ℤ) : LightProfinite :=
 
 def _root_.lightProfiniteToSequential : LightProfinite ⥤ Sequential where
   obj X := Sequential.of X
-  map f := f
+  map f := ConcreteCategory.ofHom ⟨f, by continuity⟩
+  map_id := sorry
+  map_comp := sorry
 
 -- This functor should probably be defined as a right Kan extension of the analogous functor to
 -- `FintypeCat`, similarly to `Condensed.profiniteSolid`, defined in `Mathlib.Condensed.Solid`.

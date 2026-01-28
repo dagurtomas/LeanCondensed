@@ -8,7 +8,12 @@ import Mathlib.Combinatorics.Quiver.ReflQuiver
 import Mathlib.Condensed.Light.Functors
 import Mathlib.Condensed.Light.Module
 import Mathlib.Topology.Category.LightProfinite.Sequence
-import Mathlib.Topology.Compactness.PseudometrizableLindelof
+import Mathlib.Data.Finset.Attr
+import Mathlib.Tactic.Common
+import Mathlib.Tactic.Continuity
+import Mathlib.Tactic.Finiteness.Attr
+import Mathlib.Tactic.SetLike
+import Mathlib.Util.CompileInductive
 import Mathlib.Topology.Connected.Separation
 import Mathlib.Topology.Spectral.Prespectral
 
@@ -21,10 +26,10 @@ noncomputable section
 variable (R : Type _) [CommRing R]
 
 def ι : LightProfinite.of PUnit.{1} ⟶ ℕ∪{∞} :=
-  (TopCat.ofHom ⟨fun _ ↦ ∞, continuous_const⟩)
+  (ConcreteCategory.ofHom ⟨fun _ ↦ ∞, continuous_const⟩)
 
 def ι_split : SplitMono ι where
-  retraction := (TopCat.ofHom ⟨fun _ ↦ PUnit.unit, continuous_const⟩)
+  retraction := (ConcreteCategory.ofHom ⟨fun _ ↦ PUnit.unit, continuous_const⟩)
   id := rfl
 
 def P_map :
