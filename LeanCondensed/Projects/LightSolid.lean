@@ -3,15 +3,12 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Condensed.Light.Epi
-import LeanCondensed.Projects.MonoidalLinear
-import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
-import LeanCondensed.Mathlib.Condensed.Light.Limits
-import Mathlib.Condensed.Light.Monoidal
-import Mathlib.CategoryTheory.Preadditive.Projective.Internal
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.Proj
 import LeanCondensed.Projects.Sequence
+import LeanCondensed.Projects.AdjointFunctorTheorem
+import Mathlib.Algebra.Order.Ring.Star
+import Mathlib.Condensed.Light.Small
 /-!
 
 # Project: light solid abelian groups
@@ -86,8 +83,8 @@ def oneMinusShift : P R ⟶ P R := by
 
 variable {R : Type} [CommRing R]
 
-/-- A light condensed abelian group `A` is *solid* if the shift map `ℕ∪∞ → ℕ∪∞` induces an
-isomorphism on internal homs into `A` -/
+/-- A light condensed abelian group `A` is *solid* if the identity minus the map induced by the
+shift map `ℕ∪∞ → ℕ∪∞` is an isomorphism on internal homs into `A` -/
 class IsSolid (A : LightCondAb) : Prop where
   oneMinusShift_induces_iso : IsIso ((MonoidalClosed.pre (oneMinusShift ℤ)).app A)
 
@@ -116,6 +113,13 @@ instance : PreservesLimitsOfSize.{0, 0} solidToCondensed := sorry
 
 instance : PreservesColimitsOfSize.{0, 0} solidToCondensed := sorry
 
+instance : Functor.IsAccessible.{0} solidToCondensed where
+  exists_cardinal :=
+    have := Cardinal.fact_isRegular_aleph0
+    ⟨.aleph0, inferInstance, { preservesColimitOfShape := inferInstance }⟩
+
+instance : LocallySmall.{0} LightCondAb where
+
 instance : LocallySmall.{0} Solid where
   hom_small X Y := sorry--inferInstanceAs (Small (X.1 ⟶ Y.1))
 
@@ -125,40 +129,10 @@ variable {C : Type u} [SmallCategory C] (J : GrothendieckTopology C)
 
 end
 
--- def solidToCondensed' : ShrinkHoms Solid ⥤ ShrinkHoms LightCondAb :=
---   inducedFunctor _
-
 -- TODO: define this property:
 -- instance : PreservesExtensions (solidToCondensed R) := sorry
 
-instance : solidToCondensed.IsRightAdjoint := by sorry
-  -- TODO: use construction of left adjoint for Bousfield localizations instead
-  -- let i : solidToCondensed ≅ (ShrinkHoms.equivalence.{0} Solid).functor ⋙
-  --     solidToCondensed' ⋙
-  --     (ShrinkHoms.equivalence.{0} LightCondAb).inverse := by
-  --   refine NatIso.ofComponents (fun _ ↦ Iso.refl _) ?_
-  --   intro X Y f
-  --   simp only [solidToCondensed_obj, ShrinkHoms.equivalence_functor, ShrinkHoms.equivalence_inverse,
-  --     Functor.comp_obj, ShrinkHoms.functor_obj, ShrinkHoms.inverse_obj,
-  --     solidToCondensed_map, Iso.refl_hom, Category.comp_id, Functor.comp_map,
-  --     ShrinkHoms.functor_map, ShrinkHoms.inverse_map, Category.id_comp]
-  --   erw [Equiv.apply_symm_apply]
-  -- have : HasLimits (ShrinkHoms Solid) :=
-  --   Adjunction.has_limits_of_equivalence (ShrinkHoms.equivalence _).inverse
-  -- have : HasLimits (ShrinkHoms LightCondAb) :=
-  --   Adjunction.has_limits_of_equivalence (ShrinkHoms.equivalence _).inverse
-  -- have : PreservesLimits solidToCondensed' := sorry
-  -- have : solidToCondensed'.IsRightAdjoint := by
-  --   apply isRightAdjoint_of_preservesLimits_of_solutionSetCondition
-  --   intro A
-  --   sorry
-  -- have : ((ShrinkHoms.equivalence.{0} Solid).functor ⋙
-  --     inducedFunctor _ ⋙
-  --     (ShrinkHoms.equivalence.{0} LightCondAb).inverse).IsRightAdjoint := by
-  --   apply (config := {allowSynthFailures := true}) Functor.isRightAdjoint_comp
-  --   apply (config := {allowSynthFailures := true}) Functor.isRightAdjoint_comp
-  --   exact this
-  -- apply Functor.isRightAdjoint_of_iso i.symm
+instance : solidToCondensed.IsRightAdjoint := by infer_instance
 
 def solidification : LightCondAb ⥤ Solid :=
   solidToCondensed.leftAdjoint

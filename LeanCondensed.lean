@@ -1,9 +1,11 @@
+import LeanCondensed.Mathlib.CategoryTheory.Adjunction.AdjointFunctorTheorems
 import LeanCondensed.Mathlib.CategoryTheory.Countable
 import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
 import LeanCondensed.Mathlib.Condensed.Adjunctions
 import LeanCondensed.Mathlib.Condensed.Light.Limits
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+import LeanCondensed.Projects.AdjointFunctorTheorem
 import LeanCondensed.Projects.Epi
 import LeanCondensed.Projects.FreeCondensed
 import LeanCondensed.Projects.IsLocalizedMonoidal
