@@ -119,13 +119,74 @@ instance : Inhabited Solid := ⟨((discrete (ModuleCat ℤ)).obj (ModuleCat.of �
 
 -- instance : solidToCondensed.Faithful := fullyFaithfulSolidToCondensed.faithful
 
-instance : PreservesLimitsOfSize.{0, 0} isSolid.ι := sorry
+instance {C J : Type*} [Category* C] [Category* J] [MonoidalCategory C] [BraidedCategory C]
+    [MonoidalClosed C] (X : C) : PreservesLimitsOfShape J (ihom X) where
+  preservesLimit {K} := {
+    preserves {c} hc := by
+      refine ⟨?_⟩
+      apply coyonedaJointlyReflectsLimits
+      intro ⟨Y⟩
+      change IsLimit <| (ihom X ⋙ coyoneda.obj _).mapCone _
+      let i : ihom X ⋙ coyoneda.obj ⟨Y⟩ ≅ coyoneda.obj ⟨X ⊗ Y⟩ := by
+        refine NatIso.ofComponents ?_ ?_
+        · intro Z
+          exact (ihom.adjunction _).homEquiv _ _ |>.symm.toIso
+        · intro Z₁ Z₂ f
+          ext
+          simp only [op_tensorObj, Functor.flip_obj_obj, yoneda_obj_obj, unop_tensorObj,
+            Functor.comp_obj, Functor.comp_map, Functor.flip_obj_map, curriedTensor_obj_obj,
+            Equiv.toIso_hom, types_comp_apply, yoneda_map_app]
+          erw [Adjunction.homEquiv_symm_apply, Adjunction.homEquiv_symm_apply]
+          simp
+      exact IsLimit.mapConeEquiv i.symm <| isLimitOfPreserves _ hc }
 
-instance : PreservesColimitsOfSize.{0, 0} isSolid.ι := sorry
+instance {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C] [MonoidalClosed C]
+    (X : C) : PreservesLimits (ihom X) where
 
-instance : HasLimitsOfSize.{0, 0} Solid := sorry
+instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderLimitsOfShape J := by
+  apply ObjectProperty.IsClosedUnderLimitsOfShape.mk
+  intro A ⟨⟨F, π, hl⟩, h⟩
+  let hl' := isLimitOfPreserves (ihom (P ℤ)) hl
+  let α := F.whiskerLeft <| MonoidalClosed.pre (oneMinusShift ℤ)
+  have : IsIso α := by
+    rw [NatTrans.isIso_iff_isIso_app]
+    intro j
+    exact h j
+  let c := (Cones.postcompose α).obj ((ihom (P ℤ)).mapCone ⟨A, π⟩)
+  have : hl'.lift c = (MonoidalClosed.pre (oneMinusShift ℤ)).app A := by
+    apply hl'.hom_ext
+    intro j
+    change _ ≫ ((ihom (P ℤ)).mapCone ⟨A, π⟩).π.app _ = _
+    simp only [Functor.comp_obj, Functor.const_obj_obj, IsLimit.fac]
+    simp only [Functor.mapCone_pt, Functor.mapCone_π_app]
+    simp only [MonoidalClosed.pre, Cones.postcompose_obj_pt, Functor.mapCone_pt,
+      Cones.postcompose_obj_π, NatTrans.comp_app, Functor.const_obj_obj, Functor.comp_obj,
+      Functor.mapCone_π_app, Functor.whiskerLeft_app, conjugateEquiv_apply_app,
+      curriedTensor_obj_obj, ihom.ihom_adjunction_unit, curriedTensor_map_app,
+      ihom.ihom_adjunction_counit, ← Functor.map_comp, ihom.coev_naturality_assoc, Category.assoc,
+      ← ihom.ev_naturality, Functor.id_obj, c, α]
+    rw [← whisker_exchange_assoc]
+  dsimp [isSolid]
+  rw [← this]
+  rw [← IsLimit.nonempty_isLimit_iff_isIso_lift]
+  exact ⟨(IsLimit.postcomposeHomEquiv (asIso α) _).symm hl'⟩
 
-instance : HasColimitsOfSize.{0, 0} Solid := sorry
+instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
+
+instance : CreatesLimitsOfSize.{0, 0} isSolid.ι where
+  CreatesLimitsOfShape := createsLimitsOfShapeFullSubcategoryInclusion _ _
+
+instance : HasColimitsOfSize.{0, 0} LightCondAb := by
+  dsimp [LightCondAb, LightCondMod, LightCondensed]
+  exact hasColimitsOfSizeShrink.{0, 0, 1, 0} _
+
+instance : CreatesColimitsOfSize.{0, 0} isSolid.ι where
+  CreatesColimitsOfShape := createsColimitsOfShapeFullSubcategoryInclusion _ _
+
+instance : HasLimitsOfSize.{0, 0} Solid := hasLimits_of_hasLimits_createsLimits isSolid.ι
+
+instance : HasColimitsOfSize.{0, 0} Solid :=
+  hasColimits_of_hasColimits_createsColimits isSolid.ι
 
 instance : Functor.IsAccessible.{0} isSolid.ι where
   exists_cardinal :=
@@ -144,8 +205,6 @@ end
 
 -- TODO: define this property:
 -- instance : PreservesExtensions (solidToCondensed R) := sorry
-
-instance : isSolid.ι.IsRightAdjoint := by infer_instance
 
 def solidification : LightCondAb ⥤ Solid :=
   isSolid.ι.leftAdjoint
