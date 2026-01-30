@@ -9,6 +9,7 @@ import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.AdjointFunctorTheorem
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.CategoryTheory.Localization.Bousfield
+import Mathlib.Tactic.CategoryTheory.Coherence
 import Mathlib.Condensed.Light.Small
 /-!
 
@@ -84,6 +85,8 @@ def oneMinusShift : P R ⟶ P R := by
 
 variable {R : Type} [CommRing R]
 
+/-- A light condensed abelian group `A` is *solid* if the identity minus the map induced by the
+shift map `ℕ∪∞ → ℕ∪∞` is an isomorphism on internal homs into `A` -/
 def isSolid : ObjectProperty LightCondAb :=
   fun A ↦ IsIso ((MonoidalClosed.pre (oneMinusShift ℤ)).app A)
 
@@ -131,8 +134,7 @@ instance : Functor.IsAccessible.{0} isSolid.ι where
 
 instance : LocallySmall.{0} LightCondAb where
 
-instance : LocallySmall.{0} Solid where
-  hom_small X Y := sorry--inferInstanceAs (Small (X.1 ⟶ Y.1))
+instance : LocallySmall.{0} Solid := locallySmall_of_faithful isSolid.ι
 
 section
 
@@ -199,6 +201,7 @@ def ihomFlipIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory 
   refine (ihomAdjunctionIso _ _ _).symm ≪≫
     (MonoidalClosed.internalHom.flip.obj Z).mapIso (β_ X Y).op ≪≫ ihomAdjunctionIso _ _ _
 
+set_option maxHeartbeats 400000 in
 lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom A).obj B) := by
   dsimp [isSolid] at hB ⊢
   have : IsIso <| (ihomFlipIso A (P ℤ) B).inv ≫
@@ -206,9 +209,34 @@ lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom 
     (ihomFlipIso A (P ℤ) B).hom := inferInstance
   convert this
   rw [Iso.eq_inv_comp]
-  simp [ihomFlipIso]
-  ext ⟨S⟩
-  sorry
+  simp [ihomFlipIso, ihomAdjunctionIso]
+  apply Yoneda.fullyFaithful.map_injective
+  simp only [Functor.map_comp, Functor.FullyFaithful.map_preimage]
+  ext ⟨W⟩ g : 3
+  simp only [yoneda_obj_obj, FunctorToTypes.comp, NatIso.ofComponents_inv_app, Equiv.toIso_inv,
+    Equiv.symm_trans_apply, Equiv.symm_symm, Iso.toEquiv_symm_fun, Functor.mapIso_inv,
+    yoneda_obj_map, unop_tensorObj, unop_inv_associator, yoneda_map_app,
+    NatIso.ofComponents_hom_app, Equiv.toIso_hom, Equiv.trans_apply, Iso.toEquiv_fun,
+    Functor.mapIso_hom, unop_hom_associator]
+  erw [MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
+    MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
+    MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
+    MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq,
+    MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq,
+    MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq]
+  rw [curry_pre_app, curry_pre_app, curry_pre_app]
+  simp only [uncurry_curry]
+  congr
+  simp [curry_eq, uncurry_eq]
+  simp only [← Functor.map_comp]
+  simp only [← associator_naturality_right_assoc, ← whisker_exchange_assoc,
+    ← associator_inv_naturality_right_assoc]
+  simp only [← whiskerLeft_comp_assoc (W := A), ← whisker_exchange]
+  simp only [whiskerLeft_comp, Category.assoc, associator_inv_naturality_middle_assoc,
+    ← MonoidalCategory.comp_whiskerRight_assoc,
+    BraidedCategory.braiding_naturality_right]
+  rw [MonoidalCategory.comp_whiskerRight_assoc, associator_naturality_left_assoc,
+    whisker_exchange_assoc]
 
 instance : isSolid.isLocal.IsMonoidal := by
   apply MorphismProperty.IsMonoidal.mk'
@@ -229,9 +257,18 @@ instance : isSolid.isLocal.IsMonoidal := by
     Adjunction.homEquiv_symm_apply]
   simp [tensorHom_def, whisker_exchange_assoc]
 
-/- This is the monoidal structure on localized categories -/
 instance : MonoidalCategory Solid :=
   inferInstanceAs <| MonoidalCategory <| LocalizedMonoidal solidification isSolid.isLocal (.refl _)
+
+instance : solidification.Monoidal :=
+  inferInstanceAs (Localization.Monoidal.toMonoidalCategory
+    solidification isSolid.isLocal (.refl _)).Monoidal
+
+instance : SymmetricCategory Solid :=
+  inferInstanceAs <| SymmetricCategory <| LocalizedMonoidal solidification isSolid.isLocal (.refl _)
+
+instance : MonoidalClosed Solid :=
+  Monoidal.Reflective.monoidalClosed solidificationAdjunction
 
 instance : HasLimitsOfSize.{u, 0} Type := inferInstance
 
