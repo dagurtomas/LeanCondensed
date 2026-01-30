@@ -173,10 +173,25 @@ def ihomHomEquiv {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory
   ((ihom.adjunction _).homEquiv _ _).symm.trans <|
     ((yoneda.obj Z).mapIso (β_ X Y).op).toEquiv.trans ((ihom.adjunction _).homEquiv _ _)
 
-def ihomAdjunctionIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C]
+def ihomAdjunctionIso {C : Type*} [Category* C] [MonoidalCategory C]
     [MonoidalClosed C] (X Y Z : C) :
     (ihom (X ⊗ Y)).obj Z ≅ (ihom Y).obj ((ihom X).obj Z) := by
-  sorry
+  suffices yoneda.obj ((ihom (X ⊗ Y)).obj Z) ≅ yoneda.obj ((ihom Y).obj ((ihom X).obj Z)) by
+    exact Yoneda.fullyFaithful.preimageIso this
+  refine NatIso.ofComponents ?_ ?_
+  · intro W
+    exact (((ihom.adjunction _).homEquiv _ _).symm.trans
+      (((yoneda.obj Z).mapIso (α_ X Y W.unop).symm.op).toEquiv.trans
+      ((ihom.adjunction _).homEquiv _ _))).trans ((ihom.adjunction _).homEquiv _ _) |>.toIso
+  · intros
+    ext
+    simp only [yoneda_obj_obj, curriedTensor_obj_obj, op_tensorObj, Opposite.op_unop,
+      unop_tensorObj, Iso.op_symm, op_associator, Iso.symm_symm_eq, Equiv.toIso_hom,
+      Equiv.coe_trans, Iso.toEquiv_fun, Functor.mapIso_hom, types_comp_apply, yoneda_obj_map,
+      Function.comp_apply, unop_hom_associator]
+    erw [Adjunction.homEquiv_apply, Adjunction.homEquiv_apply, Adjunction.homEquiv_apply,
+      Adjunction.homEquiv_apply, Adjunction.homEquiv_symm_apply, Adjunction.homEquiv_symm_apply]
+    simp [← Functor.map_comp]
 
 def ihomFlipIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C]
     [MonoidalClosed C] (X Y Z : C) :
@@ -185,6 +200,14 @@ def ihomFlipIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory 
     (MonoidalClosed.internalHom.flip.obj Z).mapIso (β_ X Y).op ≪≫ ihomAdjunctionIso _ _ _
 
 lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom A).obj B) := by
+  dsimp [isSolid] at hB ⊢
+  have : IsIso <| (ihomFlipIso A (P ℤ) B).inv ≫
+    (MonoidalClosed.internalHom.obj ⟨A⟩).map ((MonoidalClosed.pre (oneMinusShift ℤ)).app B) ≫
+    (ihomFlipIso A (P ℤ) B).hom := inferInstance
+  convert this
+  rw [Iso.eq_inv_comp]
+  simp [ihomFlipIso]
+  ext ⟨S⟩
   sorry
 
 instance : isSolid.isLocal.IsMonoidal := by
