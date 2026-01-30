@@ -1,4 +1,3 @@
-import LeanCondensed.Mathlib.CategoryTheory.Adjunction.AdjointFunctorTheorems
 import LeanCondensed.Mathlib.CategoryTheory.Countable
 import LeanCondensed.Mathlib.CategoryTheory.Functor.EpiMono
 import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
