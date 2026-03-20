@@ -143,7 +143,7 @@ instance {C J : Type*} [Category* C] [Category* J] [MonoidalCategory C] [Braided
 instance {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C] [MonoidalClosed C]
     (X : C) : PreservesLimits (ihom X) where
 
-instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderLimitsOfShape J := by
+instance (J : Type*) [Category* J] : isSolid.IsClosedUnderLimitsOfShape J := by
   apply ObjectProperty.IsClosedUnderLimitsOfShape.mk
   intro A ⟨⟨F, π, hl⟩, h⟩
   let hl' := isLimitOfPreserves (ihom (P ℤ)) hl
@@ -166,9 +166,7 @@ instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderLimitsOfShape J := 
       ihom.ihom_adjunction_counit, ← Functor.map_comp, ihom.coev_naturality_assoc, Category.assoc,
       ← ihom.ev_naturality, Functor.id_obj, c, α]
     rw [← whisker_exchange_assoc]
-  dsimp [isSolid]
-  rw [← this]
-  rw [← IsLimit.nonempty_isLimit_iff_isIso_lift]
+  rw [isSolid, ← this, ← IsLimit.nonempty_isLimit_iff_isIso_lift]
   exact ⟨(IsLimit.postcomposeHomEquiv (asIso α) _).symm hl'⟩
 
 instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
