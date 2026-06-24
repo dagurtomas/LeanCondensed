@@ -3,8 +3,10 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
+import LeanCondensed.Mathlib.CategoryTheory.Limits.Constructions.Filtered
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.AdjointFunctorTheorem
+import LeanCondensed.Projects.LightSolidFilteredScaffold
 import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Light.Sequence
 import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
@@ -168,16 +170,25 @@ lemma preservesFiniteColimits_ihom_P : PreservesFiniteColimits (ihom (P ℤ)) :=
   exact ⟨((Functor.preservesFiniteLimits_iff_forall_exact_map_and_mono
     (ihom (P ℤ))).1 inferInstance S hS).1, inferInstance⟩
 
-lemma preservesFilteredColimits_ihom_P : PreservesFilteredColimits (ihom (P ℤ)) := sorry
+lemma preservesFilteredColimits_ihom_P :
+    PreservesFilteredColimitsOfSize.{0, 0} (ihom (P ℤ)) :=
+  LightSolidFilteredScaffold.preservesFilteredColimits_ihom_P_scaffold
 
-instance : HasCoproducts.{0} (LightCondMod ℤ) := sorry
+instance : HasCoproducts.{0} (LightCondMod ℤ) := by
+  haveI : HasColimitsOfSize.{0, 0} (LightCondMod ℤ) := by
+    dsimp [LightCondAb, LightCondMod, LightCondensed]
+    exact hasColimitsOfSizeShrink.{0, 0, 1, 0} _
+  intro J
+  exact HasColimitsOfSize.has_colimits_of_shape (C := LightCondMod ℤ) (J := Discrete J)
 
 instance : PreservesColimitsOfSize.{0, 0} (ihom (P ℤ)) := by
   have := preservesFiniteColimits_ihom_P
   have := preservesFilteredColimits_ihom_P
-  have (J : Type) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) := sorry
-  -- Follows by writing the `J`-coproduct as a filtered colimit of the finite parts.
-  -- May require general API.
+  haveI : HasColimitsOfSize.{0, 0} (LightCondMod ℤ) := by
+    dsimp [LightCondAb, LightCondMod, LightCondensed]
+    exact hasColimitsOfSizeShrink.{0, 0, 1, 0} _
+  have (J : Type) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) :=
+    preservesColimitsOfShape_discrete_of_preservesFiniteCoproducts_and_filteredColimits _ J
   exact preservesColimits_of_preservesCoequalizers_and_coproducts _
 
 instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
