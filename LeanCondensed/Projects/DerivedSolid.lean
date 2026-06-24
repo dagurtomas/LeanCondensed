@@ -6,6 +6,8 @@ Authors: Dagur Asgeirsson
 import LeanCondensed.Projects.LightSolid
 import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
 import Mathlib.Algebra.Homology.DerivedCategory.ExactFunctor
+import Mathlib.Algebra.Homology.Monoidal
+import Mathlib.CategoryTheory.Monoidal.Preadditive
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
 
@@ -24,8 +26,8 @@ The general two-variable localization scaffold is in
 `LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable`.
 
 The definitions using `Functor.totalLeftDerived`/`Functor.totalRightDerived` are conditional on the
-corresponding Kan-extension existence typeclasses.  The remaining `sorry`s mark the genuinely
-bifunctorial derived constructions which are not yet packaged here.
+corresponding Kan-extension existence typeclasses. The bifunctorial tensor product is similarly
+conditional on an adapted replacement package, e.g. K-flat replacements once available for `Solid`.
 -/
 
 noncomputable section
@@ -36,6 +38,31 @@ namespace LightCondensed
 namespace Solid
 
 attribute [local instance] HasDerivedCategory.standard
+
+instance (X : Solid) : PreservesFiniteColimits (tensorRight X) :=
+  preservesFiniteColimits_of_natIso (BraidedCategory.tensorLeftIsoTensorRight X)
+
+instance (X : Solid) : (tensorLeft X).Additive := by
+  haveI := preservesBinaryBiproducts_of_preservesBinaryCoproducts (tensorLeft X)
+  exact Functor.additive_of_preservesBinaryBiproducts _
+
+instance (X : Solid) : (tensorRight X).Additive := by
+  haveI := preservesBinaryBiproducts_of_preservesBinaryCoproducts (tensorRight X)
+  exact Functor.additive_of_preservesBinaryBiproducts _
+
+instance : MonoidalPreadditive Solid where
+  whiskerLeft_zero {X Y Z} := by
+    change (tensorLeft X).map (0 : Y ⟶ Z) = 0
+    exact Functor.map_zero (tensorLeft X) Y Z
+  zero_whiskerRight {X Y Z} := by
+    change (tensorRight X).map (0 : Y ⟶ Z) = 0
+    exact Functor.map_zero (tensorRight X) Y Z
+  whiskerLeft_add {X Y Z} f g := by
+    change (tensorLeft X).map (f + g) = (tensorLeft X).map f + (tensorLeft X).map g
+    simpa using (Functor.map_add (F := tensorLeft X) (f := f) (g := g))
+  add_whiskerRight {X Y Z} f g := by
+    change (tensorRight X).map (f + g) = (tensorRight X).map f + (tensorRight X).map g
+    simpa using (Functor.map_add (F := tensorRight X) (f := f) (g := g))
 
 /-- The derived category of light condensed abelian groups. -/
 abbrev DLightCondAb := DerivedCategory LightCondAb
@@ -93,6 +120,11 @@ noncomputable abbrev derivedInclusionFactors :
       isSolid.ι.mapHomologicalComplex (ComplexShape.up ℤ) ⋙ DerivedCategory.Q :=
   isSolid.ι.mapDerivedCategoryFactors
 
+/-- The tensor product bifunctor on cochain complexes of solid abelian groups. -/
+noncomputable abbrev solidTensorComplex :
+    CochainComplex Solid ℤ ⥤ CochainComplex Solid ℤ ⥤ CochainComplex Solid ℤ :=
+  curriedTensor (CochainComplex Solid ℤ)
+
 /-- Tensoring on the right by a solid object, applied degreewise to cochain complexes. -/
 noncomputable abbrev tensorRightComplexes (A : Solid) :
     CochainComplex Solid ℤ ⥤ CochainComplex Solid ℤ :=
@@ -149,23 +181,39 @@ noncomputable abbrev rightDerivedIhomUnit (A : Solid)
 noncomputable abbrev derivedTensorUnit : DSolid :=
   (DerivedCategory.singleFunctor Solid 0).obj (𝟙_ Solid)
 
-/-- Placeholder for the bifunctorial derived tensor product on the derived category of solid
-abelian groups.
+open CategoryTheory.DerivedCategory.TwoVariable
 
-The fixed-variable functors `leftDerivedTensorRight` above are the intended one-variable shadows of
-this bifunctor.  A complete construction should be an instance of
-`DerivedCategory.TwoVariable.derived₂Curried` applied to the complex-level tensor bifunctor and a
-suitable K-flat/K-projective replacement theorem. -/
-noncomputable def derivedTensor : DSolid ⥤ DSolid ⥤ DSolid := by
-  sorry
+/-- Adapted replacement data for constructing the derived tensor product of solid abelian groups.
 
-/-- Placeholder for the expected derived adjunction between derived solidification and the derived
-inclusion. -/
+The intended instance should use K-flat complexes: the adapted classes should be K-flat solid
+complexes, the `inverts` field says that the complex-level tensor sends quasi-isomorphisms between
+adapted complexes to quasi-isomorphisms, and the localized-equivalence fields say that adapted
+complexes compute the derived category. -/
+abbrev HasTensorAdapted : Type _ := HasAdaptedDerived₂ solidTensorComplex
+
+/-- The bifunctorial derived tensor product on the derived category of solid abelian groups,
+computed from an adapted replacement class such as K-flat complexes. -/
+noncomputable def derivedTensor [HasTensorAdapted] : DSolid ⥤ DSolid ⥤ DSolid :=
+  derived₂CurriedOfAdapted solidTensorComplex
+
+/-- Data witnessing the expected derived adjunction between derived solidification and the derived
+inclusion.
+
+A future proof should construct this from the general derived-adjunction API, by showing that the
+left-derived solidification is absolute enough to compose with the exact derived inclusion. -/
+class HasDerivedSolidificationAdjunction
+    [solidificationToDerived.HasLeftDerivedFunctor
+      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))] where
+  adjunction : derivedSolidification ⊣ derivedInclusion
+
+/-- The expected derived adjunction between derived solidification and the derived inclusion,
+once the relevant absolute-derived-functor compatibility has been supplied. -/
 noncomputable def derivedSolidificationAdjunction
     [solidificationToDerived.HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))] :
-    derivedSolidification ⊣ derivedInclusion := by
-  sorry
+      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))]
+    [h : HasDerivedSolidificationAdjunction] :
+    derivedSolidification ⊣ derivedInclusion :=
+  h.adjunction
 
 /-- Placeholder marker for the eventual closed structure: it should relate `derivedTensor` and the
 total right-derived internal Hom once the bifunctorial tensor is available. -/
