@@ -10,13 +10,14 @@ import Mathlib.Algebra.Category.ModuleCat.FilteredColimits
 import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
 import Mathlib.CategoryTheory.Adjunction.Additive
 import Mathlib.CategoryTheory.Limits.FilteredColimitCommutesFiniteLimit
+import Mathlib.CategoryTheory.Limits.IndYoneda
 import Mathlib.CategoryTheory.Sites.Limits
 import Mathlib.Condensed.Light.InternallyProjective
 
 /-!
 # Scaffold for filtered colimits of internal homs out of `P`
 
-This file is a proof scaffold for replacing the remaining `sorry` in
+This file is a proof scaffold for replacing the remaining gap in
 `LightCondensed.Solid.preservesFilteredColimits_ihom_P`.
 
 The planned route is:
@@ -28,8 +29,8 @@ The planned route is:
    hom functors out of the numerator and denominator;
 4. those numerator/denominator hom functors reduce to point evaluations of filtered colimits.
 
-Most declarations below are intentionally left as `sorry`: the goal is to make the intended Lean
-interfaces precise.
+The declarations below isolate the intended Lean interfaces before porting the proof back to
+`LightSolid.lean`.
 -/
 
 noncomputable section
@@ -246,16 +247,78 @@ noncomputable def tensorCokerIsoScaffold {A B C : LightCondAb} (f : A ⟶ B) :
   exact preservesColimitIso (tensorRight C) _ ≪≫
     HasColimit.isoOfNatIso (parallelPair.ext (Iso.refl _) (Iso.refl _) rfl (by simp))
 
+-- Small filtered colimits commute with finite limits in `Type 1`.
+set_option backward.isDefEq.respectTransparency false in
+lemma lim_preservesFilteredColimitsOfSize_type1 (K : Type) [SmallCategory K] [FinCategory K] :
+    PreservesFilteredColimitsOfSize.{0, 0} (lim : (K ⥤ Type 1) ⥤ Type 1) := by
+  refine ⟨fun J _ _ => ?_⟩
+  constructor
+  intro F
+  haveI : IsIso (colimit.post F (lim : (K ⥤ Type 1) ⥤ Type 1)) := by
+    rw [show colimit.post F (lim : (K ⥤ Type 1) ⥤ Type 1) =
+        (HasColimit.isoOfNatIso (limitFlipIsoCompLim F).symm ≪≫ colimitLimitIso F.flip).hom by
+      apply colimit.hom_ext
+      intro j
+      apply limit.hom_ext
+      intro k
+      rw [colimit.ι_post]
+      simp only [Iso.trans_hom, Category.assoc]
+      erw [HasColimit.isoOfNatIso_ι_hom_assoc]
+      change lim.map (colimit.ι F j) ≫ limit.π (colimit F.flip.flip) k =
+        (limitFlipIsoCompLim F).symm.hom.app j ≫
+          (colimit.ι (limit F.flip) j ≫ (colimitLimitIso F.flip).hom ≫
+            limit.π (colimit F.flip.flip) k)
+      rw [ι_colimitLimitIso_limit_π (F.flip) j k]
+      have hflip : (limitFlipIsoCompLim F).symm.hom.app j ≫ (limit.π F.flip k).app j =
+          limit.π (F.obj j) k := by
+        change (limitFlipIsoCompLim F).inv.app j ≫ (limit.π F.flip k).app j =
+          limit.π (F.obj j) k
+        rw [limitFlipIsoCompLim_inv_app]
+        rw [Category.assoc]
+        rw [limitObjIsoLimitCompEvaluation_inv_π_app]
+        rw [HasLimit.isoOfNatIso_inv_π]
+        rfl
+      rw [← Category.assoc, hflip]
+      change lim.map (colimit.ι F j) ≫ limit.π (colimit F) k =
+        limit.π (F.obj j) k ≫ (colimit.ι F j).app k
+      exact limMap_π (colimit.ι F j) k]
+    infer_instance
+  exact preservesColimit_of_isIso_post (lim : (K ⥤ Type 1) ⥤ Type 1) F
+
 /-- If ordinary homs out of `X` and `Y` preserve small filtered colimits, then ordinary homs out
 of a cokernel of `X ⟶ Y` preserve small filtered colimits.
 
-Expected proof: ordinary hom out of a cokernel is an equalizer of ordinary hom functors, and
-filtered colimits commute with finite limits in `Type`. -/
+Ordinary hom out of a cokernel is an equalizer of ordinary hom functors, and filtered colimits
+commute with finite limits in `Type`. -/
 lemma preservesFilteredColimits_hom_cokernel_of_preserves_hom {X Y : LightCondAb} (f : X ⟶ Y)
     [PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op X))]
     [PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op Y))] :
     PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op (cokernel f))) := by
-  sorry
+  refine ⟨fun J _ _ => ?_⟩
+  letI : PreservesFilteredColimitsOfSize.{0, 0}
+      (lim : (WalkingParallelPairᵒᵖ ⥤ Type 1) ⥤ Type 1) :=
+    lim_preservesFilteredColimitsOfSize_type1 WalkingParallelPairᵒᵖ
+  letI : PreservesColimitsOfShape J (lim : (WalkingParallelPairᵒᵖ ⥤ Type 1) ⥤ Type 1) :=
+    PreservesFilteredColimitsOfSize.preserves_filtered_colimits J
+  let H : WalkingParallelPairᵒᵖ ⥤ LightCondAb ⥤ Type 1 := (parallelPair f 0).op ⋙ coyoneda
+  have hH : PreservesColimitsOfShape J H.flip := by
+    apply preservesColimitsOfShape_of_evaluation
+    intro i
+    have hi : PreservesColimitsOfShape J (H.obj i) := by
+      cases i using Opposite.rec
+      rename_i i
+      cases i
+      · change PreservesColimitsOfShape J (coyoneda.obj (Opposite.op X))
+        infer_instance
+      · change PreservesColimitsOfShape J (coyoneda.obj (Opposite.op Y))
+        infer_instance
+    exact preservesColimitsOfShape_of_natIso (flipCompEvaluation H i).symm
+  letI : PreservesColimitsOfShape J H.flip := hH
+  have hlim : PreservesColimitsOfShape J (limit H) := by
+    exact preservesColimitsOfShape_of_natIso (limitFlipIsoCompLim H.flip).symm
+  letI : PreservesColimitsOfShape J (limit H) := hlim
+  exact preservesColimitsOfShape_of_natIso
+    (coyonedaOpColimitIsoLimitCoyoneda (parallelPair f 0)).symm
 
 /-- Ordinary homs out of `P ℤ ⊗ ℤ[T]` preserve small filtered colimits. -/
 lemma preservesFilteredColimits_hom_P_tensor_free (T : LightProfinite) :
