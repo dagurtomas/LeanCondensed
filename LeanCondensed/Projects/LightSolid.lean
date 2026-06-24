@@ -169,6 +169,19 @@ instance (J : Type*) [Category* J] : isSolid.IsClosedUnderLimitsOfShape J := by
   rw [isSolid, ← this, ← IsLimit.nonempty_isLimit_iff_isIso_lift]
   exact ⟨(IsLimit.postcomposeHomEquiv (asIso α) _).symm hl'⟩
 
+lemma preservesFiniteColimits_ihom_P : PreservesFiniteColimits (ihom (P ℤ)) := sorry
+
+lemma preservesFilteredColimits_ihom_P : PreservesFilteredColimits (ihom (P ℤ)) := sorry
+
+instance : HasCoproducts.{1} (LightCondMod ℤ) := by
+  sorry
+
+instance : PreservesColimits (ihom (P ℤ)) := by
+  have := preservesFiniteColimits_ihom_P
+  have := preservesFilteredColimits_ihom_P
+  have (J : Type 1) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) := sorry
+  exact preservesColimits_of_preservesCoequalizers_and_coproducts _
+
 instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
 
 instance : CreatesLimitsOfSize.{0, 0} isSolid.ι where
