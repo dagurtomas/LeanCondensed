@@ -6,6 +6,7 @@ Authors: Dagur Asgeirsson
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.Sequence
 import Mathlib.Algebra.Category.ModuleCat.AB
+import Mathlib.Algebra.Category.ModuleCat.FilteredColimits
 import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
 import Mathlib.CategoryTheory.Adjunction.Additive
 import Mathlib.CategoryTheory.Limits.FilteredColimitCommutesFiniteLimit
@@ -181,20 +182,28 @@ noncomputable def hom_free_lightProfinite_iso_points (S : LightProfinite) :
           (((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed A) g)))
     congr 1
 
+/-- Homs out of a free light condensed module preserve small filtered colimits. -/
+lemma preservesSmallFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
+    PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj S.toCondensed))) := by
+  refine ⟨fun J _ _ => ?_⟩
+  letI : PreservesFilteredColimits (lightCondAbPoints S) :=
+    lightCondAbPoints_preservesFilteredColimits S
+  letI : PreservesColimitsOfShape J (lightCondAbPoints S) :=
+    PreservesFilteredColimitsOfSize.preserves_filtered_colimits J
+  letI : PreservesColimitsOfShape J (CategoryTheory.forget (ModuleCat ℤ)) := by
+    infer_instance
+  letI : PreservesColimitsOfShape J uliftFunctor.{1, 0} := by
+    infer_instance
+  exact preservesColimitsOfShape_of_natIso (hom_free_lightProfinite_iso_points S).symm
+
 /-- Homs out of a free light condensed module preserve filtered colimits. -/
 lemma preservesFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
     PreservesFilteredColimits
       (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj S.toCondensed))) := by
-  -- Transport `lightCondAbPoints_preservesFilteredColimits S` across
-  -- `hom_free_lightProfinite_iso_points S`; `forget (ModuleCat ℤ)` and `uliftFunctor` preserve
-  -- filtered colimits.
-  sorry
-
-/-- Tensor product of free light condensed modules is free on the product. -/
-noncomputable def free_tensor_free_iso (S T : LightProfinite) :
-    (LightCondensed.free ℤ).obj S.toCondensed ⊗ (LightCondensed.free ℤ).obj T.toCondensed ≅
-      (LightCondensed.free ℤ).obj (S ⊗ T).toCondensed := by
-  -- This should be the monoidal structure on `LightCondensed.free ℤ`.
+  -- The proof above gives the small-filtered-colimit statement supplied by pointwise colimits.
+  -- The full `PreservesFilteredColimits` statement asks for larger shapes because `coyoneda`
+  -- lands in `Type 1`; this needs an additional large-colimit reduction.
   sorry
 
 /-- Homs out of a tensor product of two free light condensed modules preserve filtered colimits. -/
@@ -203,9 +212,20 @@ lemma preservesFilteredColimits_hom_free_tensor_free (S T : LightProfinite) :
       (coyoneda.obj (Opposite.op
         ((LightCondensed.free ℤ).obj S.toCondensed ⊗
           (LightCondensed.free ℤ).obj T.toCondensed))) := by
-  -- Transport `preservesFilteredColimits_hom_free_lightProfinite (S ⊗ T)` across
-  -- `free_tensor_free_iso S T`.
-  sorry
+  let e : (LightCondensed.free ℤ).obj S.toCondensed ⊗
+        (LightCondensed.free ℤ).obj T.toCondensed ≅
+      (LightCondensed.free ℤ).obj (S ⊗ T).toCondensed :=
+    Functor.Monoidal.μIso (LightCondensed.free ℤ) S.toCondensed T.toCondensed ≪≫
+      (LightCondensed.free ℤ).mapIso
+        (Functor.Monoidal.μIso lightProfiniteToLightCondSet S T)
+  letI : PreservesFilteredColimits
+      (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj (S ⊗ T).toCondensed))) :=
+    preservesFilteredColimits_hom_free_lightProfinite (S ⊗ T)
+  refine ⟨fun J _ _ => ?_⟩
+  letI : PreservesColimitsOfShape J
+      (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj (S ⊗ T).toCondensed))) :=
+    PreservesFilteredColimitsOfSize.preserves_filtered_colimits J
+  exact preservesColimitsOfShape_of_natIso (coyoneda.mapIso e.op)
 
 /-- The numerator after tensoring the presentation of `P` with `ℤ[T]`. -/
 abbrev PNumeratorTensor (T : LightProfinite) : LightCondAb :=
