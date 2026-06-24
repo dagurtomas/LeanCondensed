@@ -7,7 +7,11 @@ import Mathlib.Algebra.Category.ModuleCat.Monoidal.Closed
 import Mathlib.CategoryTheory.Monoidal.Braided.Reflection
 import Mathlib.CategoryTheory.Monoidal.Braided.Transport
 import Mathlib.Condensed.Discrete.Module
-import Mathlib.Condensed.Light.CartesianClosed
+import Mathlib.CategoryTheory.Monoidal.Closed.Types
+import Mathlib.CategoryTheory.Sites.CartesianClosed
+import Mathlib.CategoryTheory.Sites.Equivalence
+import Mathlib.Condensed.Light.Basic
+import Mathlib.Condensed.Light.Instances
 import Mathlib.Condensed.Light.Monoidal
 import Mathlib.Condensed.Light.Small
 import LeanCondensed.Projects.MonoidalLinear

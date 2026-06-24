@@ -47,7 +47,7 @@ lemma PSequence_exact : (PSequence R).ShortExact := by
   refine ShortComplex.ShortExact.mk' ?_
     (SplitMono.mono ((ι_split).map (lightProfiniteToLightCondSet ⋙ free R)))
     coequalizer.π_epi
-  rw [ShortComplex.exact_iff_kernel_ι_comp_cokernel_π_zero,
+  erw [ShortComplex.exact_iff_kernel_ι_comp_cokernel_π_zero,
     ←kernel.condition (P_proj R)]
   rfl
 

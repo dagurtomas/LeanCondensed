@@ -26,8 +26,6 @@ namespace CategoryTheory.Sheaf
 
 variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
 
-attribute [local instance] Types.instConcreteCategory
-
 section
 
 variable {A B : Type*} [Category A] [Category B]

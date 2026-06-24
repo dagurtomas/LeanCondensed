@@ -9,6 +9,7 @@ open CategoryTheory Limits Functor
 
 namespace CategoryTheory.Adjunction
 
+set_option backward.isDefEq.respectTransparency false in
 private lemma aux {C : Type u₁} {D : Type u₂} [Category.{w} C] [Category.{w} D]
     (R : C ⥤ D) [IsLocallyPresentable.{w} C] [IsLocallyPresentable.{w} D]
     [IsAccessible.{w} R] [PreservesLimitsOfSize.{w, w} R]
@@ -141,6 +142,7 @@ instance (L : C ⥤ E) (R : D ⥤ E) [IsAccessible.{w} L] [IsAccessible.{w} R] :
 instance (L : C ⥤ E) (R : D ⥤ E) [IsAccessible.{w} L] [IsAccessible.{w} R] :
     IsAccessible.{w} (Comma.snd L R) := sorry
 
+set_option backward.defeqAttrib.useBackward true in
 instance (κ : Cardinal.{w}) [Fact κ.IsRegular] (A : C) :
     IsCardinalAccessible ((Functor.const C).obj A) κ where
   preservesColimitOfShape J _ hJ := {
@@ -161,6 +163,8 @@ instance (A : C) : IsAccessible.{w} ((Functor.const C).obj A) := by
   have : Fact Cardinal.aleph0.IsRegular := Cardinal.fact_isRegular_aleph0
   exact ⟨Cardinal.aleph0, inferInstance, inferInstance⟩
 
+set_option backward.isDefEq.respectTransparency false in
+set_option backward.defeqAttrib.useBackward true in
 lemma solutionSetCondition_of_isAccessible (R : C ⥤ D) [IsAccessible.{w} R] :
     SolutionSetCondition.{w} R := by
   intro A

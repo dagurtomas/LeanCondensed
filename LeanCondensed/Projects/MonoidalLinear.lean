@@ -51,7 +51,8 @@ instance : Preadditive (LocalizedMonoidal L W ε) := inferInstanceAs (Preadditiv
 
 instance [L.Additive] : (L').Additive := inferInstanceAs (L.Additive)
 
-def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : L ⊣ R) :
+set_option backward.isDefEq.respectTransparency false in
+lemma monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : L ⊣ R) :
     MonoidalPreadditive (LocalizedMonoidal L W ε) where
   whiskerLeft_zero {X Y Z} := by
     obtain ⟨X', ⟨eX⟩⟩ : ∃ X₁, Nonempty ((L').obj X₁ ≅ X) := ⟨_, ⟨(L').objObjPreimageIso X⟩⟩
@@ -106,7 +107,8 @@ def monoidalPreadditive [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful] (adj : 
     rw [← Functor.map_add, map_whiskerRight', map_whiskerRight', map_whiskerRight' (F := L')]
     simp
 
-def monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful]
+set_option backward.isDefEq.respectTransparency false in
+lemma monoidalLinear (A : Type u) [Ring A] [L.Additive] (R : D ⥤ C) [R.Full] [R.Faithful]
     (adj : L ⊣ R) [Linear A D] [Linear A C] [L.Linear A]
     [MonoidalLinear A C] :
     @MonoidalLinear A _ (LocalizedMonoidal L W ε) _ _ (inferInstanceAs (Linear A D)) _
@@ -147,8 +149,8 @@ section Preadditive
 variable {C : Type*} [Category C]  (J : GrothendieckTopology C) (A : Type*) [Category A]
     [Preadditive A]
 
-def sheafHomAddEquiv (X Y : Sheaf J A) : (X ⟶ Y) ≃+ (X.val ⟶ Y.val) where
-  toFun f := f.val
+def sheafHomAddEquiv (X Y : Sheaf J A) : (X ⟶ Y) ≃+ (X.obj ⟶ Y.obj) where
+  toFun f := f.hom
   invFun f := ⟨f⟩
   left_inv := by intro; rfl
   right_inv := by intro; rfl;
@@ -161,24 +163,15 @@ section Linear
 
 variable (R : Type u) [Ring R]
 
+set_option backward.isDefEq.respectTransparency false in
 instance [Linear R A] : Linear R (Sheaf J A) where
   homModule X Y := (sheafHomAddEquiv J A X Y).module R
-  smul_comp X Y Z r f g := by
-    have : (r • f.val) ≫ g.val = r • (f.val ≫ g.val) := by simp
-    apply hom_ext
-    simp only [comp_val]
-    exact this
-  comp_smul X Y Z f r g := by
-    have : f.val ≫ (r • g.val) = r • (f.val ≫ g.val) := by simp
-    apply hom_ext
-    simp only [comp_val]
-    exact this
 
 end Linear
 
 instance [MonoidalCategory A] [MonoidalPreadditive A] : MonoidalPreadditive (C ⥤ A) where
 
-def CategoryTheory.Sheaf.monoidalPreadditive [MonoidalCategory A]
+lemma CategoryTheory.Sheaf.monoidalPreadditive [MonoidalCategory A]
     [(J.W (A := A)).IsMonoidal] [HasSheafify J A] [Limits.HasBinaryProducts A]
     [MonoidalPreadditive A] :
     letI := monoidalCategory J A
@@ -192,7 +185,7 @@ instance [MonoidalCategory A] [MonoidalPreadditive A]
 
 attribute [local instance] CategoryTheory.Sheaf.monoidalCategory
   CategoryTheory.Sheaf.monoidalPreadditive in
-def CategoryTheory.Sheaf.monoidalLinear [MonoidalCategory A]
+lemma CategoryTheory.Sheaf.monoidalLinear [MonoidalCategory A]
     [(J.W (A := A)).IsMonoidal] [HasSheafify J A] [Limits.HasBinaryProducts A]
     [MonoidalPreadditive A] (R : Type u) [Ring R] [Linear R A]
     [MonoidalLinear R A] [(presheafToSheaf J A).Linear R] :

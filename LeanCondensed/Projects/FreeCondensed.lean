@@ -4,8 +4,6 @@ noncomputable section
 
 open CategoryTheory LightCondensed LightCondSet LightCondAb Limits
 
-attribute [local instance] Types.instConcreteCategory Types.instFunLike
-
 namespace LightProfinite
 
 namespace FreeImage
@@ -79,7 +77,7 @@ def iso : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ≅
 end FreeImage
 
 instance : IsIso (freeLightProfiniteMap S) := by
-  rw [sequentialAdjunction.isIso_unit_app_iff_mem_essImage]
+  erw [sequentialAdjunction.isIso_unit_app_iff_mem_essImage]
   exact ⟨_, ⟨(FreeImage.iso S).symm⟩⟩
 
 end LightCondAb

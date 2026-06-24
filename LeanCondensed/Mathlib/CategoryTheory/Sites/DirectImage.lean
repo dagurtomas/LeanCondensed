@@ -13,6 +13,9 @@ universe w
 
 noncomputable section
 
+set_option backward.defeqAttrib.useBackward true
+set_option backward.isDefEq.respectTransparency false
+
 namespace CategoryTheory
 
 open Functor
@@ -33,25 +36,23 @@ def inverseDirectImageAdjunction :
 
 @[simp]
 lemma inverseDirectImageAdjunction_unit_app_val (X : Sheaf J A) :
-    ((inverseDirectImageAdjunction J K A F).unit.app X).val =
-    F.op.lanUnit.app X.val ≫ whiskerLeft F.op (toSheafify K (F.op.lan.obj X.val)) := by
+    ((inverseDirectImageAdjunction J K A F).unit.app X).hom =
+    F.op.lanUnit.app X.obj ≫ whiskerLeft F.op (toSheafify K (F.op.lan.obj X.obj)) := by
   change ((sheafToPresheaf J A).map ((inverseDirectImageAdjunction J K A F).unit.app X)) = _
-  simp [inverseDirectImageAdjunction, -sheafToPresheaf_map]
+  simp [inverseDirectImageAdjunction, -ObjectProperty.ι_map]
 
 lemma inverseDirectImageAdjunction_unit_app_val_app (X : Sheaf J A) (Y : C) :
-    ((inverseDirectImageAdjunction J K A F).unit.app X).val.app ⟨Y⟩ =
-    (F.op.lanUnit.app X.val).app ⟨Y⟩ ≫ (toSheafify K (F.op.lan.obj X.val)).app ⟨F.obj Y⟩ := by
-  simp only [Functor.id_obj, Functor.comp_obj, sheafToPresheaf_obj,
-    inverseDirectImageAdjunction_unit_app_val, whiskeringLeft_obj_obj, NatTrans.comp_app,
-    Functor.op_obj, whiskerLeft_app]
+    ((inverseDirectImageAdjunction J K A F).unit.app X).hom.app ⟨Y⟩ =
+    (F.op.lanUnit.app X.obj).app ⟨Y⟩ ≫ (toSheafify K (F.op.lan.obj X.obj)).app ⟨F.obj Y⟩ := by
+  simp
 
 @[simp]
 lemma inverseDirectImageAdjunction_counit_app (X : Sheaf K A) :
     ((inverseDirectImageAdjunction J K A F).counit.app X) =
-    (presheafToSheaf K A).map ((F.op.lanAdjunction A).counit.app X.val) ≫
+    (presheafToSheaf K A).map ((F.op.lanAdjunction A).counit.app X.obj) ≫
       (sheafificationAdjunction K A).counit.app X := by
   change (𝟭 (Sheaf K A)).map ((inverseDirectImageAdjunction J K A F).counit.app X) = _
-  simp only [Functor.comp_obj, sheafToPresheaf_obj, Functor.id_obj, inverseDirectImageAdjunction,
+  simp only [Functor.comp_obj, ObjectProperty.ι_obj, Functor.id_obj, inverseDirectImageAdjunction,
     Adjunction.map_restrictFullyFaithful_counit_app, Iso.refl_inv, NatTrans.id_app,
     whiskeringLeft_obj_obj, Functor.comp_map, Category.id_comp]
   erw [Functor.map_id, Functor.map_id]

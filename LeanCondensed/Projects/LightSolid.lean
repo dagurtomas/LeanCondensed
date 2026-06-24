@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-import LeanCondensed.Projects.Proj
-import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.AdjointFunctorTheorem
+import LeanCondensed.Projects.Sequence
+import Mathlib.Condensed.Light.Sequence
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.CategoryTheory.Localization.Bousfield
 import Mathlib.Tactic.CategoryTheory.Coherence
@@ -24,8 +24,6 @@ open CategoryTheory LightProfinite OnePoint Limits LightCondensed MonoidalCatego
 
 section MonoidalClosed
 
-attribute [local instance] Types.instConcreteCategory Types.instFunLike
-
 variable (R : Type u) [CommRing R]
 
 variable (A : LightCondMod R) (S : LightProfinite)
@@ -37,6 +35,7 @@ instance : Linear R (LightCondMod R) := inferInstanceAs (Linear R (Sheaf _ _))
 
 instance : MonoidalLinear R (LightCondMod R) := by sorry
 
+set_option backward.isDefEq.respectTransparency false in
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
   preservesColimitIso (tensorRight C) _ ≪≫
     HasColimit.isoOfNatIso (parallelPair.ext (Iso.refl _) (Iso.refl _) rfl (by simp))
@@ -54,7 +53,7 @@ def shift : ℕ∪{∞} ⟶ ℕ∪{∞} := ConcreteCategory.ofHom {
     intro U h hU
     simp only [isOpen_iff_of_mem h, isClosed_discrete, isCompact_iff_finite, true_and] at hU
     refine ⟨sSup (Option.some ⁻¹' U)ᶜ + 1, fun n hn ↦ by
-      simpa using notMem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩ }
+      simpa using! notMem_of_csSup_lt (Nat.succ_le_iff.mp hn) (Set.Finite.bddAbove hU)⟩ }
 
 end LightProfinite
 
@@ -77,6 +76,7 @@ example (A B : LightCondMod R) : AddCommGroup (A ⟶ B) := by infer_instance
 def oneMinusShift' : (free R).obj (ℕ∪{∞}).toCondensed ⟶ (free R).obj (ℕ∪{∞}).toCondensed :=
   𝟙 _  - (lightProfiniteToLightCondSet ⋙ free R).map LightProfinite.shift
 
+set_option backward.isDefEq.respectTransparency false in
 def oneMinusShift : P R ⟶ P R := by
   refine P_homMk R _ (oneMinusShift' R) ?_ ≫ P_proj R
   rw [oneMinusShift', Preadditive.comp_sub]
@@ -119,6 +119,8 @@ instance : Inhabited Solid := ⟨((discrete (ModuleCat ℤ)).obj (ModuleCat.of �
 
 -- instance : solidToCondensed.Faithful := fullyFaithfulSolidToCondensed.faithful
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 instance {C J : Type*} [Category* C] [Category* J] [MonoidalCategory C] [BraidedCategory C]
     [MonoidalClosed C] (X : C) : PreservesLimitsOfShape J (ihom X) where
   preservesLimit {K} := {
@@ -134,8 +136,9 @@ instance {C J : Type*} [Category* C] [Category* J] [MonoidalCategory C] [Braided
         · intro Z₁ Z₂ f
           ext
           simp only [op_tensorObj, Functor.flip_obj_obj, yoneda_obj_obj, unop_tensorObj,
-            Functor.comp_obj, Functor.comp_map, Functor.flip_obj_map, curriedTensor_obj_obj,
-            Equiv.toIso_hom, types_comp_apply, yoneda_map_app]
+            Functor.comp_obj, Functor.comp_map, Functor.flip_obj_map, yoneda_map_app,
+            curriedTensor_obj_obj, TypeCat.Fun.toFun_apply, comp_apply, TypeCat.hom_ofHom,
+            TypeCat.Fun.coe_mk, Equiv.toIso_hom_hom_apply]
           erw [Adjunction.homEquiv_symm_apply, Adjunction.homEquiv_symm_apply]
           simp
       exact IsLimit.mapConeEquiv i.symm <| isLimitOfPreserves _ hc }
@@ -143,6 +146,8 @@ instance {C J : Type*} [Category* C] [Category* J] [MonoidalCategory C] [Braided
 instance {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory C] [MonoidalClosed C]
     (X : C) : PreservesLimits (ihom X) where
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 instance (J : Type*) [Category* J] : isSolid.IsClosedUnderLimitsOfShape J := by
   apply ObjectProperty.IsClosedUnderLimitsOfShape.mk
   intro A ⟨⟨F, π, hl⟩, h⟩
@@ -152,15 +157,15 @@ instance (J : Type*) [Category* J] : isSolid.IsClosedUnderLimitsOfShape J := by
     rw [NatTrans.isIso_iff_isIso_app]
     intro j
     exact h j
-  let c := (Cones.postcompose α).obj ((ihom (P ℤ)).mapCone ⟨A, π⟩)
+  let c := (Cone.postcompose α).obj ((ihom (P ℤ)).mapCone ⟨A, π⟩)
   have : hl'.lift c = (MonoidalClosed.pre (oneMinusShift ℤ)).app A := by
     apply hl'.hom_ext
     intro j
     change _ ≫ ((ihom (P ℤ)).mapCone ⟨A, π⟩).π.app _ = _
     simp only [Functor.comp_obj, Functor.const_obj_obj, IsLimit.fac]
     simp only [Functor.mapCone_pt, Functor.mapCone_π_app]
-    simp only [MonoidalClosed.pre, Cones.postcompose_obj_pt, Functor.mapCone_pt,
-      Cones.postcompose_obj_π, NatTrans.comp_app, Functor.const_obj_obj, Functor.comp_obj,
+    simp only [MonoidalClosed.pre, Cone.postcompose_obj_pt, Functor.mapCone_pt,
+      Cone.postcompose_obj_π, NatTrans.comp_app, Functor.const_obj_obj, Functor.comp_obj,
       Functor.mapCone_π_app, Functor.whiskerLeft_app, conjugateEquiv_apply_app,
       curriedTensor_obj_obj, ihom.ihom_adjunction_unit, curriedTensor_map_app,
       ihom.ihom_adjunction_counit, ← Functor.map_comp, ihom.coev_naturality_assoc, Category.assoc,
@@ -232,7 +237,7 @@ open MonoidalCategory
 
 instance : solidification.IsLocalization isSolid.isLocal := by
   convert ObjectProperty.isLocalization_isLocal solidificationAdjunction
-  ext A
+  rename_i A
   simp only [Set.mem_range, ObjectProperty.ι_obj]
   constructor
   · intro h
@@ -245,6 +250,8 @@ def ihomHomEquiv {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory
   ((ihom.adjunction _).homEquiv _ _).symm.trans <|
     ((yoneda.obj Z).mapIso (β_ X Y).op).toEquiv.trans ((ihom.adjunction _).homEquiv _ _)
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 def ihomAdjunctionIso {C : Type*} [Category* C] [MonoidalCategory C]
     [MonoidalClosed C] (X Y Z : C) :
     (ihom (X ⊗ Y)).obj Z ≅ (ihom Y).obj ((ihom X).obj Z) := by
@@ -257,10 +264,11 @@ def ihomAdjunctionIso {C : Type*} [Category* C] [MonoidalCategory C]
       ((ihom.adjunction _).homEquiv _ _))).trans ((ihom.adjunction _).homEquiv _ _) |>.toIso
   · intros
     ext
-    simp only [yoneda_obj_obj, curriedTensor_obj_obj, op_tensorObj, Opposite.op_unop,
-      unop_tensorObj, Iso.op_symm, op_associator, Iso.symm_symm_eq, Equiv.toIso_hom,
-      Equiv.coe_trans, Iso.toEquiv_fun, Functor.mapIso_hom, types_comp_apply, yoneda_obj_map,
-      Function.comp_apply, unop_hom_associator]
+    simp only [yoneda_obj_obj, yoneda_obj_map, curriedTensor_obj_obj, op_tensorObj,
+      Opposite.op_unop, unop_tensorObj, Iso.op_symm, op_associator, Iso.symm_symm_eq,
+      TypeCat.Fun.toFun_apply, comp_apply, TypeCat.hom_ofHom, TypeCat.Fun.coe_mk,
+      Equiv.toIso_hom_hom_apply, Equiv.trans_apply, Iso.toEquiv_apply, Functor.mapIso_hom,
+      unop_hom_associator]
     erw [Adjunction.homEquiv_apply, Adjunction.homEquiv_apply, Adjunction.homEquiv_apply,
       Adjunction.homEquiv_apply, Adjunction.homEquiv_symm_apply, Adjunction.homEquiv_symm_apply]
     simp [← Functor.map_comp]
@@ -271,6 +279,8 @@ def ihomFlipIso {C : Type*} [Category* C] [MonoidalCategory C] [BraidedCategory 
   refine (ihomAdjunctionIso _ _ _).symm ≪≫
     (MonoidalClosed.internalHom.flip.obj Z).mapIso (β_ X Y).op ≪≫ ihomAdjunctionIso _ _ _
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 400000 in
 lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom A).obj B) := by
   dsimp [isSolid] at hB ⊢
@@ -282,12 +292,10 @@ lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom 
   simp [ihomFlipIso, ihomAdjunctionIso]
   apply Yoneda.fullyFaithful.map_injective
   simp only [Functor.map_comp, Functor.FullyFaithful.map_preimage]
-  ext ⟨W⟩ g : 3
-  simp only [yoneda_obj_obj, FunctorToTypes.comp, NatIso.ofComponents_inv_app, Equiv.toIso_inv,
-    Equiv.symm_trans_apply, Equiv.symm_symm, Iso.toEquiv_symm_fun, Functor.mapIso_inv,
-    yoneda_obj_map, unop_tensorObj, unop_inv_associator, yoneda_map_app,
-    NatIso.ofComponents_hom_app, Equiv.toIso_hom, Equiv.trans_apply, Iso.toEquiv_fun,
-    Functor.mapIso_hom, unop_hom_associator]
+  ext ⟨W⟩
+  dsimp
+  ext g
+  simp
   erw [MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
     MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
     MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
@@ -308,17 +316,21 @@ lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom 
   rw [MonoidalCategory.comp_whiskerRight_assoc, associator_naturality_left_assoc,
     whisker_exchange_assoc]
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 instance : isSolid.isLocal.IsMonoidal := by
   apply MorphismProperty.IsMonoidal.mk'
   intro X₁ X₂ Y₁ Y₂ f g hf hg Z hZ
   have h₁ := (ihom.adjunction X₁).homEquiv Y₁ Z |>.symm.bijective
   have h₂ := (ihom.adjunction X₂).homEquiv Y₂ Z |>.bijective
+  -- used to create 3 goals, now 5:
   convert h₁.comp (Function.Bijective.comp (g := ?map) ?bij h₂)
   case map =>
     exact (fun x ↦ g ≫ x) ∘ ihomHomEquiv _ _ _ ∘ (fun x ↦ f ≫ x) ∘ ihomHomEquiv _ _ _
   case bij =>
     refine (hg _ (isSolid_internalHom _ _ hZ)).comp ((Equiv.bijective _).comp
       ((hf _ (isSolid_internalHom _ _ hZ)).comp (Equiv.bijective _)))
+  all_goals try rfl
   ext1 x
   simp only [curriedTensor_obj_obj, ihomHomEquiv, op_tensorObj, yoneda_obj_obj, unop_tensorObj,
     op_braiding, Equiv.coe_trans, Iso.toEquiv_fun, Functor.mapIso_hom, Function.comp_apply,
