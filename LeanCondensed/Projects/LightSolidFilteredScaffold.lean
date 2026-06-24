@@ -159,16 +159,27 @@ attribute [local instance] lightCondAb_sheafToPresheaf_createsFilteredColimitsOf
 /-- Point evaluation preserves filtered colimits once filtered colimits are pointwise. -/
 lemma lightCondAbPoints_preservesFilteredColimits (T : LightProfinite) :
     PreservesFilteredColimits (lightCondAbPoints T) := by
-  -- Use the local `CreatesColimitsOfShape` instance above, then the functor-category fact that
-  -- evaluation preserves pointwise colimits.
-  sorry
+  refine ⟨fun J _ _ => ?_⟩
+  letI : CreatesColimitsOfShape J
+      (sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)) :=
+    lightCondAb_sheafToPresheaf_createsFilteredColimitsOfShape J
+  apply comp_preservesColimitsOfShape
 
 /-- Ordinary homs out of a free light condensed module are point evaluations. -/
 noncomputable def hom_free_lightProfinite_iso_points (S : LightProfinite) :
     coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj S.toCondensed)) ≅
       lightCondAbPoints S ⋙ CategoryTheory.forget (ModuleCat ℤ) ⋙ uliftFunctor.{1, 0} := by
-  -- Combine `freeForgetAdjunction` with `(coherentTopology LightProfinite).yonedaEquiv`.
-  sorry
+  refine NatIso.ofComponents (fun A => ?_) ?_
+  · exact Equiv.toIso ((((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed A).trans
+      (coherentTopology LightProfinite).yonedaEquiv).trans Equiv.ulift.symm)
+  · intro A B f
+    ext g
+    change ULift.up ((coherentTopology LightProfinite).yonedaEquiv
+        (((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed B) (g ≫ f))) =
+      ULift.up (((LightCondensed.forget ℤ).map f).hom.app (op S)
+        ((coherentTopology LightProfinite).yonedaEquiv
+          (((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed A) g)))
+    congr 1
 
 /-- Homs out of a free light condensed module preserve filtered colimits. -/
 lemma preservesFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
