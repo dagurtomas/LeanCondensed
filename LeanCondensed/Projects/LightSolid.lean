@@ -7,6 +7,8 @@ import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.AdjointFunctorTheorem
 import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Light.Sequence
+import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
+import Mathlib.CategoryTheory.Adjunction.Additive
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.CategoryTheory.Localization.Bousfield
 import Mathlib.Tactic.CategoryTheory.Coherence
@@ -96,28 +98,11 @@ abbrev IsSolid (A : LightCondAb) := isSolid.Is A
 
 abbrev Solid : Type _ := isSolid.FullSubcategory
 
--- structure Solid where
---   toLightCondAb : LightCondAb
---   [isSolid : IsSolid toLightCondAb]
-
 namespace Solid
-
--- def of (A : LightCondAb) [IsSolid A] : Solid := ⟨A, inferInstance⟩
-
-instance category : Category Solid := ObjectProperty.FullSubcategory.category _
 
 lemma isSolid_int : isSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := sorry
 
 instance : Inhabited Solid := ⟨((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)), isSolid_int⟩
-
--- @[simps!]
--- def solidToCondensed : Solid ⥤ LightCondAb := isSolid.ι
-
--- def fullyFaithfulSolidToCondensed : solidToCondensed.FullyFaithful := isSolid.fullyFaithfulι
-
--- instance : solidToCondensed.Full := fullyFaithfulSolidToCondensed.full
-
--- instance : solidToCondensed.Faithful := fullyFaithfulSolidToCondensed.faithful
 
 set_option backward.defeqAttrib.useBackward true in
 set_option backward.isDefEq.respectTransparency false in
@@ -174,17 +159,25 @@ instance (J : Type*) [Category* J] : isSolid.IsClosedUnderLimitsOfShape J := by
   rw [isSolid, ← this, ← IsLimit.nonempty_isLimit_iff_isIso_lift]
   exact ⟨(IsLimit.postcomposeHomEquiv (asIso α) _).symm hl'⟩
 
-lemma preservesFiniteColimits_ihom_P : PreservesFiniteColimits (ihom (P ℤ)) := sorry
+instance : (ihom (P ℤ)).Additive := (ihom.adjunction (P ℤ)).right_adjoint_additive
+
+lemma preservesFiniteColimits_ihom_P : PreservesFiniteColimits (ihom (P ℤ)) := by
+  rw [Functor.preservesFiniteColimits_iff_forall_exact_map_and_epi]
+  intro S hS
+  haveI : Epi S.g := hS.epi_g
+  exact ⟨((Functor.preservesFiniteLimits_iff_forall_exact_map_and_mono
+    (ihom (P ℤ))).1 inferInstance S hS).1, inferInstance⟩
 
 lemma preservesFilteredColimits_ihom_P : PreservesFilteredColimits (ihom (P ℤ)) := sorry
 
-instance : HasCoproducts.{1} (LightCondMod ℤ) := by
-  sorry
+instance : HasCoproducts.{1} (LightCondMod ℤ) := sorry
 
 instance : PreservesColimits (ihom (P ℤ)) := by
   have := preservesFiniteColimits_ihom_P
   have := preservesFilteredColimits_ihom_P
   have (J : Type 1) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) := sorry
+  -- Follows by writing the `J`-coproduct as a filtered colimit of the finite parts.
+  -- May require general API.
   exact preservesColimits_of_preservesCoequalizers_and_coproducts _
 
 instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
