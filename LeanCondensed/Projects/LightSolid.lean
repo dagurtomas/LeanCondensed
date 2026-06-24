@@ -191,7 +191,33 @@ instance : PreservesColimitsOfSize.{0, 0} (ihom (P ℤ)) := by
     preservesColimitsOfShape_discrete_of_preservesFiniteCoproducts_and_filteredColimits _ J
   exact preservesColimits_of_preservesCoequalizers_and_coproducts _
 
-instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := sorry
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
+instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J := by
+  apply ObjectProperty.IsClosedUnderColimitsOfShape.mk
+  intro A ⟨⟨F, ι, hc⟩, h⟩
+  let hc' := isColimitOfPreserves (ihom (P ℤ)) hc
+  let α := F.whiskerLeft <| MonoidalClosed.pre (oneMinusShift ℤ)
+  have : IsIso α := by
+    rw [NatTrans.isIso_iff_isIso_app]
+    intro j
+    exact h j
+  let c := (Cocone.precompose α).obj ((ihom (P ℤ)).mapCocone ⟨A, ι⟩)
+  have hdesc : hc'.desc c = (MonoidalClosed.pre (oneMinusShift ℤ)).app A := by
+    apply hc'.hom_ext
+    intro j
+    change ((ihom (P ℤ)).mapCocone ⟨A, ι⟩).ι.app _ ≫ _ = _
+    simp only [IsColimit.fac]
+    simp only [Functor.mapCocone_pt, Functor.mapCocone_ι_app]
+    simp only [MonoidalClosed.pre, Cocone.precompose_obj_pt, Functor.mapCocone_pt,
+      Cocone.precompose_obj_ι, NatTrans.comp_app, Functor.const_obj_obj, Functor.comp_obj,
+      Functor.mapCocone_ι_app, Functor.whiskerLeft_app, conjugateEquiv_apply_app,
+      curriedTensor_obj_obj, ihom.ihom_adjunction_unit, curriedTensor_map_app,
+      ihom.ihom_adjunction_counit, ← Functor.map_comp, ihom.coev_naturality_assoc, Category.assoc,
+      ← ihom.ev_naturality, Functor.id_obj, c, α]
+    rw [← whisker_exchange_assoc]
+  rw [isSolid, ← hdesc, ← IsColimit.nonempty_isColimit_iff_isIso_desc hc']
+  exact ⟨(IsColimit.precomposeHomEquiv (asIso α) _).symm hc'⟩
 
 instance : CreatesLimitsOfSize.{0, 0} isSolid.ι where
   CreatesLimitsOfShape := createsLimitsOfShapeFullSubcategoryInclusion _ _
