@@ -183,7 +183,7 @@ noncomputable def hom_free_lightProfinite_iso_points (S : LightProfinite) :
     congr 1
 
 /-- Homs out of a free light condensed module preserve small filtered colimits. -/
-lemma preservesSmallFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
+lemma preservesFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
     PreservesFilteredColimitsOfSize.{0, 0}
       (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj S.toCondensed))) := by
   refine ⟨fun J _ _ => ?_⟩
@@ -197,18 +197,10 @@ lemma preservesSmallFilteredColimits_hom_free_lightProfinite (S : LightProfinite
     infer_instance
   exact preservesColimitsOfShape_of_natIso (hom_free_lightProfinite_iso_points S).symm
 
-/-- Homs out of a free light condensed module preserve filtered colimits. -/
-lemma preservesFilteredColimits_hom_free_lightProfinite (S : LightProfinite) :
-    PreservesFilteredColimits
-      (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj S.toCondensed))) := by
-  -- The proof above gives the small-filtered-colimit statement supplied by pointwise colimits.
-  -- The full `PreservesFilteredColimits` statement asks for larger shapes because `coyoneda`
-  -- lands in `Type 1`; this needs an additional large-colimit reduction.
-  sorry
-
-/-- Homs out of a tensor product of two free light condensed modules preserve filtered colimits. -/
+/-- Homs out of a tensor product of two free light condensed modules preserve small filtered
+colimits. -/
 lemma preservesFilteredColimits_hom_free_tensor_free (S T : LightProfinite) :
-    PreservesFilteredColimits
+    PreservesFilteredColimitsOfSize.{0, 0}
       (coyoneda.obj (Opposite.op
         ((LightCondensed.free ℤ).obj S.toCondensed ⊗
           (LightCondensed.free ℤ).obj T.toCondensed))) := by
@@ -218,7 +210,7 @@ lemma preservesFilteredColimits_hom_free_tensor_free (S T : LightProfinite) :
     Functor.Monoidal.μIso (LightCondensed.free ℤ) S.toCondensed T.toCondensed ≪≫
       (LightCondensed.free ℤ).mapIso
         (Functor.Monoidal.μIso lightProfiniteToLightCondSet S T)
-  letI : PreservesFilteredColimits
+  letI : PreservesFilteredColimitsOfSize.{0, 0}
       (coyoneda.obj (Opposite.op ((LightCondensed.free ℤ).obj (S ⊗ T).toCondensed))) :=
     preservesFilteredColimits_hom_free_lightProfinite (S ⊗ T)
   refine ⟨fun J _ _ => ?_⟩
@@ -238,11 +230,11 @@ abbrev PDenominatorTensor (T : LightProfinite) : LightCondAb :=
     (LightCondensed.free ℤ).obj T.toCondensed
 
 lemma preservesFilteredColimits_hom_PNumeratorTensor (T : LightProfinite) :
-    PreservesFilteredColimits (coyoneda.obj (Opposite.op (PNumeratorTensor T))) := by
+    PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op (PNumeratorTensor T))) := by
   exact preservesFilteredColimits_hom_free_tensor_free _ _
 
 lemma preservesFilteredColimits_hom_PDenominatorTensor (T : LightProfinite) :
-    PreservesFilteredColimits (coyoneda.obj (Opposite.op (PDenominatorTensor T))) := by
+    PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op (PDenominatorTensor T))) := by
   exact preservesFilteredColimits_hom_free_tensor_free _ _
 
 -- Local copy of the cokernel/tensor isomorphism, avoiding an import cycle with `LightSolid`.
@@ -254,55 +246,97 @@ noncomputable def tensorCokerIsoScaffold {A B C : LightCondAb} (f : A ⟶ B) :
   exact preservesColimitIso (tensorRight C) _ ≪≫
     HasColimit.isoOfNatIso (parallelPair.ext (Iso.refl _) (Iso.refl _) rfl (by simp))
 
-/-- If ordinary homs out of `X` and `Y` preserve filtered colimits, then ordinary homs out of a
-cokernel of `X ⟶ Y` preserve filtered colimits.
+/-- If ordinary homs out of `X` and `Y` preserve small filtered colimits, then ordinary homs out
+of a cokernel of `X ⟶ Y` preserve small filtered colimits.
 
 Expected proof: ordinary hom out of a cokernel is an equalizer of ordinary hom functors, and
 filtered colimits commute with finite limits in `Type`. -/
 lemma preservesFilteredColimits_hom_cokernel_of_preserves_hom {X Y : LightCondAb} (f : X ⟶ Y)
-    [PreservesFilteredColimits (coyoneda.obj (Opposite.op X))]
-    [PreservesFilteredColimits (coyoneda.obj (Opposite.op Y))] :
-    PreservesFilteredColimits (coyoneda.obj (Opposite.op (cokernel f))) := by
+    [PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op X))]
+    [PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op Y))] :
+    PreservesFilteredColimitsOfSize.{0, 0} (coyoneda.obj (Opposite.op (cokernel f))) := by
   sorry
 
-/-- Ordinary homs out of `P ℤ ⊗ ℤ[T]` preserve filtered colimits. -/
+/-- Ordinary homs out of `P ℤ ⊗ ℤ[T]` preserve small filtered colimits. -/
 lemma preservesFilteredColimits_hom_P_tensor_free (T : LightProfinite) :
-    PreservesFilteredColimits
+    PreservesFilteredColimitsOfSize.{0, 0}
       (coyoneda.obj (Opposite.op (P ℤ ⊗ (LightCondensed.free ℤ).obj T.toCondensed))) := by
-  have hden : PreservesFilteredColimits (coyoneda.obj (Opposite.op (PDenominatorTensor T))) :=
+  have hden : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (PDenominatorTensor T))) :=
     preservesFilteredColimits_hom_PDenominatorTensor T
-  have hnum : PreservesFilteredColimits (coyoneda.obj (Opposite.op (PNumeratorTensor T))) :=
+  have hnum : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (PNumeratorTensor T))) :=
     preservesFilteredColimits_hom_PNumeratorTensor T
-  letI : PreservesFilteredColimits (coyoneda.obj (Opposite.op (PDenominatorTensor T))) := hden
-  letI : PreservesFilteredColimits (coyoneda.obj (Opposite.op (PNumeratorTensor T))) := hnum
+  letI : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (PDenominatorTensor T))) := hden
+  letI : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (PNumeratorTensor T))) := hnum
   let f : PDenominatorTensor T ⟶ PNumeratorTensor T :=
     (P_map ℤ) ▷ (LightCondensed.free ℤ).obj T.toCondensed
-  have hcoker : PreservesFilteredColimits (coyoneda.obj (Opposite.op (cokernel f))) :=
+  have hcoker : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (cokernel f))) :=
     preservesFilteredColimits_hom_cokernel_of_preserves_hom f
-  -- Transport `hcoker` across `tensorCokerIsoScaffold (P_map ℤ)`.
-  sorry
+  let e : P ℤ ⊗ (LightCondensed.free ℤ).obj T.toCondensed ≅ cokernel f :=
+    tensorCokerIsoScaffold (P_map ℤ)
+  letI : PreservesFilteredColimitsOfSize.{0, 0}
+      (coyoneda.obj (Opposite.op (cokernel f))) := hcoker
+  refine ⟨fun J _ _ => ?_⟩
+  letI : PreservesColimitsOfShape J (coyoneda.obj (Opposite.op (cokernel f))) :=
+    PreservesFilteredColimitsOfSize.preserves_filtered_colimits J
+  exact preservesColimitsOfShape_of_natIso (coyoneda.mapIso e.op)
 
 /-- The `T`-valued points of `ihom (P ℤ)` are ordinary homs out of `P ℤ ⊗ ℤ[T]`. -/
 noncomputable def ihomP_points_forget_iso (T : LightProfinite) :
     (ihom (P ℤ) ⋙ lightCondAbPoints T ⋙ CategoryTheory.forget (ModuleCat ℤ) ⋙
         uliftFunctor.{1, 0}) ≅
       coyoneda.obj (Opposite.op (P ℤ ⊗ (LightCondensed.free ℤ).obj T.toCondensed)) := by
-  -- Package `LightCondensed.ihomPoints` as a natural isomorphism of functors.
-  sorry
+  refine NatIso.ofComponents (fun A => ?_) ?_
+  · exact Equiv.toIso (Equiv.ulift.trans (LightCondensed.ihomPoints ℤ (P ℤ) A T))
+  · intro A B f
+    ext x
+    change LightCondensed.ihomPoints ℤ (P ℤ) B T
+        ((((ihom (P ℤ)).map f).hom.app (op T)) x.down) =
+      LightCondensed.ihomPoints ℤ (P ℤ) A T x.down ≫ f
+    rw [LightCondensed.ihom_map_val_app]
+    simp
 
 /-- Reduction from pointwise ordinary hom preservation to internal hom preservation. -/
 lemma preservesFilteredColimits_ihom_P_of_pointwise_hom
     (h : ∀ T : LightProfinite,
-      PreservesFilteredColimits
+      PreservesFilteredColimitsOfSize.{0, 0}
         (coyoneda.obj (Opposite.op (P ℤ ⊗ (LightCondensed.free ℤ).obj T.toCondensed)))) :
-    PreservesFilteredColimits (ihom (P ℤ)) := by
-  -- For a filtered diagram, apply `lightCondAb_sheafToPresheaf_createsFilteredColimitsOfShape` and
-  -- reflect the target colimit after all `lightCondAbPoints T`; then use
-  -- `ihomP_points_forget_iso T` and `h T`.
-  sorry
+    PreservesFilteredColimitsOfSize.{0, 0} (ihom (P ℤ)) := by
+  refine ⟨fun J _ _ => ?_⟩
+  letI : CreatesColimitsOfShape J
+      (sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)) :=
+    lightCondAb_sheafToPresheaf_createsFilteredColimitsOfShape J
+  have hpresheaf : PreservesColimitsOfShape J
+      (ihom (P ℤ) ⋙ sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)) := by
+    apply preservesColimitsOfShape_of_evaluation
+    intro T
+    cases T with
+    | op T =>
+      have hpoints_forget : PreservesColimitsOfShape J
+          ((ihom (P ℤ) ⋙ lightCondAbPoints T) ⋙
+            CategoryTheory.forget (ModuleCat ℤ) ⋙ uliftFunctor.{1, 0}) := by
+        letI : PreservesColimitsOfShape J
+            (coyoneda.obj (Opposite.op (P ℤ ⊗ (LightCondensed.free ℤ).obj T.toCondensed))) :=
+          PreservesFilteredColimitsOfSize.preserves_filtered_colimits J
+        exact preservesColimitsOfShape_of_natIso (ihomP_points_forget_iso T).symm
+      letI : PreservesColimitsOfShape J
+          ((ihom (P ℤ) ⋙ lightCondAbPoints T) ⋙
+            CategoryTheory.forget (ModuleCat ℤ) ⋙ uliftFunctor.{1, 0}) := hpoints_forget
+      exact preservesColimitsOfShape_of_reflects_of_preserves
+        (F := ihom (P ℤ) ⋙ lightCondAbPoints T)
+        (G := CategoryTheory.forget (ModuleCat ℤ) ⋙ uliftFunctor.{1, 0})
+  letI : PreservesColimitsOfShape J
+      (ihom (P ℤ) ⋙ sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)) := hpresheaf
+  exact preservesColimitsOfShape_of_reflects_of_preserves (F := ihom (P ℤ))
+    (G := sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ))
 
 /-- Final scaffold for the target lemma in `LightSolid.lean`. -/
-lemma preservesFilteredColimits_ihom_P_scaffold : PreservesFilteredColimits (ihom (P ℤ)) := by
+lemma preservesFilteredColimits_ihom_P_scaffold :
+    PreservesFilteredColimitsOfSize.{0, 0} (ihom (P ℤ)) := by
   exact preservesFilteredColimits_ihom_P_of_pointwise_hom
     (fun T => preservesFilteredColimits_hom_P_tensor_free T)
 
