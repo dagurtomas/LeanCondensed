@@ -294,15 +294,13 @@ lemma isSolid_internalHom (A B : LightCondAb) (hB : isSolid B) : isSolid ((ihom 
   simp only [Functor.map_comp, Functor.FullyFaithful.map_preimage]
   ext ⟨W⟩
   dsimp
-  ext g
-  simp
   erw [MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
     MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
     MonoidalClosed.homEquiv_apply_eq, MonoidalClosed.homEquiv_apply_eq,
     MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq,
     MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq,
     MonoidalClosed.homEquiv_symm_apply_eq, MonoidalClosed.homEquiv_symm_apply_eq]
-  rw [curry_pre_app, curry_pre_app, curry_pre_app]
+  erw [curry_pre_app, curry_pre_app, curry_pre_app]
   simp only [uncurry_curry]
   congr
   simp [curry_eq, uncurry_eq]
