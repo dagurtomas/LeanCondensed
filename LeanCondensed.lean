@@ -6,6 +6,7 @@ import LeanCondensed.Projects.AdjointFunctorTheorem
 import LeanCondensed.Projects.FreeCondensed
 import LeanCondensed.Projects.IsLocalizedMonoidal
 import LeanCondensed.Projects.LightSolid
+import LeanCondensed.Projects.DerivedSolid
 import LeanCondensed.Projects.MonoidalLinear
 import LeanCondensed.Projects.Sequence
 import LeanCondensed.Projects.SheafMonoidal

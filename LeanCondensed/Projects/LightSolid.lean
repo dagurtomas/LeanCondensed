@@ -10,6 +10,7 @@ import LeanCondensed.Projects.LightSolidFilteredScaffold
 import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Light.Sequence
 import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
+import Mathlib.CategoryTheory.Abelian.Subcategory
 import Mathlib.CategoryTheory.Adjunction.Additive
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.CategoryTheory.Localization.Bousfield
@@ -219,6 +220,21 @@ instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J :
   rw [isSolid, ← hdesc, ← IsColimit.nonempty_isColimit_iff_isIso_desc hc']
   exact ⟨(IsColimit.precomposeHomEquiv (asIso α) _).symm hc'⟩
 
+instance : isSolid.IsClosedUnderKernels where
+  kernels_le := by
+    rintro _ ⟨_, k, hk, hf⟩
+    exact isSolid.prop_of_isLimit hk (by rintro (_ | _) <;> first | exact hf.1 | exact hf.2)
+
+instance : isSolid.IsClosedUnderCokernels where
+  cokernels_le := by
+    rintro _ ⟨_, k, hk, hf⟩
+    exact isSolid.prop_of_isColimit hk (by rintro (_ | _) <;> first | exact hf.1 | exact hf.2)
+
+instance : isSolid.IsClosedUnderFiniteProducts where
+  isClosedUnderLimitsOfShape _ _ := inferInstance
+
+instance : Abelian Solid := inferInstanceAs (Abelian isSolid.FullSubcategory)
+
 instance : CreatesLimitsOfSize.{0, 0} isSolid.ι where
   CreatesLimitsOfShape := createsLimitsOfShapeFullSubcategoryInclusion _ _
 
@@ -262,6 +278,8 @@ def val (A : Solid) : LightCondAb := A.1 -- maybe unnecessary, `A.1` is fine.
 def solidificationAdjunction : solidification ⊣ isSolid.ι := .ofIsRightAdjoint _
 
 instance : solidification.IsLeftAdjoint := solidificationAdjunction.isLeftAdjoint
+
+instance : solidification.Additive := solidificationAdjunction.left_adjoint_additive
 
 open MonoidalCategory
 
