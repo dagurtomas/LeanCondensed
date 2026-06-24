@@ -170,12 +170,12 @@ lemma preservesFiniteColimits_ihom_P : PreservesFiniteColimits (ihom (P ℤ)) :=
 
 lemma preservesFilteredColimits_ihom_P : PreservesFilteredColimits (ihom (P ℤ)) := sorry
 
-instance : HasCoproducts.{1} (LightCondMod ℤ) := sorry
+instance : HasCoproducts.{0} (LightCondMod ℤ) := sorry
 
-instance : PreservesColimits (ihom (P ℤ)) := by
+instance : PreservesColimitsOfSize.{0, 0} (ihom (P ℤ)) := by
   have := preservesFiniteColimits_ihom_P
   have := preservesFilteredColimits_ihom_P
-  have (J : Type 1) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) := sorry
+  have (J : Type) : PreservesColimitsOfShape (Discrete J) (ihom (P ℤ)) := sorry
   -- Follows by writing the `J`-coproduct as a filtered colimit of the finite parts.
   -- May require general API.
   exact preservesColimits_of_preservesCoequalizers_and_coproducts _
