@@ -5,8 +5,10 @@ Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.Sequence
+import Mathlib.Algebra.Category.ModuleCat.AB
 import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
 import Mathlib.CategoryTheory.Adjunction.Additive
+import Mathlib.CategoryTheory.Limits.FilteredColimitCommutesFiniteLimit
 import Mathlib.CategoryTheory.Sites.Limits
 import Mathlib.Condensed.Light.InternallyProjective
 
@@ -60,25 +62,94 @@ abbrev lightCondAbPoints (T : LightProfinite) : LightCondAb ⥤ ModuleCat ℤ :=
   sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ) ⋙
     (evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).obj (Opposite.op T)
 
-/-- The key pointwise-colimit input: a filtered presheaf colimit of light condensed abelian groups
-is again a sheaf.
+/-- A pointwise filtered colimit of light condensed abelian groups is again a sheaf. -/
+lemma isSheaf_pointwiseFilteredColimit_presheaf
+    {I : Type} [SmallCategory I] [IsFiltered I] (F : I ⥤ LightCondAb) :
+    Presheaf.IsSheaf (coherentTopology LightProfinite)
+      (pointwiseCocone (F ⋙ sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ))).pt := by
+  rw [Presheaf.isSheaf_iff_preservesFiniteProducts_and_equalizerCondition]
+  constructor
+  · apply +allowSynthFailures comp_preservesFiniteProducts
+    have : ∀ (i : I), PreservesFiniteProducts ((F ⋙ sheafToPresheaf _ _).obj i) := fun i => by
+      exact inferInstanceAs (PreservesFiniteProducts (F.obj i).obj)
+    exact ⟨fun _ ↦ preservesLimitsOfShape_of_evaluation _ _ fun d ↦
+      inferInstanceAs (PreservesLimitsOfShape _ ((F ⋙ sheafToPresheaf _ _).obj d))⟩
+  · intro X B π hπ pb hpb
+    let Fp := F ⋙ sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    let G : WalkingParallelPair ⥤ I ⥤ ModuleCat ℤ :=
+      parallelPair
+        (Functor.whiskerLeft Fp
+          ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map pb.fst.op))
+        (Functor.whiskerLeft Fp
+          ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map pb.snd.op))
+    let K : Cone G := Fork.ofι
+      (Functor.whiskerLeft Fp ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map π.op))
+      (by
+        ext i x
+        change ModuleCat.Hom.hom ((F.obj i).obj.map π.op ≫
+            (F.obj i).obj.map pb.fst.op) x =
+          ModuleCat.Hom.hom ((F.obj i).obj.map π.op ≫
+            (F.obj i).obj.map pb.snd.op) x
+        simpa using congrArg
+          (fun f : (F.obj i).obj.obj (Opposite.op B) ⟶
+              (F.obj i).obj.obj (Opposite.op pb.pt) => ModuleCat.Hom.hom f x)
+          (regularTopology.equalizerCondition_w (F.obj i).obj pb))
+    have hK : IsLimit K := by
+      apply evaluationJointlyReflectsLimits
+      intro i
+      let ii : G ⋙ (evaluation I (ModuleCat ℤ)).obj i ≅
+          parallelPair ((F.obj i).obj.map pb.fst.op) ((F.obj i).obj.map pb.snd.op) :=
+        parallelPair.ext (Iso.refl _) (Iso.refl _) (by rfl) (by rfl)
+      let e : (Cone.postcompose ii.hom).obj (((evaluation I (ModuleCat ℤ)).obj i).mapCone K) ≅
+          Fork.ofι ((F.obj i).obj.map π.op)
+            (regularTopology.equalizerCondition_w (F.obj i).obj pb) := by
+        refine Cone.ext (Iso.refl _) ?_
+        rintro (_ | _) <;> rfl
+      have hsheaf := (F.obj i).property
+      rw [Presheaf.isSheaf_iff_preservesFiniteProducts_and_equalizerCondition] at hsheaf
+      exact (IsLimit.equivOfNatIsoOfIso ii _ _ e).symm (hsheaf.2 π pb hpb).some
+    have hcolim : IsLimit ((colim (J := I) (C := ModuleCat ℤ)).mapCone K) :=
+      isLimitOfPreserves (colim (J := I) (C := ModuleCat ℤ)) hK
+    refine ⟨?_⟩
+    let i : parallelPair
+        ((pointwiseCocone Fp).pt.map pb.fst.op)
+        ((pointwiseCocone Fp).pt.map pb.snd.op) ≅ G ⋙ colim :=
+      parallelPair.ext (Iso.refl _) (Iso.refl _) (by rfl) (by rfl)
+    let e : (Cone.postcompose i.hom).obj
+        (Fork.ofι ((pointwiseCocone Fp).pt.map π.op)
+          (regularTopology.equalizerCondition_w (pointwiseCocone Fp).pt pb)) ≅
+        (colim (J := I) (C := ModuleCat ℤ)).mapCone K := by
+      refine Cone.ext (Iso.refl _) ?_
+      rintro (_ | _)
+      · change (pointwiseCocone Fp).pt.map π.op =
+          colimMap (Functor.whiskerLeft Fp ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map π.op))
+        rfl
+      · change (pointwiseCocone Fp).pt.map π.op ≫ (pointwiseCocone Fp).pt.map pb.fst.op =
+          colimMap (Functor.whiskerLeft Fp ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map π.op) ≫
+            Functor.whiskerLeft Fp ((evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).map pb.fst.op))
+        rw [← Functor.map_comp, ← Functor.whiskerLeft_comp, ← Functor.map_comp]
+        rfl
+    exact (IsLimit.equivOfNatIsoOfIso i _ _ e).symm hcolim
 
-Expected proof: use `LightCondAb.ofSheafLightProfinite`'s explicit criterion, i.e. finite-product
-preservation plus the equalizer condition, and the fact that filtered colimits of modules commute
-with finite limits. -/
+/-- The key pointwise-colimit input: a filtered presheaf colimit of light condensed abelian groups
+is again a sheaf. -/
 lemma isSheaf_filtered_colimit_presheaf
-    {I : Type*} [Category I] [IsFiltered I]
+    {I : Type} [SmallCategory I] [IsFiltered I]
     (F : I ⥤ LightCondAb)
     (c : Cocone (F ⋙ sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)))
     (hc : IsColimit c) :
     Presheaf.IsSheaf (coherentTopology LightProfinite) c.pt := by
-  sorry
+  let i : c.pt ≅ (pointwiseCocone (F ⋙ sheafToPresheaf
+      (coherentTopology LightProfinite) (ModuleCat ℤ))).pt :=
+    hc.coconePointUniqueUpToIso (pointwiseIsColimit _)
+  rw [Presheaf.isSheaf_of_iso_iff i]
+  exact isSheaf_pointwiseFilteredColimit_presheaf F
 
 /-- Filtered colimits of light condensed abelian groups are created by the presheaf-forgetful
 functor. -/
 @[implicit_reducible]
 noncomputable def lightCondAb_sheafToPresheaf_createsFilteredColimitsOfShape
-    (I : Type*) [Category I] [IsFiltered I] :
+    (I : Type) [SmallCategory I] [IsFiltered I] :
     CreatesColimitsOfShape I
       (sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ)) :=
   CategoryTheory.Sheaf.createsColimitsOfShapeOfIsSheaf (isSheaf_filtered_colimit_presheaf)
