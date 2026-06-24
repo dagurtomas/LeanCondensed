@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Projects.LightSolid
+import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
 import Mathlib.Algebra.Homology.DerivedCategory.ExactFunctor
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
@@ -18,6 +19,9 @@ This file records the intended derived-category interfaces around light solid ab
 * the exact derived inclusion of solid objects into light condensed abelian groups;
 * fixed-variable left-derived tensor functors and right-derived internal Homs;
 * placeholders for the eventual bifunctorial derived tensor product and derived adjunctions.
+
+The general two-variable localization scaffold is in
+`LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable`.
 
 The definitions using `Functor.totalLeftDerived`/`Functor.totalRightDerived` are conditional on the
 corresponding Kan-extension existence typeclasses.  The remaining `sorry`s mark the genuinely
@@ -149,7 +153,8 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 abelian groups.
 
 The fixed-variable functors `leftDerivedTensorRight` above are the intended one-variable shadows of
-this bifunctor.  A complete construction should either use a bifunctor-derived-functor API or a
+this bifunctor.  A complete construction should be an instance of
+`DerivedCategory.TwoVariable.derived₂Curried` applied to the complex-level tensor bifunctor and a
 suitable K-flat/K-projective replacement theorem. -/
 noncomputable def derivedTensor : DSolid ⥤ DSolid ⥤ DSolid := by
   sorry
