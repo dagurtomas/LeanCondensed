@@ -16,12 +16,11 @@ as explicit named obligations:
 
 * `solidPIsoProduct`, identifying `solidification.obj (P ℤ)` with the countable product of `ℤ`;
 * `solidifiedFreeRetractSolidP`, saying solidified free representables retract from
-  `solidification.obj (P ℤ)`;
-* `projective_P`, the ordinary projectivity of `P ℤ` in light condensed abelian groups;
-* `solidifiedFree_hom_ext`, the representability/separation statement for solidified free
-  representables.
+  `solidification.obj (P ℤ)`.
 
-The remaining declarations are formal category-theory consequences of these named inputs.
+The remaining declarations are formal category-theory consequences of these named inputs, together
+with the ordinary projectivity of `P ℤ` and the separation statement for solidified free
+representables proved below.
 -/
 
 noncomputable section
@@ -122,6 +121,15 @@ noncomputable def retract {L : C ⥤ D}
     _ = 𝟙 (L.obj d.bObj) := by
           rw [d.sect_fac, Functor.map_id]
 
+/-- If the complementary idempotent extracted from a shift-retract diagram is the identity, then
+`L.map d.g` is an isomorphism. -/
+lemma isIso_map_g {L : C ⥤ D}
+    (d : ShiftRetractData L)
+    (hidempotent : L.map d.g ≫ (d.retract).i = 𝟙 (L.obj d.aObj)) :
+    IsIso (L.map d.g) := by
+  letI := d.inverted
+  exact ⟨(d.retract).i, hidempotent, d.retract.retract⟩
+
 end ShiftRetractData
 
 end CategoryTheory
@@ -200,6 +208,47 @@ instance solidification_preservesProjectiveObjects :
 instance projective_solidP : Projective solidP := by
   dsimp [solidP]
   infer_instance
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Ordinary currying intertwines external precomposition with internal precomposition. -/
+lemma curry'_pre_app {X Y Z : LightCondAb} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    MonoidalClosed.curry' (f ≫ g) =
+      MonoidalClosed.curry' g ≫ (MonoidalClosed.pre f).app Z := by
+  dsimp [MonoidalClosed.curry']
+  rw [MonoidalClosed.curry_pre_app]
+  congr 1
+  simp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The defining map `1 - shift : P ℤ ⟶ P ℤ` is local for the solidification localization. -/
+lemma oneMinusShift_mem_isLocal : isSolid.isLocal (oneMinusShift ℤ) := by
+  intro Z hZ
+  dsimp [isSolid] at hZ
+  let φ := ((MonoidalClosed.pre (oneMinusShift ℤ)).app Z)
+  haveI : IsIso φ := hZ
+  have hcompat : ∀ g : P ℤ ⟶ Z,
+      MonoidalClosed.curry' ((oneMinusShift ℤ) ≫ g) = MonoidalClosed.curry' g ≫ φ := by
+    intro g
+    exact curry'_pre_app (oneMinusShift ℤ) g
+  constructor
+  · intro g₁ g₂ h
+    apply MonoidalClosed.curry'_injective
+    apply (cancel_mono φ).1
+    rw [← hcompat, ← hcompat]
+    exact congrArg MonoidalClosed.curry' h
+  · intro g
+    let a : 𝟙_ LightCondAb ⟶ (ihom (P ℤ)).obj Z := MonoidalClosed.curry' g ≫ inv φ
+    refine ⟨MonoidalClosed.uncurry' a, ?_⟩
+    apply MonoidalClosed.curry'_injective
+    rw [hcompat]
+    dsimp [a, φ]
+    simp
+
+/-- Tensoring `1 - shift` on the right is inverted by solidification. -/
+lemma solidification_map_oneMinusShift_tensor_isIso (M : LightCondAb) :
+    IsIso (solidification.map ((oneMinusShift ℤ) ▷ M)) := by
+  apply Localization.inverts solidification isSolid.isLocal
+  exact isSolid.isLocal.whiskerRight_mem (oneMinusShift ℤ) oneMinusShift_mem_isLocal M
 
 /-- Obligation: the solidification of `P ℤ` is the countable product of copies of `ℤ`.  This is the
 heart-level form of the paper's bounded-sequence and derived-solidification calculation. -/
