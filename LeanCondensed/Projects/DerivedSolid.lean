@@ -12,7 +12,7 @@ import Mathlib.CategoryTheory.Functor.Derived.Adjunction
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
 import Mathlib.CategoryTheory.Functor.Derived.PointwiseRightDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
-import Mathlib.CategoryTheory.Generator.Basic
+import Mathlib.CategoryTheory.Generator.Preadditive
 
 /-!
 # Scaffold for derived light solid abelian groups
@@ -69,6 +69,25 @@ lemma enoughProjectives_of_projective_separator_shrink {C : Type u} [Category.{v
       have hh := congrArg (fun e => Sigma.ι (fun _ : Shrink (G ⟶ X) => G)
         (equivShrink (G ⟶ X) h) ≫ e) huv
       simpa [Category.assoc] using hh }⟩⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- If the tensor unit is projective, internal projectivity implies ordinary projectivity.
+This packages the standard adjunction argument: maps out of `P` are global sections of
+`P ⟶[C] -`, and `P ⟶[C] -` preserves epimorphisms by internal projectivity. -/
+lemma projective_of_internallyProjective_of_projective_unit
+    {C : Type*} [Category* C] [MonoidalCategory C] [MonoidalClosed C]
+    (P : C) [Projective (𝟙_ C)] [InternallyProjective P] : Projective P where
+  factors {E X} f e he := by
+    letI : Epi e := he
+    haveI : Epi ((ihom P).map e) := Functor.map_epi (ihom P) e
+    let f' : 𝟙_ C ⟶ (ihom P).obj X := MonoidalClosed.curry ((ρ_ P).hom ≫ f)
+    obtain ⟨g', hg'⟩ := Projective.factors f' ((ihom P).map e)
+    refine ⟨(ρ_ P).inv ≫ MonoidalClosed.uncurry g', ?_⟩
+    rw [Category.assoc]
+    have huncurry := congrArg MonoidalClosed.uncurry hg'
+    dsimp [f'] at huncurry
+    rw [MonoidalClosed.uncurry_natural_right] at huncurry
+    simpa using congrArg (fun k => (ρ_ P).inv ≫ k) huncurry
 
 end CategoryTheory
 
@@ -239,14 +258,69 @@ noncomputable abbrev solidInteger : Solid :=
 noncomputable abbrev solidProjectiveGenerator : Solid :=
   ∏ᶜ fun _ : ℕ => solidInteger
 
-/-- Obligation: the countable product of copies of `ℤ` is projective in solid abelian groups. -/
-instance solidProjectiveGenerator_projective : Projective solidProjectiveGenerator := by
+/-- The underlying light condensed abelian group of the intended solid projective generator. -/
+noncomputable abbrev solidProjectiveGeneratorVal : LightCondAb :=
+  isSolid.ι.obj solidProjectiveGenerator
+
+/-- Obligation: the tensor unit of light condensed abelian groups is projective.  A direct proof
+should use local surjectivity of epimorphisms and the fact that every nonempty light profinite set
+maps from the point. -/
+lemma lightCondAb_tensorUnit_projective : Projective (𝟙_ LightCondAb) := by
   sorry
 
-/-- Obligation: the countable product of copies of `ℤ` is a separator/generator for solid abelian
-groups. -/
-lemma solidProjectiveGenerator_isSeparator : IsSeparator solidProjectiveGenerator := by
+/-- The object `P ℤ` is projective: it is internally projective, and maps out of an internally
+projective object are projective once the tensor unit is projective. -/
+lemma lightCondAb_P_projective : Projective (P ℤ) := by
+  haveI : Projective (𝟙_ LightCondAb) := lightCondAb_tensorUnit_projective
+  exact CategoryTheory.projective_of_internallyProjective_of_projective_unit (P ℤ)
+
+/-- Obligation: the underlying countable product of copies of `ℤ` identifies with the sequence
+object `P ℤ = ℤ[ℕ ∪ {∞}] / ℤ[{∞}]`. -/
+noncomputable def solidProjectiveGeneratorValIsoP : solidProjectiveGeneratorVal ≅ P ℤ := by
   sorry
+
+/-- The underlying countable product of copies of `ℤ` is projective as a light condensed abelian
+group. -/
+lemma solidProjectiveGeneratorVal_projective : Projective solidProjectiveGeneratorVal :=
+  Projective.of_iso solidProjectiveGeneratorValIsoP.symm lightCondAb_P_projective
+
+/-- The countable product of copies of `ℤ` is projective in solid abelian groups, once its
+underlying light condensed abelian group is projective. -/
+instance solidProjectiveGenerator_projective : Projective solidProjectiveGenerator :=
+  isSolid.ι.projective_of_map_projective solidProjectiveGeneratorVal_projective
+
+/-- Obligation: the sequence object `P ℤ` detects zero morphisms between solid abelian groups.
+This is the substantive generator statement after identifying `P ℤ` with the countable product of
+copies of `ℤ`. -/
+lemma lightCondAb_P_detects_zero_of_solid {X Y : Solid} (f : X ⟶ Y)
+    (hf : ∀ h : P ℤ ⟶ isSolid.ι.obj X, h ≫ isSolid.ι.map f = 0) : isSolid.ι.map f = 0 := by
+  sorry
+
+/-- Maps from the countable product of copies of `ℤ` detect zero morphisms of solid abelian groups,
+once the product is identified with `P ℤ`. -/
+lemma solidProjectiveGeneratorVal_detects_zero {X Y : Solid} (f : X ⟶ Y)
+    (hf : ∀ h : solidProjectiveGenerator ⟶ X, h ≫ f = 0) : isSolid.ι.map f = 0 := by
+  apply lightCondAb_P_detects_zero_of_solid
+  intro h
+  have hh := hf (isSolid.ι.preimage ((solidProjectiveGeneratorValIsoP).hom ≫ h))
+  have hpre : (isSolid.ι.preimage ((solidProjectiveGeneratorValIsoP).hom ≫ h)).hom =
+      (solidProjectiveGeneratorValIsoP).hom ≫ h := isSolid.ι.map_preimage _
+  have hhmap := congrArg (fun k => isSolid.ι.map k) hh
+  change (isSolid.ι.preimage ((solidProjectiveGeneratorValIsoP).hom ≫ h)).hom ≫
+      isSolid.ι.map f = 0 at hhmap
+  rw [hpre] at hhmap
+  have hprecomp : (solidProjectiveGeneratorValIsoP).hom ≫ (h ≫ isSolid.ι.map f) =
+      (solidProjectiveGeneratorValIsoP).hom ≫ 0 := by
+    rw [comp_zero]
+    exact hhmap
+  exact (cancel_epi (solidProjectiveGeneratorValIsoP).hom).1 hprecomp
+
+/-- The countable product of copies of `ℤ` is a separator/generator for solid abelian groups. -/
+lemma solidProjectiveGenerator_isSeparator : IsSeparator solidProjectiveGenerator := by
+  rw [Preadditive.isSeparator_iff]
+  intro X Y f hf
+  apply isSolid.ι.map_injective
+  exact solidProjectiveGeneratorVal_detects_zero f hf
 
 /-- Solid abelian groups have enough projective objects, using the explicit projective generator. -/
 instance solid_enoughProjectives : EnoughProjectives Solid :=
