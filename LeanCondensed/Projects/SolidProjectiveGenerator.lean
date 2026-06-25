@@ -698,6 +698,48 @@ lemma pTensorDesc_slice (M N : LightCondAb)
   simp only [Category.assoc]
   rw [pTensorDesc_comp_proj]
 
+/-- Obligation: compatibility of the free tensor isomorphism with finite slices. -/
+@[reassoc]
+lemma freeTensorIsoInt_hom_finiteTensorPoint (T : LightProfinite) (n : ℕ) :
+    (λ_ ((free ℤ).obj T.toCondensed)).inv ≫
+      freeNatBasis n ▷ (free ℤ).obj T.toCondensed ≫
+      (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom =
+    (free ℤ).map (lightProfiniteToLightCondSet.map (finiteTensorPoint T n)) := by
+  sorry
+
+/-- Obligation: compatibility of the free tensor isomorphism with the `∞` slice. -/
+@[reassoc]
+lemma freeTensorIsoInt_hom_inftyTensorPoint (T : LightProfinite) :
+    (λ_ ((free ℤ).obj T.toCondensed)).inv ≫
+      freeInftyBasis ▷ (free ℤ).obj T.toCondensed ≫
+      (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom =
+    (free ℤ).map (lightProfiniteToLightCondSet.map (inftyTensorPoint T)) := by
+  sorry
+
+/-- Finite slices of a numerator built from a section over `(ℕ∪∞) × T` are obtained by
+restricting that section along the finite slice map. -/
+lemma numeratorSlice_of_freeTensorElement (T : LightProfinite) (A : LightCondAb) (n : ℕ)
+    (x : A.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩) :
+    numeratorSlice ((free ℤ).obj T.toCondensed) A n
+      ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+        (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A).symm x) =
+      (freeHomEquivPoints T A).symm (A.obj.map (finiteTensorPoint T n).op x) := by
+  dsimp [numeratorSlice]
+  rw [freeTensorIsoInt_hom_finiteTensorPoint_assoc]
+  rw [freeHomEquivPoints_symm_map]
+
+/-- The `∞` slice of a numerator built from a section over `(ℕ∪∞) × T` is obtained by
+restricting that section along the `∞` slice map. -/
+lemma inftySlice_of_freeTensorElement (T : LightProfinite) (A : LightCondAb)
+    (x : A.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩) :
+    inftySlice ((free ℤ).obj T.toCondensed) A
+      ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+        (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A).symm x) =
+      (freeHomEquivPoints T A).symm (A.obj.map (inftyTensorPoint T).op x) := by
+  dsimp [inftySlice]
+  rw [freeTensorIsoInt_hom_inftyTensorPoint_assoc]
+  rw [freeHomEquivPoints_symm_map]
+
 /-- Obligation: the section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail
 endomorphisms and whose `∞` slice is zero. -/
 noncomputable def infiniteTailElement (T : LightProfinite) [Infinite T] :
@@ -713,17 +755,35 @@ noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
     (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
       ((free ℤ).obj T.toCondensed)).symm (infiniteTailElement T)
 
-/-- Obligation: finite slices of the tail numerator are the prescribed tail endomorphisms. -/
+/-- Obligation: restricting `infiniteTailElement` to the finite slice `n` gives the `n`th tail
+endomorphism. -/
+lemma infiniteTailElement_finite (T : LightProfinite) [Infinite T] (n : ℕ) :
+    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+      (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op
+        (infiniteTailElement T)) =
+      freeTailEndomorphism T n := by
+  sorry
+
+/-- Finite slices of the tail numerator are the prescribed tail endomorphisms. -/
 lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
     numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n
       (infiniteTailNumerator T) = freeTailEndomorphism T n := by
+  rw [infiniteTailNumerator, numeratorSlice_of_freeTensorElement]
+  exact infiniteTailElement_finite T n
+
+/-- Obligation: restricting `infiniteTailElement` to the `∞` slice gives zero. -/
+lemma infiniteTailElement_infty (T : LightProfinite) [Infinite T] :
+    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+      (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
+        (infiniteTailElement T)) = 0 := by
   sorry
 
-/-- Obligation: the `∞` slice of the tail numerator is zero. -/
+/-- The `∞` slice of the tail numerator is zero. -/
 lemma infiniteTailNumerator_infty (T : LightProfinite) [Infinite T] :
     inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
       (infiniteTailNumerator T) = 0 := by
-  sorry
+  rw [infiniteTailNumerator, inftySlice_of_freeTensorElement]
+  exact infiniteTailElement_infty T
 
 /-- The tail numerator vanishes on the basepoint summand, so it descends through `P ℤ ⊗ ℤ[T]`. -/
 lemma infiniteTailNumerator_kills (T : LightProfinite) [Infinite T] :
