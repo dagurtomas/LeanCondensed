@@ -1,6 +1,7 @@
 import Mathlib.Data.Finsupp.Basic
 import Mathlib.Algebra.BigOperators.Finsupp.Basic
 import Mathlib.Algebra.Module.LinearMap.Defs
+import Mathlib.Condensed.Light.InternallyProjective
 import Mathlib.Tactic
 
 /-!
@@ -15,6 +16,8 @@ inverse given by finite tail sums.
 open scoped BigOperators
 
 noncomputable section
+
+open CategoryTheory LightCondensed MonoidalCategory MonoidalClosed
 
 namespace LightCondensed.Solid.IntProof
 
@@ -164,5 +167,38 @@ noncomputable def seqDiffEquiv : SeqZ ≃ₗ[ℤ] SeqZ where
 
 example : Function.Bijective seqDiff :=
   seqDiffEquiv.bijective
+
+section InternalHomPoints
+
+variable {R : Type} [CommRing R]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- On `S`-points of internal Homs, precomposition by `f` is precomposition by
+`f ▷ ℤ[S]` after applying `ihomPoints`. -/
+lemma ihom_pre_val_app
+    {A B X : LightCondMod R} (f : B ⟶ A)
+    (S : LightProfinite)
+    (x : ((ihom A).obj X).obj.obj ⟨S⟩) :
+    (((MonoidalClosed.pre f).app X).hom.app ⟨S⟩) x =
+      (ihomPoints R B X S).symm
+        ((f ▷ (LightCondensed.free R).obj S.toCondensed) ≫ ihomPoints R A X S x) := by
+  apply (ihomPoints R B X S).injective
+  simp only [ihomPoints_apply, ← MonoidalClosed.uncurry_pre_app,
+    ← Adjunction.homEquiv_naturality_right_symm, Equiv.apply_symm_apply]
+  congr
+  apply (coherentTopology LightProfinite).yonedaEquiv.injective
+  simp [dsimp% GrothendieckTopology.yonedaEquiv_comp]
+
+lemma ihomPoints_pre_app
+    {A B X : LightCondMod R} (f : B ⟶ A)
+    (S : LightProfinite)
+    (x : ((ihom A).obj X).obj.obj ⟨S⟩) :
+    ihomPoints R B X S
+      ((((MonoidalClosed.pre f).app X).hom.app ⟨S⟩) x)
+      = (f ▷ (LightCondensed.free R).obj S.toCondensed) ≫ ihomPoints R A X S x := by
+  rw [ihom_pre_val_app]
+  simp
+
+end InternalHomPoints
 
 end LightCondensed.Solid.IntProof
