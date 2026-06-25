@@ -25,9 +25,10 @@ This file records the intended derived-category interfaces around light solid ab
 The general two-variable localization scaffold is in
 `LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable`.
 
-The definitions using `Functor.totalLeftDerived`/`Functor.totalRightDerived` are conditional on the
-corresponding Kan-extension existence typeclasses. The bifunctorial tensor product is similarly
-conditional on an adapted replacement package, e.g. K-flat replacements once available for `Solid`.
+The scaffold keeps the remaining mathematical obligations as explicit declarations with `sorry`,
+rather than hiding them as assumptions on downstream definitions.  In particular, existence of the
+relevant total derived functors, K-flat/adapted tensor data, and the derived solidification
+adjunction are all named below.
 -/
 
 noncomputable section
@@ -80,19 +81,21 @@ noncomputable abbrev solidificationToDerived :
     CochainComplex LightCondAb ℤ ⥤ DSolid :=
   solidificationComplexes ⋙ DerivedCategory.Q
 
-/-- The left-derived solidification functor, when the corresponding total left-derived functor
-exists. -/
-noncomputable abbrev derivedSolidification
-    [solidificationToDerived.HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))] :
-    DLightCondAb ⥤ DSolid :=
+/-- Obligation: degreewise solidification followed by localization admits a total left-derived
+functor.  This should follow from the general existence theorem for total left-derived functors once
+the relevant size/existence hypotheses are available. -/
+instance solidificationToDerived_hasLeftDerivedFunctor :
+    solidificationToDerived.HasLeftDerivedFunctor
+      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ)) := by
+  sorry
+
+/-- The left-derived solidification functor. -/
+noncomputable abbrev derivedSolidification : DLightCondAb ⥤ DSolid :=
   solidificationToDerived.totalLeftDerived DerivedCategory.Q
     (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))
 
 /-- The comparison map characterizing `derivedSolidification` as a total left-derived functor. -/
-noncomputable abbrev derivedSolidificationCounit
-    [solidificationToDerived.HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))] :
+noncomputable abbrev derivedSolidificationCounit :
     DerivedCategory.Q ⋙ derivedSolidification ⟶ solidificationToDerived :=
   solidificationToDerived.totalLeftDerivedCounit DerivedCategory.Q
     (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))
@@ -135,18 +138,19 @@ noncomputable abbrev tensorRightToDerived (A : Solid) :
     CochainComplex Solid ℤ ⥤ DSolid :=
   tensorRightComplexes A ⋙ DerivedCategory.Q
 
+/-- Obligation: right tensoring by a fixed solid object admits a total left-derived functor. -/
+instance tensorRightToDerived_hasLeftDerivedFunctor (A : Solid) :
+    (tensorRightToDerived A).HasLeftDerivedFunctor
+      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) := by
+  sorry
+
 /-- The left-derived functor of right tensoring by a fixed solid object. -/
-noncomputable abbrev leftDerivedTensorRight (A : Solid)
-    [(tensorRightToDerived A).HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))] :
-    DSolid ⥤ DSolid :=
+noncomputable abbrev leftDerivedTensorRight (A : Solid) : DSolid ⥤ DSolid :=
   (tensorRightToDerived A).totalLeftDerived DerivedCategory.Q
     (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))
 
 /-- The comparison map characterizing `leftDerivedTensorRight A`. -/
-noncomputable abbrev leftDerivedTensorRightCounit (A : Solid)
-    [(tensorRightToDerived A).HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))] :
+noncomputable abbrev leftDerivedTensorRightCounit (A : Solid) :
     DerivedCategory.Q ⋙ leftDerivedTensorRight A ⟶ tensorRightToDerived A :=
   (tensorRightToDerived A).totalLeftDerivedCounit DerivedCategory.Q
     (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))
@@ -161,18 +165,19 @@ noncomputable abbrev ihomToDerived (A : Solid) :
     CochainComplex Solid ℤ ⥤ DSolid :=
   ihomComplexes A ⋙ DerivedCategory.Q
 
+/-- Obligation: internal Hom out of a fixed solid object admits a total right-derived functor. -/
+instance ihomToDerived_hasRightDerivedFunctor (A : Solid) :
+    (ihomToDerived A).HasRightDerivedFunctor
+      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) := by
+  sorry
+
 /-- The right-derived functor of internal Hom out of a fixed solid object. -/
-noncomputable abbrev rightDerivedIhom (A : Solid)
-    [(ihomToDerived A).HasRightDerivedFunctor
-      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))] :
-    DSolid ⥤ DSolid :=
+noncomputable abbrev rightDerivedIhom (A : Solid) : DSolid ⥤ DSolid :=
   (ihomToDerived A).totalRightDerived DerivedCategory.Q
     (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))
 
 /-- The comparison map characterizing `rightDerivedIhom A`. -/
-noncomputable abbrev rightDerivedIhomUnit (A : Solid)
-    [(ihomToDerived A).HasRightDerivedFunctor
-      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))] :
+noncomputable abbrev rightDerivedIhomUnit (A : Solid) :
     ihomToDerived A ⟶ DerivedCategory.Q ⋙ rightDerivedIhom A :=
   (ihomToDerived A).totalRightDerivedUnit DerivedCategory.Q
     (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))
@@ -183,37 +188,31 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 
 open CategoryTheory.DerivedCategory.TwoVariable
 
-/-- Adapted replacement data for constructing the derived tensor product of solid abelian groups.
+/-- Obligation: choose the adapted complexes used to compute the solid derived tensor product.
+The intended choice is K-flat complexes of solid abelian groups. -/
+noncomputable def solidKFlat : AdaptedProperty Solid := by
+  sorry
 
-The intended instance should use K-flat complexes: the adapted classes should be K-flat solid
-complexes, the `inverts` field says that the complex-level tensor sends quasi-isomorphisms between
-adapted complexes to quasi-isomorphisms, and the localized-equivalence fields say that adapted
-complexes compute the derived category. -/
-abbrev HasTensorAdapted : Type _ := HasAdaptedDerived₂ solidTensorComplex
+/-- Obligation: the adapted complexes compute the derived category of solid abelian groups. -/
+instance solidKFlat_isLocalizedEquivalence :
+    (adaptedLocalizer solidKFlat).IsLocalizedEquivalence := by
+  sorry
+
+/-- Obligation: tensoring adapted solid complexes sends adapted quasi-isomorphisms in both variables
+to quasi-isomorphisms. -/
+lemma solidTensorComplex_inverts_kflat :
+    InvertsAdaptedQuasiIso₂ solidKFlat solidKFlat solidTensorComplex := by
+  sorry
 
 /-- The bifunctorial derived tensor product on the derived category of solid abelian groups,
-computed from an adapted replacement class such as K-flat complexes. -/
-noncomputable def derivedTensor [HasTensorAdapted] : DSolid ⥤ DSolid ⥤ DSolid :=
-  derived₂CurriedOfAdapted solidTensorComplex
+computed from the adapted replacement class `solidKFlat`. -/
+noncomputable def derivedTensor : DSolid ⥤ DSolid ⥤ DSolid :=
+  derived₂Curried solidKFlat solidKFlat solidTensorComplex solidTensorComplex_inverts_kflat
 
-/-- Data witnessing the expected derived adjunction between derived solidification and the derived
-inclusion.
-
-A future proof should construct this from the general derived-adjunction API, by showing that the
-left-derived solidification is absolute enough to compose with the exact derived inclusion. -/
-class HasDerivedSolidificationAdjunction
-    [solidificationToDerived.HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))] where
-  adjunction : derivedSolidification ⊣ derivedInclusion
-
-/-- The expected derived adjunction between derived solidification and the derived inclusion,
-once the relevant absolute-derived-functor compatibility has been supplied. -/
-noncomputable def derivedSolidificationAdjunction
-    [solidificationToDerived.HasLeftDerivedFunctor
-      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))]
-    [h : HasDerivedSolidificationAdjunction] :
-    derivedSolidification ⊣ derivedInclusion :=
-  h.adjunction
+/-- Obligation: construct the derived adjunction between derived solidification and the derived
+inclusion from the ordinary solidification adjunction and the derived-functor comparison data. -/
+noncomputable def derivedSolidificationAdjunction : derivedSolidification ⊣ derivedInclusion := by
+  sorry
 
 /-- Placeholder marker for the eventual closed structure: it should relate `derivedTensor` and the
 total right-derived internal Hom once the bifunctorial tensor is available. -/

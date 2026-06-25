@@ -131,33 +131,6 @@ noncomputable def derived₂Curried (P₁ : AdaptedProperty C₁) (P₂ : Adapte
     DerivedCategory C₁ ⥤ DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
   Functor.curry.obj (derived₂ P₁ P₂ T hT)
 
-/-- A package of adapted replacement data sufficient to derive a bifunctor on complexes. -/
-class HasAdaptedDerived₂ (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) where
-  /-- Adapted complexes in the first variable. -/
-  P₁ : AdaptedProperty C₁
-  /-- Adapted complexes in the second variable. -/
-  P₂ : AdaptedProperty C₂
-  /-- The bifunctor sends adapted quasi-isomorphisms in both variables to quasi-isomorphisms. -/
-  inverts : InvertsAdaptedQuasiIso₂ P₁ P₂ T
-  /-- Adapted complexes in the first variable compute the derived category. -/
-  isLocalizedEquivalence₁ : (adaptedLocalizer P₁).IsLocalizedEquivalence
-  /-- Adapted complexes in the second variable compute the derived category. -/
-  isLocalizedEquivalence₂ : (adaptedLocalizer P₂).IsLocalizedEquivalence
-
-/-- The derived bifunctor associated to a `HasAdaptedDerived₂` package. -/
-noncomputable def derived₂OfAdapted (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    [h : HasAdaptedDerived₂ T] :
-    DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃ := by
-  haveI : (adaptedLocalizer h.P₁).IsLocalizedEquivalence := h.isLocalizedEquivalence₁
-  haveI : (adaptedLocalizer h.P₂).IsLocalizedEquivalence := h.isLocalizedEquivalence₂
-  exact derived₂ h.P₁ h.P₂ T h.inverts
-
-/-- Curried form of `derived₂OfAdapted`. -/
-noncomputable def derived₂CurriedOfAdapted (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    [h : HasAdaptedDerived₂ T] :
-    DerivedCategory C₁ ⥤ DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
-  Functor.curry.obj (derived₂OfAdapted T)
-
 /-- The adapted property of K-projective complexes. -/
 abbrev kProjective (C : Type u₁) [Category.{v₁} C] [Abelian C] : AdaptedProperty C :=
   fun K => CochainComplex.IsKProjective K
