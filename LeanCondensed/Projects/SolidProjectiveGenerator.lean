@@ -253,6 +253,24 @@ noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
   ((freeForgetAdjunction ℤ).homEquiv T.toCondensed A).trans
     (coherentTopology LightProfinite).yonedaEquiv
 
+lemma freeHomEquivPoints_map {T T' : LightProfinite} (φ : T' ⟶ T)
+    (A : LightCondAb) (f : (free ℤ).obj T.toCondensed ⟶ A) :
+    freeHomEquivPoints T' A (((free ℤ).map (lightProfiniteToLightCondSet.map φ)) ≫ f) =
+      A.obj.map φ.op (freeHomEquivPoints T A f) := by
+  dsimp [freeHomEquivPoints]
+  erw [Adjunction.homEquiv_naturality_left]
+  exact (GrothendieckTopology.yonedaEquiv_naturality (coherentTopology LightProfinite)
+    (((freeForgetAdjunction ℤ).homEquiv T.toCondensed A) f) φ).symm
+
+lemma freeHomEquivPoints_symm_map {T T' : LightProfinite} (φ : T' ⟶ T)
+    (A : LightCondAb) (x : A.obj.obj ⟨T⟩) :
+    ((free ℤ).map (lightProfiniteToLightCondSet.map φ)) ≫
+      (freeHomEquivPoints T A).symm x =
+      (freeHomEquivPoints T' A).symm (A.obj.map φ.op x) := by
+  apply (freeHomEquivPoints T' A).injective
+  rw [freeHomEquivPoints_map]
+  simp
+
 /-- The free light condensed abelian group on the point is the tensor unit. -/
 noncomputable def freePointIsoUnit :
     (LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ≅ 𝟙_ LightCondAb :=
@@ -469,6 +487,16 @@ lemma natPoint_comp_shift (n : ℕ) :
     natPoint n ≫ LightProfinite.shift = natPoint (n + 1) := by
   ext x
   rfl
+
+/-- The slice map `T → (ℕ∪∞) × T` selecting the finite index `n`. -/
+noncomputable def finiteTensorPoint (T : LightProfinite) (n : ℕ) :
+    T ⟶ ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) :=
+  (λ_ T).inv ≫ natPoint n ▷ T
+
+/-- The slice map `T → (ℕ∪∞) × T` selecting the point `∞`. -/
+noncomputable def inftyTensorPoint (T : LightProfinite) :
+    T ⟶ ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) :=
+  (λ_ T).inv ≫ ι ▷ T
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
@@ -789,6 +817,38 @@ noncomputable def infiniteDifferenceMap (T : LightProfinite) [Infinite T] :
 noncomputable def infiniteTailSection (T : LightProfinite) [Infinite T] :
     (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed :=
   tailSection T
+
+/-- The finite slices of the shifted tail numerator are finite differences of tail
+endomorphisms. -/
+lemma shiftedTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
+    numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n
+      (((oneMinusShift' ℤ) ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T) =
+    freeTailEndomorphism T n - freeTailEndomorphism T (n + 1) := by
+  rw [numeratorSlice_oneMinusShift']
+  rw [infiniteTailNumerator_slice]
+  rw [infiniteTailNumerator_slice]
+
+/-- The `∞` slice of the shifted tail numerator is zero. -/
+lemma shiftedTailNumerator_infty (T : LightProfinite) [Infinite T] :
+    inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
+      (((oneMinusShift' ℤ) ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T) = 0 := by
+  rw [inftySlice_oneMinusShift']
+
+/-- Finite slices commute with postcomposition by `infinitePToFree`. -/
+lemma differenceNumerator_comp_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
+    numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n
+      (infiniteDifferenceNumerator T ≫ infinitePToFree T) =
+    numeratorSlice ((free ℤ).obj T.toCondensed) (P ℤ) n (infiniteDifferenceNumerator T) ≫
+      infinitePToFree T := by
+  rw [numeratorSlice_comp]
+
+/-- The `∞` slice of the finite-difference factorization is zero. -/
+lemma differenceNumerator_comp_infty (T : LightProfinite) [Infinite T] :
+    inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
+      (infiniteDifferenceNumerator T ≫ infinitePToFree T) = 0 := by
+  rw [inftySlice_comp]
+  rw [infiniteDifferenceNumerator_infty]
+  simp
 
 /-- Obligation: the numerator-level shift-retract square for Lemma 3.3.2. -/
 lemma infiniteShiftRetract_numerator_comm (T : LightProfinite) [Infinite T] :
