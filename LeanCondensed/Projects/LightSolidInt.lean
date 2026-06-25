@@ -1,6 +1,7 @@
 import Mathlib.Data.Finsupp.Basic
 import Mathlib.Algebra.BigOperators.Finsupp.Basic
 import Mathlib.Algebra.Module.LinearMap.Defs
+import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.InternallyProjective
 import Mathlib.Tactic
 
@@ -200,5 +201,50 @@ lemma ihomPoints_pre_app
   simp
 
 end InternalHomPoints
+
+section FreeDiscrete
+
+variable (R : Type) [Ring R]
+variable (T : LightProfinite) (M : ModuleCat R)
+
+/-- Maps from the free light condensed `R`-module on a light profinite set `T` to a discrete
+module `M` are locally constant `M`-valued functions on `T`. -/
+noncomputable def freeHomDiscreteEquiv :
+    ((LightCondensed.free R).obj T.toCondensed ⟶ (LightCondensed.discrete (ModuleCat R)).obj M) ≃
+      LocallyConstant T M where
+  toFun f := by
+    let g : T.toCondensed ⟶
+        (LightCondensed.forget R).obj ((LightCondensed.discrete (ModuleCat R)).obj M) :=
+      (LightCondensed.freeForgetAdjunction R).homEquiv T.toCondensed
+        ((LightCondensed.discrete (ModuleCat R)).obj M) f
+    let g' : T.toCondensed ⟶
+        (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M) :=
+      g ≫ (LightCondensed.forget R).map
+        ((LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M)
+    let x := (coherentTopology LightProfinite).yonedaEquiv g'
+    change LocallyConstant T M at x
+    exact x
+  invFun x := by
+    let x' : ((LightCondensed.forget R).obj
+        ((LightCondMod.LocallyConstant.functor R).obj M)).obj.obj ⟨T⟩ := x
+    let g' : T.toCondensed ⟶
+        (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M) :=
+      (coherentTopology LightProfinite).yonedaEquiv.symm x'
+    let g : T.toCondensed ⟶
+        (LightCondensed.forget R).obj ((LightCondensed.discrete (ModuleCat R)).obj M) :=
+      g' ≫ (LightCondensed.forget R).map
+        ((LightCondMod.LocallyConstant.functorIsoDiscrete R).hom.app M)
+    exact ((LightCondensed.freeForgetAdjunction R).homEquiv T.toCondensed
+      ((LightCondensed.discrete (ModuleCat R)).obj M)).symm g
+  left_inv f := by
+    dsimp
+    rw [Equiv.symm_apply_apply]
+    simp
+  right_inv x := by
+    dsimp
+    rw [Equiv.apply_symm_apply]
+    simp
+
+end FreeDiscrete
 
 end LightCondensed.Solid.IntProof
