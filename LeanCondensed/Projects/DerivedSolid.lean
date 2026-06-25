@@ -8,6 +8,7 @@ import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
 import Mathlib.Algebra.Homology.DerivedCategory.ExactFunctor
 import Mathlib.Algebra.Homology.Monoidal
 import Mathlib.CategoryTheory.Monoidal.Preadditive
+import Mathlib.CategoryTheory.Functor.Derived.Adjunction
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
 
@@ -113,15 +114,37 @@ noncomputable abbrev exactDerivedSolidificationFactors [PreservesFiniteLimits so
       solidification.mapHomologicalComplex (ComplexShape.up ℤ) ⋙ DerivedCategory.Q :=
   solidification.mapDerivedCategoryFactors
 
+/-- The inclusion of solid abelian groups, applied degreewise to cochain complexes. -/
+noncomputable abbrev inclusionComplexes :
+    CochainComplex Solid ℤ ⥤ CochainComplex LightCondAb ℤ :=
+  isSolid.ι.mapHomologicalComplex (ComplexShape.up ℤ)
+
+/-- Obligation: the solidification adjunction lifts degreewise to cochain complexes. -/
+noncomputable def solidificationComplexesAdjunction :
+    solidificationComplexes ⊣ inclusionComplexes := by
+  sorry
+
 /-- The exact functor on derived categories induced by the inclusion `Solid ⥤ LightCondAb`. -/
 noncomputable abbrev derivedInclusion : DSolid ⥤ DLightCondAb :=
   isSolid.ι.mapDerivedCategory
 
 /-- The inclusion-derived functor is induced by applying the inclusion degreewise to complexes. -/
 noncomputable abbrev derivedInclusionFactors :
-    DerivedCategory.Q ⋙ derivedInclusion ≅
-      isSolid.ι.mapHomologicalComplex (ComplexShape.up ℤ) ⋙ DerivedCategory.Q :=
+    DerivedCategory.Q ⋙ derivedInclusion ≅ inclusionComplexes ⋙ DerivedCategory.Q :=
   isSolid.ι.mapDerivedCategoryFactors
+
+/-- The comparison map exhibiting `derivedInclusion` as a right-derived functor of the degreewise
+inclusion. -/
+noncomputable abbrev derivedInclusionComparison :
+    inclusionComplexes ⋙ DerivedCategory.Q ⟶ DerivedCategory.Q ⋙ derivedInclusion :=
+  derivedInclusionFactors.inv
+
+/-- Obligation: the exact derived inclusion is the right-derived functor of the degreewise
+inclusion.  This should follow formally from the exact-functor derived-category API. -/
+instance derivedInclusion_isRightDerivedFunctor :
+    derivedInclusion.IsRightDerivedFunctor derivedInclusionComparison
+      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) := by
+  sorry
 
 /-- The tensor product bifunctor on cochain complexes of solid abelian groups. -/
 noncomputable abbrev solidTensorComplex :
@@ -209,10 +232,34 @@ computed from the adapted replacement class `solidKFlat`. -/
 noncomputable def derivedTensor : DSolid ⥤ DSolid ⥤ DSolid :=
   derived₂Curried solidKFlat solidKFlat solidTensorComplex solidTensorComplex_inverts_kflat
 
-/-- Obligation: construct the derived adjunction between derived solidification and the derived
-inclusion from the ordinary solidification adjunction and the derived-functor comparison data. -/
-noncomputable def derivedSolidificationAdjunction : derivedSolidification ⊣ derivedInclusion := by
+/-- Obligation: the composite `derivedSolidification ⋙ derivedInclusion` is the left-derived
+composite needed by `Adjunction.derived`.  This is the absoluteness input in the general derived
+adjunction theorem. -/
+instance derivedSolidification_comp_derivedInclusion_isLeftDerivedFunctor :
+    (derivedSolidification ⋙ derivedInclusion).IsLeftDerivedFunctor
+      ((Functor.associator _ _ _).inv ≫
+        Functor.whiskerRight derivedSolidificationCounit derivedInclusion)
+      (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ)) := by
   sorry
+
+/-- Obligation: the composite `derivedInclusion ⋙ derivedSolidification` is the right-derived
+composite needed by `Adjunction.derived`.  This is the dual absoluteness input in the general
+derived adjunction theorem. -/
+instance derivedInclusion_comp_derivedSolidification_isRightDerivedFunctor :
+    (derivedInclusion ⋙ derivedSolidification).IsRightDerivedFunctor
+      (Functor.whiskerRight derivedInclusionComparison derivedSolidification ≫
+        (Functor.associator _ _ _).hom)
+      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) := by
+  sorry
+
+/-- The derived adjunction between derived solidification and the derived inclusion, obtained from
+`Adjunction.derived` once the explicit derived-functor obligations above are discharged. -/
+noncomputable def derivedSolidificationAdjunction : derivedSolidification ⊣ derivedInclusion :=
+  solidificationComplexesAdjunction.derived
+    (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))
+    (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ))
+    derivedSolidificationCounit
+    derivedInclusionComparison
 
 /-- Placeholder marker for the eventual closed structure: it should relate `derivedTensor` and the
 total right-derived internal Hom once the bifunctorial tensor is available. -/
