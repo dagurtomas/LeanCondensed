@@ -236,14 +236,8 @@ noncomputable def freeHomDiscreteEquiv :
         ((LightCondMod.LocallyConstant.functorIsoDiscrete R).hom.app M)
     exact ((LightCondensed.freeForgetAdjunction R).homEquiv T.toCondensed
       ((LightCondensed.discrete (ModuleCat R)).obj M)).symm g
-  left_inv f := by
-    dsimp
-    rw [Equiv.symm_apply_apply]
-    simp
-  right_inv x := by
-    dsimp
-    rw [Equiv.apply_symm_apply]
-    simp
+  left_inv f := by simp
+  right_inv x := by simp
 
 end FreeDiscrete
 
