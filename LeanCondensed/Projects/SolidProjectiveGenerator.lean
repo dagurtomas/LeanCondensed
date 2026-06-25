@@ -117,7 +117,6 @@ noncomputable def solidifiedFreeHomEquiv
     (((LightCondensed.freeForgetAdjunction ℤ).homEquiv T.toCondensed (isSolid.ι.obj A)).trans
       (coherentTopology LightProfinite).yonedaEquiv)
 
-/-- Obligation: naturality of `solidifiedFreeHomEquiv` in the solid target. -/
 lemma solidifiedFreeHomEquiv_comp
     (T : LightProfinite) {A B : Solid}
     (k : solidification.obj ((free ℤ).obj T.toCondensed) ⟶ A)
@@ -125,16 +124,32 @@ lemma solidifiedFreeHomEquiv_comp
     solidifiedFreeHomEquiv T B (k ≫ f) =
       ((isSolid.ι.map f).hom.app ⟨T⟩)
         (solidifiedFreeHomEquiv T A k) := by
-  sorry
+  dsimp [solidifiedFreeHomEquiv]
+  erw [Adjunction.homEquiv_naturality_right]
+  erw [Adjunction.homEquiv_naturality_right]
+  erw [GrothendieckTopology.yonedaEquiv_comp]
 
-/-- Obligation: solidified free representables jointly separate solid objects. -/
+/-- Solidified free representables jointly separate solid objects. -/
 lemma solidifiedFree_hom_ext
     {X Y : Solid} (f g : X ⟶ Y)
     (h : ∀ (T : LightProfinite)
       (k : solidification.obj ((free ℤ).obj T.toCondensed) ⟶ X),
       k ≫ f = k ≫ g) :
     f = g := by
-  sorry
+  apply isSolid.ι.map_injective
+  ext S x
+  rcases S with ⟨T⟩
+  let k : solidification.obj ((free ℤ).obj T.toCondensed) ⟶ X :=
+    (solidifiedFreeHomEquiv T X).symm x
+  have hk := h T k
+  have hpoint := congrArg (solidifiedFreeHomEquiv T Y) hk
+  change solidifiedFreeHomEquiv T Y (k ≫ f) = solidifiedFreeHomEquiv T Y (k ≫ g) at hpoint
+  rw [solidifiedFreeHomEquiv_comp, solidifiedFreeHomEquiv_comp] at hpoint
+  have hx : (solidifiedFreeHomEquiv T X) k = x := by
+    dsimp [k]
+    rw [Equiv.apply_symm_apply]
+  rw [hx] at hpoint
+  exact hpoint
 
 /-- Obligation: every solidified free representable is a retract of `solidification.obj (P ℤ)`. -/
 noncomputable def solidifiedFreeRetractSolidP
