@@ -192,7 +192,60 @@ abbrev Solid : Type _ := isSolid.FullSubcategory
 
 namespace Solid
 
-lemma isSolid_int : isSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := sorry
+set_option backward.isDefEq.respectTransparency false in
+lemma component_nullSeqPointsEquiv_oneMinusShift (S : LightProfinite)
+    (x : ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩) :
+    Solid.IntProof.nullSeqPointsEquiv S
+        (ihomPoints ℤ (P ℤ) Solid.IntProof.Zdisc S
+          ((((MonoidalClosed.pre (oneMinusShift ℤ)).app Solid.IntProof.Zdisc).hom.app ⟨S⟩) x)) =
+      LocallyConstant.map Solid.IntProof.seqDiff
+        (Solid.IntProof.nullSeqPointsEquiv S
+          (ihomPoints ℤ (P ℤ) Solid.IntProof.Zdisc S x)) := by
+  rw [Solid.IntProof.ihomPoints_pre_app]
+  exact nullSeqPointsEquiv_oneMinusShift S (ihomPoints ℤ (P ℤ) Solid.IntProof.Zdisc S x)
+
+set_option backward.isDefEq.respectTransparency false in
+lemma oneMinusShift_component_bijective (S : LightProfinite) :
+    Function.Bijective
+      (((((MonoidalClosed.pre (oneMinusShift ℤ)).app Solid.IntProof.Zdisc).hom.app ⟨S⟩) :
+        ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩ ⟶
+          ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩)) := by
+  let E : ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩ ≃
+      LocallyConstant S Solid.IntProof.SeqZ :=
+    (ihomPoints ℤ (P ℤ) Solid.IntProof.Zdisc S).trans (Solid.IntProof.nullSeqPointsEquiv S)
+  let D := Solid.IntProof.locallyConstantSeqDiffEquiv S
+  let m := ((((MonoidalClosed.pre (oneMinusShift ℤ)).app Solid.IntProof.Zdisc).hom.app ⟨S⟩) :
+        ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩ ⟶
+          ((ihom (P ℤ)).obj Solid.IntProof.Zdisc).obj.obj ⟨S⟩)
+  have hcompat : ∀ x, E (m x) = D (E x) := by
+    intro x
+    exact component_nullSeqPointsEquiv_oneMinusShift S x
+  constructor
+  · intro x y hxy
+    apply E.injective
+    have h := congrArg E hxy
+    rw [hcompat x, hcompat y] at h
+    exact D.injective h
+  · intro y
+    refine ⟨E.symm (D.symm (E y)), ?_⟩
+    apply E.injective
+    rw [hcompat]
+    simp [E, D]
+
+lemma oneMinusShift_component_isIso (S : LightProfinite) :
+    IsIso ((((MonoidalClosed.pre (oneMinusShift ℤ)).app Solid.IntProof.Zdisc).hom.app ⟨S⟩)) := by
+  rw [ConcreteCategory.isIso_iff_bijective]
+  exact oneMinusShift_component_bijective S
+
+set_option backward.isDefEq.respectTransparency false in
+lemma isSolid_int : isSolid ((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)) := by
+  rw [isSolid]
+  rw [← isIso_iff_of_reflects_iso _
+    (sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ))]
+  rw [NatTrans.isIso_iff_isIso_app]
+  intro S
+  rcases S with ⟨S⟩
+  exact oneMinusShift_component_isIso S
 
 instance : Inhabited Solid := ⟨((discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)), isSolid_int⟩
 

@@ -177,6 +177,19 @@ noncomputable def seqDiffEquiv : SeqZ ≃ₗ[ℤ] SeqZ where
 example : Function.Bijective seqDiff :=
   seqDiffEquiv.bijective
 
+/-- Pointwise finite difference is an automorphism of locally constant families of finitely
+supported integer sequences. -/
+noncomputable def locallyConstantSeqDiffEquiv (S : LightProfinite) :
+    LocallyConstant S SeqZ ≃ LocallyConstant S SeqZ where
+  toFun := LocallyConstant.map seqDiff
+  invFun := LocallyConstant.map seqTailSum
+  left_inv g := by
+    ext s n
+    simp [LocallyConstant.map, seqTailSum_seqDiff]
+  right_inv g := by
+    ext s n
+    simp [LocallyConstant.map, seqDiff_seqTailSum]
+
 section InternalHomPoints
 
 variable {R : Type} [CommRing R]
