@@ -247,6 +247,12 @@ noncomputable abbrev solidP : Solid :=
 noncomputable abbrev productInt : Solid :=
   solidProjectiveGenerator
 
+/-- Maps out of a free light condensed abelian group are the corresponding point values. -/
+noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
+    ((free ℤ).obj T.toCondensed ⟶ A) ≃ A.obj.obj ⟨T⟩ :=
+  ((freeForgetAdjunction ℤ).homEquiv T.toCondensed A).trans
+    (coherentTopology LightProfinite).yonedaEquiv
+
 /-- The free light condensed abelian group on the point is the tensor unit. -/
 noncomputable def freePointIsoUnit :
     (LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ≅ 𝟙_ LightCondAb :=
@@ -458,11 +464,82 @@ lemma freeTailEndomorphism_eventually_freeProj_zero (T : LightProfinite) (k : �
 noncomputable def natPoint (n : ℕ) : LightProfinite.of PUnit.{1} ⟶ ℕ∪{∞} :=
   ConcreteCategory.ofHom ⟨fun _ => (n : ℕ∪{∞}), continuous_const⟩
 
+@[simp]
+lemma natPoint_comp_shift (n : ℕ) :
+    natPoint n ≫ LightProfinite.shift = natPoint (n + 1) := by
+  ext x
+  rfl
+
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
     𝟙_ LightCondAb ⟶ (free ℤ).obj (ℕ∪{∞}).toCondensed :=
   freePointIsoUnit.inv ≫
     (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint n))
+
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma freeNatBasis_comp_shift (n : ℕ) :
+    freeNatBasis n ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift =
+      freeNatBasis (n + 1) := by
+  dsimp [freeNatBasis]
+  rw [Category.assoc]
+  congr 1
+  change (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint n)) ≫
+      (free ℤ).map (lightProfiniteToLightCondSet.map LightProfinite.shift) =
+    (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint (n + 1)))
+  rw [← Functor.map_comp]
+  rw [← Functor.map_comp]
+  rw [natPoint_comp_shift]
+
+set_option backward.isDefEq.respectTransparency false in
+lemma freeNatBasis_oneMinusShift' (n : ℕ) :
+    freeNatBasis n ≫ oneMinusShift' ℤ = freeNatBasis n - freeNatBasis (n + 1) := by
+  dsimp [oneMinusShift']
+  change freeNatBasis n ≫
+      (𝟙 ((lightProfiniteToLightCondSet ⋙ free ℤ).obj (ℕ∪{∞})) -
+        (lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift) =
+    freeNatBasis n - freeNatBasis (n + 1)
+  rw [Preadditive.comp_sub]
+  rw [freeNatBasis_comp_shift]
+  change freeNatBasis n - freeNatBasis (n + 1) = freeNatBasis n - freeNatBasis (n + 1)
+  rfl
+
+/-- The `∞` generator in the free object on `ℕ∪∞`. -/
+noncomputable def freeInftyBasis :
+    𝟙_ LightCondAb ⟶ (free ℤ).obj (ℕ∪{∞}).toCondensed :=
+  freePointIsoUnit.inv ≫ P_map ℤ
+
+@[simp]
+lemma iota_comp_shift : ι ≫ LightProfinite.shift = ι := by
+  ext x
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma freeInftyBasis_comp_shift :
+    freeInftyBasis ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift =
+      freeInftyBasis := by
+  dsimp [freeInftyBasis, P_map]
+  rw [Category.assoc]
+  congr 1
+  change (free ℤ).map (lightProfiniteToLightCondSet.map ι) ≫
+      (free ℤ).map (lightProfiniteToLightCondSet.map LightProfinite.shift) =
+    (free ℤ).map (lightProfiniteToLightCondSet.map ι)
+  rw [← Functor.map_comp]
+  rw [← Functor.map_comp]
+  rw [iota_comp_shift]
+
+set_option backward.isDefEq.respectTransparency false in
+lemma freeInftyBasis_oneMinusShift' :
+    freeInftyBasis ≫ oneMinusShift' ℤ = 0 := by
+  dsimp [oneMinusShift']
+  change freeInftyBasis ≫
+      (𝟙 ((lightProfiniteToLightCondSet ⋙ free ℤ).obj (ℕ∪{∞})) -
+        (lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift) = 0
+  rw [Preadditive.comp_sub]
+  rw [freeInftyBasis_comp_shift]
+  change freeInftyBasis - freeInftyBasis = 0
+  abel
 
 /-- The class in `P ℤ` represented by the `n`th finite point of `ℕ∪∞`. -/
 noncomputable def pBasis (n : ℕ) : 𝟙_ LightCondAb ⟶ P ℤ :=
@@ -477,6 +554,83 @@ noncomputable def tailSection (T : LightProfinite) :
 noncomputable def numeratorSlice (M N : LightCondAb) (n : ℕ)
     (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) : M ⟶ N :=
   (λ_ M).inv ≫ freeNatBasis n ▷ M ≫ f
+
+@[reassoc]
+lemma numeratorSlice_comp (M N K : LightCondAb) (n : ℕ)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) (g : N ⟶ K) :
+    numeratorSlice M K n (f ≫ g) = numeratorSlice M N n f ≫ g := by
+  dsimp [numeratorSlice]
+  simp [Category.assoc]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Slicing after precomposition by `1 - shift` takes finite differences of slices. -/
+lemma numeratorSlice_oneMinusShift' (M N : LightCondAb) (n : ℕ)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) :
+    numeratorSlice M N n ((oneMinusShift' ℤ ▷ M) ≫ f) =
+      numeratorSlice M N n f - numeratorSlice M N (n + 1) f := by
+  dsimp [numeratorSlice]
+  rw [← comp_whiskerRight_assoc]
+  rw [freeNatBasis_oneMinusShift']
+  rw [IntProof.sub_whiskerRight]
+  rw [Preadditive.sub_comp]
+  rw [Preadditive.comp_sub]
+
+/-- The `∞` value of a map out of the free object on `ℕ∪∞`. -/
+noncomputable def freeInftyValue (N : LightCondAb)
+    (f : (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ N) : 𝟙_ LightCondAb ⟶ N :=
+  freeInftyBasis ≫ f
+
+/-- If a map out of `ℤ[ℕ∪∞]` is zero at `∞`, then it kills the denominator defining `P ℤ`. -/
+lemma freeNumerator_kills_of_inftyValue_zero (N : LightCondAb)
+    (f : (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ N)
+    (h : freeInftyValue N f = 0) :
+    P_map ℤ ≫ f = 0 := by
+  haveI : IsIso freePointIsoUnit.inv := by infer_instance
+  apply (cancel_epi freePointIsoUnit.inv).1
+  dsimp [freeInftyValue, freeInftyBasis] at h ⊢
+  simpa [Category.assoc] using h
+
+/-- The `∞` slice of a numerator map `ℤ[ℕ∪∞] ⊗ M ⟶ N`. -/
+noncomputable def inftySlice (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) : M ⟶ N :=
+  (λ_ M).inv ≫ freeInftyBasis ▷ M ≫ f
+
+@[reassoc]
+lemma inftySlice_comp (M N K : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) (g : N ⟶ K) :
+    inftySlice M K (f ≫ g) = inftySlice M N f ≫ g := by
+  dsimp [inftySlice]
+  simp [Category.assoc]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The `∞` slice after precomposition by `1 - shift` is zero. -/
+lemma inftySlice_oneMinusShift' (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) :
+    inftySlice M N ((oneMinusShift' ℤ ▷ M) ≫ f) = 0 := by
+  dsimp [inftySlice]
+  rw [← comp_whiskerRight_assoc]
+  rw [freeInftyBasis_oneMinusShift']
+  simp
+
+/-- If the `∞` slice of a numerator is zero, then it kills the denominator defining `P ℤ`. -/
+lemma numerator_kills_of_inftySlice_zero (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N)
+    (h : inftySlice M N f = 0) :
+    (P_map ℤ ▷ M) ≫ f = 0 := by
+  let u : M ⟶ (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⊗ M :=
+    (λ_ M).inv ≫ freePointIsoUnit.inv ▷ M
+  haveI : IsIso u := by dsimp [u]; infer_instance
+  apply (cancel_epi u).1
+  calc
+    u ≫ ((P_map ℤ ▷ M) ≫ f)
+        = inftySlice M N f := by
+          dsimp [u, inftySlice, freeInftyBasis]
+          simp only [Category.assoc]
+          rw [comp_whiskerRight]
+          simp [Category.assoc]
+    _ = u ≫ (0 : (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⊗ M ⟶ N) := by
+          rw [h]
+          simp
 
 /-- Descend a map out of `ℤ[ℕ∪∞] ⊗ M` which kills the basepoint summand to a map out of
 `P ℤ ⊗ M`. -/
@@ -516,37 +670,78 @@ lemma pTensorDesc_slice (M N : LightCondAb)
   simp only [Category.assoc]
   rw [pTensorDesc_comp_proj]
 
-/-- Obligation: the numerator of the tail map.  It should be the map
-`ℤ[ℕ∪∞] ⊗ ℤ[T] ⟶ ℤ[T]` whose `n`th slice is `freeTailEndomorphism T n` and whose
-`∞` slice is zero. -/
+/-- Obligation: the section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail
+endomorphisms and whose `∞` slice is zero. -/
+noncomputable def infiniteTailElement (T : LightProfinite) [Infinite T] :
+    ((free ℤ).obj T.toCondensed).obj.obj
+      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ := by
+  sorry
+
+/-- The numerator of the tail map, built from its section over `(ℕ∪∞) × T`. -/
 noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
     ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶
-      (free ℤ).obj T.toCondensed := by
+      (free ℤ).obj T.toCondensed :=
+  (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+    (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
+      ((free ℤ).obj T.toCondensed)).symm (infiniteTailElement T)
+
+/-- Obligation: finite slices of the tail numerator are the prescribed tail endomorphisms. -/
+lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
+    numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n
+      (infiniteTailNumerator T) = freeTailEndomorphism T n := by
   sorry
 
-/-- Obligation: the tail numerator vanishes on the basepoint summand, so it descends through
-`P ℤ ⊗ ℤ[T]`. -/
+/-- Obligation: the `∞` slice of the tail numerator is zero. -/
+lemma infiniteTailNumerator_infty (T : LightProfinite) [Infinite T] :
+    inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
+      (infiniteTailNumerator T) = 0 := by
+  sorry
+
+/-- The tail numerator vanishes on the basepoint summand, so it descends through `P ℤ ⊗ ℤ[T]`. -/
 lemma infiniteTailNumerator_kills (T : LightProfinite) [Infinite T] :
-    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T = 0 := by
-  sorry
+    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T = 0 :=
+  numerator_kills_of_inftySlice_zero
+    ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
+    (infiniteTailNumerator T) (infiniteTailNumerator_infty T)
 
-/-- Obligation: the zeroth finite slice of the tail numerator is the identity. -/
+/-- The zeroth finite slice of the tail numerator is the identity. -/
 lemma infiniteTailNumerator_zero (T : LightProfinite) [Infinite T] :
     numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) 0
       (infiniteTailNumerator T) = 𝟙 ((free ℤ).obj T.toCondensed) := by
+  simpa [freeTailEndomorphism] using infiniteTailNumerator_slice T 0
+
+/-- After every fixed finite projection of `T`, the finite slices of the tail numerator are
+eventually zero. -/
+lemma infiniteTailNumerator_eventually_freeProj_zero (T : LightProfinite) [Infinite T] (k : ℕ) :
+    ∀ᶠ n : ℕ in Filter.atTop,
+      numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n
+        (infiniteTailNumerator T) ≫ freeProj T k = 0 := by
+  filter_upwards [freeTailEndomorphism_eventually_freeProj_zero T k] with n hn
+  rw [infiniteTailNumerator_slice]
+  exact hn
+
+/-- Obligation: the section of `ℤ[T]` over `ℕ∪∞` whose finite values enumerate the
+successive finite-stage differences and whose `∞` value is zero. -/
+noncomputable def infinitePToFreeElement (T : LightProfinite) [Infinite T] :
+    ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩ := by
   sorry
 
-/-- Obligation: the numerator of the map from the sequence object to the free object on an
-infinite test object.  It should send the finite points of `ℕ∪∞` to an enumeration of the
-successive finite-stage differences and send `∞` to zero. -/
+/-- The numerator of the map from the sequence object to the free object on `T`. -/
 noncomputable def infinitePToFreeNumerator (T : LightProfinite) [Infinite T] :
-    (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ (free ℤ).obj T.toCondensed := by
+    (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ (free ℤ).obj T.toCondensed :=
+  (freeHomEquivPoints (ℕ∪{∞}) ((free ℤ).obj T.toCondensed)).symm
+    (infinitePToFreeElement T)
+
+/-- Obligation: the numerator of `infinitePToFree` is zero at `∞`. -/
+lemma infinitePToFreeNumerator_infty (T : LightProfinite) [Infinite T] :
+    freeInftyValue ((free ℤ).obj T.toCondensed) (infinitePToFreeNumerator T) = 0 := by
   sorry
 
-/-- Obligation: the numerator of `infinitePToFree` kills the basepoint summand. -/
+/-- The numerator of `infinitePToFree` kills the basepoint summand. -/
 lemma infinitePToFreeNumerator_kills (T : LightProfinite) [Infinite T] :
-    P_map ℤ ≫ infinitePToFreeNumerator T = 0 := by
-  sorry
+    P_map ℤ ≫ infinitePToFreeNumerator T = 0 :=
+  freeNumerator_kills_of_inftyValue_zero ((free ℤ).obj T.toCondensed)
+    (infinitePToFreeNumerator T) (infinitePToFreeNumerator_infty T)
 
 /-- The map from the sequence object `P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
 noncomputable def infinitePToFree (T : LightProfinite) [Infinite T] :
@@ -560,17 +755,29 @@ noncomputable def infiniteTailMap (T : LightProfinite) [Infinite T] :
   pTensorDesc ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
     (infiniteTailNumerator T) (infiniteTailNumerator_kills T)
 
-/-- Obligation: the numerator of the finite-difference factorization in Lemma 3.3.2.  Its
-`n`th slice should be the map to `P ℤ` induced by the difference between consecutive tail
-endomorphisms. -/
-noncomputable def infiniteDifferenceNumerator (T : LightProfinite) [Infinite T] :
-    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ := by
+/-- Obligation: the section of `P ℤ` over `(ℕ∪∞) × T` whose finite slices encode the
+finite-difference factorization in Lemma 3.3.2 and whose `∞` slice is zero. -/
+noncomputable def infiniteDifferenceElement (T : LightProfinite) [Infinite T] :
+    (P ℤ).obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ := by
   sorry
 
-/-- Obligation: the finite-difference numerator vanishes on the basepoint summand. -/
-lemma infiniteDifferenceNumerator_kills (T : LightProfinite) [Infinite T] :
-    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteDifferenceNumerator T = 0 := by
+/-- The numerator of the finite-difference factorization in Lemma 3.3.2. -/
+noncomputable def infiniteDifferenceNumerator (T : LightProfinite) [Infinite T] :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ :=
+  (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+    (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) (P ℤ)).symm
+      (infiniteDifferenceElement T)
+
+/-- Obligation: the finite-difference numerator has zero `∞` slice. -/
+lemma infiniteDifferenceNumerator_infty (T : LightProfinite) [Infinite T] :
+    inftySlice ((free ℤ).obj T.toCondensed) (P ℤ) (infiniteDifferenceNumerator T) = 0 := by
   sorry
+
+/-- The finite-difference numerator vanishes on the basepoint summand. -/
+lemma infiniteDifferenceNumerator_kills (T : LightProfinite) [Infinite T] :
+    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteDifferenceNumerator T = 0 :=
+  numerator_kills_of_inftySlice_zero ((free ℤ).obj T.toCondensed) (P ℤ)
+    (infiniteDifferenceNumerator T) (infiniteDifferenceNumerator_infty T)
 
 /-- The finite-difference factorization in Lemma 3.3.2. -/
 noncomputable def infiniteDifferenceMap (T : LightProfinite) [Infinite T] :
