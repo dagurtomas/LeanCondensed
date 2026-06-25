@@ -70,25 +70,6 @@ lemma enoughProjectives_of_projective_separator_shrink {C : Type u} [Category.{v
         (equivShrink (G ⟶ X) h) ≫ e) huv
       simpa [Category.assoc] using hh }⟩⟩
 
-set_option backward.isDefEq.respectTransparency false in
-/-- If the tensor unit is projective, internal projectivity implies ordinary projectivity.
-This packages the standard adjunction argument: maps out of `P` are global sections of
-`P ⟶[C] -`, and `P ⟶[C] -` preserves epimorphisms by internal projectivity. -/
-lemma projective_of_internallyProjective_of_projective_unit
-    {C : Type*} [Category* C] [MonoidalCategory C] [MonoidalClosed C]
-    (P : C) [Projective (𝟙_ C)] [InternallyProjective P] : Projective P where
-  factors {E X} f e he := by
-    letI : Epi e := he
-    haveI : Epi ((ihom P).map e) := Functor.map_epi (ihom P) e
-    let f' : 𝟙_ C ⟶ (ihom P).obj X := MonoidalClosed.curry ((ρ_ P).hom ≫ f)
-    obtain ⟨g', hg'⟩ := Projective.factors f' ((ihom P).map e)
-    refine ⟨(ρ_ P).inv ≫ MonoidalClosed.uncurry g', ?_⟩
-    rw [Category.assoc]
-    have huncurry := congrArg MonoidalClosed.uncurry hg'
-    dsimp [f'] at huncurry
-    rw [MonoidalClosed.uncurry_natural_right] at huncurry
-    simpa using congrArg (fun k => (ρ_ P).inv ≫ k) huncurry
-
 end CategoryTheory
 
 namespace LightCondensed

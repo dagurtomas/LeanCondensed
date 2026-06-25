@@ -59,6 +59,71 @@ lemma isSeparator_of_retracts_of_hom_ext
   have h := congrArg (fun t => ri.i ≫ t) hk
   simpa [Category.assoc, ri.retract] using h
 
+set_option backward.isDefEq.respectTransparency false in
+/-- If the tensor unit is projective, internal projectivity implies ordinary projectivity.
+This packages the standard adjunction argument: maps out of `P` are global sections of
+`P ⟶[C] -`, and `P ⟶[C] -` preserves epimorphisms by internal projectivity. -/
+lemma projective_of_internallyProjective_of_projective_unit
+    {C : Type*} [Category* C] [MonoidalCategory C] [MonoidalClosed C]
+    (P : C) [Projective (𝟙_ C)] [InternallyProjective P] : Projective P where
+  factors {E X} f e he := by
+    letI : Epi e := he
+    haveI : Epi ((ihom P).map e) := Functor.map_epi (ihom P) e
+    let f' : 𝟙_ C ⟶ (ihom P).obj X := MonoidalClosed.curry ((ρ_ P).hom ≫ f)
+    obtain ⟨g', hg'⟩ := Projective.factors f' ((ihom P).map e)
+    refine ⟨(ρ_ P).inv ≫ MonoidalClosed.uncurry g', ?_⟩
+    rw [Category.assoc]
+    have huncurry := congrArg MonoidalClosed.uncurry hg'
+    dsimp [f'] at huncurry
+    rw [MonoidalClosed.uncurry_natural_right] at huncurry
+    simpa using congrArg (fun k => (ρ_ P).inv ≫ k) huncurry
+
+universe v₁ u₁ v₂ u₂
+
+variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
+
+/-- Abstract data for the shift-retract diagram used in the projective-generator proof. -/
+structure ShiftRetractData (L : C ⥤ D) where
+  xObj : C
+  aObj : C
+  bObj : C
+  s : xObj ⟶ xObj
+  toB : xObj ⟶ bObj
+  toA : xObj ⟶ aObj
+  g : aObj ⟶ bObj
+  comm : s ≫ toB = toA ≫ g
+  sect : bObj ⟶ xObj
+  sect_fac : sect ≫ toB = 𝟙 bObj
+  inverted : IsIso (L.map s)
+
+namespace ShiftRetractData
+
+/-- The formal retract extracted from a shift-retract square after applying a functor that inverts
+its left vertical map. -/
+noncomputable def retract {L : C ⥤ D}
+    (d : ShiftRetractData L) : Retract (L.obj d.bObj) (L.obj d.aObj) := by
+  letI := d.inverted
+  refine {
+    i := L.map d.sect ≫ inv (L.map d.s) ≫ L.map d.toA
+    r := L.map d.g
+    retract := ?_ }
+  have hcomm : L.map d.s ≫ L.map d.toB = L.map d.toA ≫ L.map d.g := by
+    simpa only [Functor.map_comp] using congrArg (fun f => L.map f) d.comm
+  calc
+    (L.map d.sect ≫ inv (L.map d.s) ≫ L.map d.toA) ≫ L.map d.g
+        = L.map d.sect ≫ inv (L.map d.s) ≫ (L.map d.toA ≫ L.map d.g) := by
+          simp [Category.assoc]
+    _ = L.map d.sect ≫ inv (L.map d.s) ≫ (L.map d.s ≫ L.map d.toB) := by
+          rw [← hcomm]
+    _ = L.map d.sect ≫ L.map d.toB := by
+          simp
+    _ = L.map (d.sect ≫ d.toB) := by
+          rw [Functor.map_comp]
+    _ = 𝟙 (L.obj d.bObj) := by
+          rw [d.sect_fac, Functor.map_id]
+
+end ShiftRetractData
+
 end CategoryTheory
 
 namespace LightCondensed
@@ -87,10 +152,42 @@ noncomputable abbrev solidP : Solid :=
 noncomputable abbrev productInt : Solid :=
   solidProjectiveGenerator
 
-/-- Obligation: `P ℤ` is projective in light condensed abelian groups.  This should follow from
-internal projectivity of `P ℤ` and the local-surjectivity characterization of epimorphisms. -/
+/-- The free light condensed abelian group on the point is the tensor unit. -/
+noncomputable def freePointIsoUnit :
+    (LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ≅ 𝟙_ LightCondAb :=
+  (LightCondensed.free ℤ).mapIso (Functor.Monoidal.εIso lightProfiniteToLightCondSet).symm ≪≫
+    (Functor.Monoidal.εIso (LightCondensed.free ℤ)).symm
+
+/-- The free light condensed abelian group on the point is projective: local lifts over a cover of
+`*` can be pulled back along any chosen point of the cover. -/
+instance freePoint_projective :
+    Projective ((LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed) where
+  factors {A B} f e he := by
+    letI : Epi e := he
+    let pt : LightProfinite := LightProfinite.of PUnit.{1}
+    obtain ⟨T, π, g, hπ, hg⟩ :=
+      LightCondMod.factorsThru_lightProfinite_epi_of_epi ℤ e (S := pt) f
+    have hπsurj : Function.Surjective π := (LightProfinite.epi_iff_surjective π).mp hπ
+    obtain ⟨t, ht⟩ := hπsurj PUnit.unit
+    let σ : pt ⟶ T := ConcreteCategory.ofHom ⟨fun _ => t, continuous_const⟩
+    have hσπ : σ ≫ π = 𝟙 pt := by
+      ext x
+    refine ⟨(LightCondensed.free ℤ).map (lightProfiniteToLightCondSet.map σ) ≫ g, ?_⟩
+    simp only [Category.assoc]
+    rw [← hg]
+    change (LightCondensed.free ℤ).map (lightProfiniteToLightCondSet.map σ) ≫
+        ((LightCondensed.free ℤ).map (lightProfiniteToLightCondSet.map π) ≫ f) = f
+    rw [← Category.assoc]
+    simp [← Functor.map_comp, hσπ]
+
+/-- The tensor unit of light condensed abelian groups is projective. -/
+instance tensorUnit_projective : Projective (𝟙_ LightCondAb) :=
+  Projective.of_iso freePointIsoUnit freePoint_projective
+
+/-- The object `P ℤ` is projective in light condensed abelian groups. -/
 instance projective_P : Projective (P ℤ) := by
-  sorry
+  haveI : Projective (𝟙_ LightCondAb) := tensorUnit_projective
+  exact CategoryTheory.projective_of_internallyProjective_of_projective_unit (P ℤ)
 
 /-- Solidification preserves projective objects because its right adjoint, the inclusion of solid
 objects, preserves epimorphisms. -/
