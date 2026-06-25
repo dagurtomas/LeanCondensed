@@ -1,8 +1,10 @@
 import Mathlib.Data.Finsupp.Basic
 import Mathlib.Algebra.BigOperators.Finsupp.Basic
 import Mathlib.Algebra.Module.LinearMap.Defs
+import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.InternallyProjective
+import Mathlib.Topology.Compactification.OnePoint.Basic
 import Mathlib.Tactic
 
 /-!
@@ -18,7 +20,7 @@ open scoped BigOperators
 
 noncomputable section
 
-open CategoryTheory LightCondensed MonoidalCategory MonoidalClosed
+open CategoryTheory LightCondensed LightProfinite OnePoint MonoidalCategory MonoidalClosed Filter Topology
 
 namespace LightCondensed.Solid.IntProof
 
@@ -240,5 +242,193 @@ noncomputable def freeHomDiscreteEquiv :
   right_inv x := by simp
 
 end FreeDiscrete
+
+section VanishingAtInfinity
+
+/-- The product test object `(ℕ∪{∞}) × S`, written in the cartesian monoidal structure on
+`LightProfinite`. -/
+abbrev NinfTensor (S : LightProfinite) : LightProfinite :=
+  (ℕ∪{∞} : LightProfinite) ⊗ S
+
+/-- Locally constant integer-valued functions on `(ℕ∪{∞}) × S` vanishing along `{∞} × S`. -/
+abbrev VanishAtInfinity (S : LightProfinite) :=
+  { h : LocallyConstant (NinfTensor S) ℤ // ∀ s : S, h (∞, s) = 0 }
+
+lemma vanish_supportN_finite {S : LightProfinite} (h : VanishAtInfinity S) :
+    Set.Finite {n : ℕ | ∃ s : S, h.1 ((n : ℕ∪{∞}), s) ≠ 0} := by
+  let K : Set (NinfTensor S) := {x | h.1 x ≠ 0}
+  have hKclosed : IsClosed K := by
+    exact (isClosed_discrete ({z : ℤ | z ≠ 0})).preimage h.1.continuous
+  have hKcompact : IsCompact K := by
+    exact IsCompact.of_isClosed_subset isCompact_univ hKclosed (by intro x _; trivial)
+  let L : Set ℕ∪{∞} := Prod.fst '' K
+  have hLcompact : IsCompact L := hKcompact.image continuous_fst
+  have hLnot : (∞ : ℕ∪{∞}) ∉ L := by
+    rintro ⟨x, hxK, hx⟩
+    rcases x with ⟨a, s⟩
+    dsimp [K] at hxK
+    dsimp at hx
+    subst hx
+    exact hxK (h.2 s)
+  have hLclosed : IsClosed L := hLcompact.isClosed
+  have hprecompact : IsCompact (((↑) : ℕ → ℕ∪{∞}) ⁻¹' L) := by
+    exact ((OnePoint.isClosed_iff_of_notMem (s := L) hLnot).mp hLclosed).2
+  have hfinite : Set.Finite (((↑) : ℕ → ℕ∪{∞}) ⁻¹' L) := by
+    exact isCompact_iff_finite.mp hprecompact
+  convert hfinite using 1
+  ext n
+  simp [L, K]
+  constructor <;> rintro ⟨s, hs⟩ <;> exact ⟨s, hs⟩
+
+lemma vanish_eventually_zero {S : LightProfinite} (h : VanishAtInfinity S) :
+    ∃ N : ℕ, ∀ s : S, ∀ n : ℕ, N ≤ n → h.1 ((n : ℕ∪{∞}), s) = 0 := by
+  obtain ⟨N, hN⟩ := (vanish_supportN_finite h).bddAbove
+  refine ⟨N + 1, ?_⟩
+  intro s n hn
+  by_contra hne
+  have hmem : n ∈ {n : ℕ | ∃ s : S, h.1 ((n : ℕ∪{∞}), s) ≠ 0} := ⟨s, hne⟩
+  have := hN hmem
+  omega
+
+/-- Convert a function on a finite initial segment to a finitely supported sequence. -/
+noncomputable def finFunToSeq (N : ℕ) (v : Fin N → ℤ) : SeqZ :=
+  Finsupp.onFinset (Finset.range N)
+    (fun n => if hn : n < N then v ⟨n, hn⟩ else 0)
+    (by
+      intro n hnzero
+      by_cases hn : n < N
+      · simpa [Finset.mem_range] using hn
+      · simp [hn] at hnzero)
+
+@[simp]
+lemma finFunToSeq_apply_lt (N n : ℕ) (hn : n < N) (v : Fin N → ℤ) :
+    finFunToSeq N v n = v ⟨n, hn⟩ := by
+  simp [finFunToSeq, hn]
+
+@[simp]
+lemma finFunToSeq_apply_not_lt (N n : ℕ) (hn : ¬ n < N) (v : Fin N → ℤ) :
+    finFunToSeq N v n = 0 := by
+  simp [finFunToSeq, hn]
+
+noncomputable def finitePointMap (S : LightProfinite) (n : ℕ) : C(S, NinfTensor S) where
+  toFun s := ((n : ℕ∪{∞}), s)
+  continuous_toFun := continuous_const.prodMk continuous_id
+
+/-- A vanishing locally constant family on `(ℕ∪{∞}) × S` gives a locally constant
+`S`-family of finitely supported sequences. -/
+noncomputable def vanishToSeq {S : LightProfinite} (h : VanishAtInfinity S) :
+    LocallyConstant S SeqZ := by
+  let N := Classical.choose (vanish_eventually_zero h)
+  let coords : Fin N → LocallyConstant S ℤ := fun i => h.1.comap (finitePointMap S i.1)
+  exact (LocallyConstant.unflip coords).map (finFunToSeq N)
+
+lemma vanishToSeq_apply {S : LightProfinite} (h : VanishAtInfinity S) (s : S) (n : ℕ) :
+    vanishToSeq h s n = h.1 ((n : ℕ∪{∞}), s) := by
+  dsimp [vanishToSeq]
+  let N := Classical.choose (vanish_eventually_zero h)
+  have hN := Classical.choose_spec (vanish_eventually_zero h)
+  by_cases hn : n < N
+  · simp [N, hn, finitePointMap, LocallyConstant.unflip, LocallyConstant.comap]
+  · have hzero := hN s n (by omega)
+    simp [N, hn, hzero]
+
+noncomputable def truncIndexFun (N : ℕ) : ℕ∪{∞} → Option (Fin N)
+  | ∞ => none
+  | (OnePoint.some n) => if hn : n < N then Option.some ⟨n, hn⟩ else none
+
+lemma truncIndexFun_eventually_none (N : ℕ) :
+    ∀ᶠ n : ℕ in atTop, truncIndexFun N (n : ℕ∪{∞}) = none := by
+  refine eventually_atTop.2 ⟨N, ?_⟩
+  intro n hn
+  simp [truncIndexFun, not_lt.mpr hn]
+
+/-- The locally constant map that remembers finite indices `< N` and collapses the tail and
+`∞` to `none`. -/
+noncomputable def truncIndex (N : ℕ) : LocallyConstant ℕ∪{∞} (Option (Fin N)) where
+  toFun := truncIndexFun N
+  isLocallyConstant := by
+    letI : TopologicalSpace (Option (Fin N)) := ⊥
+    haveI : DiscreteTopology (Option (Fin N)) := ⟨rfl⟩
+    rw [IsLocallyConstant.iff_continuous]
+    rw [LightProfinite.continuous_iff_convergent]
+    exact tendsto_nhds_of_eventually_eq (truncIndexFun_eventually_none N)
+
+noncomputable def fstMap (S : LightProfinite) : C(NinfTensor S, ℕ∪{∞}) where
+  toFun x := x.1
+  continuous_toFun := continuous_fst
+
+noncomputable def sndMap (S : LightProfinite) : C(NinfTensor S, S) where
+  toFun x := x.2
+  continuous_toFun := continuous_snd
+
+lemma seq_family_support_finite {S : LightProfinite} (g : LocallyConstant S SeqZ) :
+    Set.Finite {n : ℕ | ∃ s : S, g s n ≠ 0} := by
+  let R : Set SeqZ := Set.range (fun s : S => g s)
+  have hR : R.Finite := by simpa [R] using g.range_finite
+  let U : Set ℕ := ⋃ a ∈ R, (a.support : Set ℕ)
+  have hU : U.Finite := hR.biUnion (fun a _ => a.support.finite_toSet)
+  apply hU.subset
+  intro n hn
+  rcases hn with ⟨s, hs⟩
+  change n ∈ ⋃ a ∈ R, (a.support : Set ℕ)
+  rw [Set.mem_iUnion]
+  refine ⟨g s, ?_⟩
+  rw [Set.mem_iUnion]
+  exact ⟨⟨s, rfl⟩, by simpa [Finsupp.mem_support_iff] using hs⟩
+
+lemma seq_family_eventually_zero {S : LightProfinite} (g : LocallyConstant S SeqZ) :
+    ∃ N : ℕ, ∀ s : S, ∀ n : ℕ, N ≤ n → g s n = 0 := by
+  obtain ⟨N, hN⟩ := (seq_family_support_finite g).bddAbove
+  refine ⟨N + 1, ?_⟩
+  intro s n hn
+  by_contra hne
+  have hmem : n ∈ {n : ℕ | ∃ s : S, g s n ≠ 0} := ⟨s, hne⟩
+  have := hN hmem
+  omega
+
+/-- A locally constant `S`-family of finitely supported sequences gives a locally constant function
+on `(ℕ∪{∞}) × S` that vanishes along `{∞} × S`. -/
+noncomputable def seqToVanish {S : LightProfinite} (g : LocallyConstant S SeqZ) :
+    VanishAtInfinity S := by
+  let N := Classical.choose (seq_family_eventually_zero g)
+  let idx : LocallyConstant (NinfTensor S) (Option (Fin N)) := (truncIndex N).comap (fstMap S)
+  let fam : LocallyConstant (NinfTensor S) SeqZ := g.comap (sndMap S)
+  refine ⟨⟨fun x => match idx x with | none => 0 | Option.some i => fam x i.1, ?_⟩, ?_⟩
+  · exact idx.isLocallyConstant.comp₂ fam.isLocallyConstant fun oi a =>
+      match oi with | none => 0 | Option.some i => a i.1
+  · intro s
+    simp [idx, truncIndex, truncIndexFun, fstMap]
+
+lemma seqToVanish_apply_nat {S : LightProfinite} (g : LocallyConstant S SeqZ) (s : S) (n : ℕ) :
+    (seqToVanish g).1 ((n : ℕ∪{∞}), s) = g s n := by
+  dsimp [seqToVanish]
+  let N := Classical.choose (seq_family_eventually_zero g)
+  have hN := Classical.choose_spec (seq_family_eventually_zero g)
+  by_cases hn : n < N
+  · simp [N, hn, truncIndex, truncIndexFun, fstMap, sndMap]
+  · have hzero := hN s n (by omega)
+    simp [N, hn, truncIndex, truncIndexFun, fstMap, hzero]
+
+lemma seqToVanish_apply_infty {S : LightProfinite} (g : LocallyConstant S SeqZ) (s : S) :
+    (seqToVanish g).1 ((∞ : ℕ∪{∞}), s) = 0 := by
+  exact (seqToVanish g).2 s
+
+/-- Locally constant functions on `(ℕ∪{∞}) × S` vanishing at infinity are the same as locally
+constant `S`-families of finitely supported integer sequences. -/
+noncomputable def vanishAtInfinityEquiv (S : LightProfinite) :
+    VanishAtInfinity S ≃ LocallyConstant S SeqZ where
+  toFun := vanishToSeq
+  invFun := seqToVanish
+  left_inv h := by
+    ext x
+    rcases x with ⟨a, s⟩
+    cases a using OnePoint.rec
+    · rw [seqToVanish_apply_infty, h.2]
+    · rw [seqToVanish_apply_nat, vanishToSeq_apply]
+  right_inv g := by
+    ext s n
+    rw [vanishToSeq_apply, seqToVanish_apply_nat]
+
+end VanishingAtInfinity
 
 end LightCondensed.Solid.IntProof
