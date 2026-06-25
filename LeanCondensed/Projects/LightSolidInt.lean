@@ -247,6 +247,41 @@ noncomputable def freeHomDiscreteEquiv :
   left_inv f := by simp
   right_inv x := by simp
 
+set_option backward.isDefEq.respectTransparency false in
+lemma freeHomDiscreteEquiv_map {T T' : LightProfinite} (φ : T' ⟶ T)
+    (f : (LightCondensed.free R).obj T.toCondensed ⟶
+      (LightCondensed.discrete (ModuleCat R)).obj M) :
+    freeHomDiscreteEquiv R T' M
+        ((LightCondensed.free R).map (lightProfiniteToLightCondSet.map φ) ≫ f) =
+      (freeHomDiscreteEquiv R T M f).comap φ.hom.hom := by
+  change (freeHomDiscreteEquiv R T' M
+        ((LightCondensed.free R).map (lightProfiniteToLightCondSet.map φ) ≫ f) :
+      ((LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M)).obj.obj
+        ⟨T'⟩) =
+    (((LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M)).obj.map
+        φ.op)
+      (freeHomDiscreteEquiv R T M f :
+        ((LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M)).obj.obj
+          ⟨T⟩)
+  apply (((coherentTopology LightProfinite).yonedaEquiv (X := T')
+    (F := (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M))).symm.injective)
+  dsimp [freeHomDiscreteEquiv]
+  rw [Adjunction.homEquiv_naturality_left]
+  simp only [Equiv.symm_apply_apply]
+  let m : T.toCondensed ⟶
+      (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M) :=
+    ((LightCondensed.freeForgetAdjunction R).homEquiv T.toCondensed
+      ((LightCondensed.discrete (ModuleCat R)).obj M)) f ≫
+      (LightCondensed.forget R).map ((LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M)
+  change (coherentTopology LightProfinite).yoneda.map φ ≫ m =
+    (coherentTopology LightProfinite).yonedaEquiv.symm
+      ((((LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M)).obj.map
+          φ.op) ((coherentTopology LightProfinite).yonedaEquiv m))
+  simpa using (GrothendieckTopology.yonedaEquiv_symm_map (J := coherentTopology LightProfinite)
+    (f := φ.op)
+    (F := (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M))
+    (t := (coherentTopology LightProfinite).yonedaEquiv m)).symm
+
 end FreeDiscrete
 
 /-- The product test object `(ℕ∪{∞}) × S`, written in the cartesian monoidal structure on
@@ -286,12 +321,50 @@ noncomputable def freeTensorIsoInt (S T : LightProfinite) :
   Functor.Monoidal.μIso (free ℤ) S.toCondensed T.toCondensed ≪≫
     (free ℤ).mapIso (Functor.Monoidal.μIso lightProfiniteToLightCondSet S T)
 
+/-- Maps out of a tensor product of two free light condensed abelian groups as locally constant
+integer-valued functions on the product. -/
+noncomputable def freeProductHomEquiv (A S : LightProfinite) :
+    (((free ℤ).obj A.toCondensed) ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc) ≃
+      LocallyConstant (A ⊗ S : LightProfinite) ℤ :=
+  (Iso.homCongr (freeTensorIsoInt A S) (Iso.refl Zdisc)).trans
+    (freeHomDiscreteEquiv ℤ (A ⊗ S : LightProfinite) (ModuleCat.of ℤ ℤ))
+
+@[reassoc]
+lemma freeTensorIsoInt_inv_naturality_left {A' A S : LightProfinite} (φ : A' ⟶ A) :
+    (freeTensorIsoInt A' S).inv ≫
+        ((free ℤ).map (lightProfiniteToLightCondSet.map φ) ▷ (free ℤ).obj S.toCondensed) =
+      (free ℤ).map (lightProfiniteToLightCondSet.map (φ ⊗ₘ 𝟙 S)) ≫
+        (freeTensorIsoInt A S).inv := by
+  dsimp [freeTensorIsoInt]
+  simp only [Iso.trans_inv, Functor.mapIso_inv, Functor.Monoidal.μIso_inv, Category.assoc]
+  rw [Functor.OplaxMonoidal.δ_natural_left]
+  simp only [← Functor.map_comp_assoc]
+  rw [Functor.OplaxMonoidal.δ_natural_left]
+  simp [MonoidalCategory.tensorHom_id]
+
+set_option backward.isDefEq.respectTransparency false in
+lemma freeProductHomEquiv_precomp_left {A' A S : LightProfinite} (φ : A' ⟶ A)
+    (g : ((free ℤ).obj A.toCondensed ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc)) :
+    freeProductHomEquiv A' S
+        (((free ℤ).map (lightProfiniteToLightCondSet.map φ) ▷
+            (free ℤ).obj S.toCondensed) ≫ g) =
+      (freeProductHomEquiv A S g).comap (φ ⊗ₘ 𝟙 S).hom.hom := by
+  dsimp [freeProductHomEquiv]
+  simp only [Iso.homCongr_apply, Iso.refl_hom, Category.comp_id]
+  have hcomp : (freeTensorIsoInt A' S).inv ≫
+        (((free ℤ).map (lightProfiniteToLightCondSet.map φ) ▷
+          (free ℤ).obj S.toCondensed) ≫ g) =
+      (free ℤ).map (lightProfiniteToLightCondSet.map (φ ⊗ₘ 𝟙 S)) ≫
+        ((freeTensorIsoInt A S).inv ≫ g) := by
+    rw [← Category.assoc, freeTensorIsoInt_inv_naturality_left, Category.assoc]
+  rw [hcomp]
+  rw [freeHomDiscreteEquiv_map]
+
 /-- Maps out of the free numerator `(ℕ∪{∞}) × S` are locally constant integer-valued functions. -/
 noncomputable def numeratorHomEquiv (S : LightProfinite) :
     ((((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃
       LocallyConstant (NinfTensor S) ℤ :=
-  (Iso.homCongr (freeTensorIsoInt (ℕ∪{∞}) S) (Iso.refl Zdisc)).trans
-    (freeHomDiscreteEquiv ℤ (NinfTensor S) (ModuleCat.of ℤ ℤ))
+  freeProductHomEquiv (ℕ∪{∞}) S
 
 /-- Maps out of `P ℤ ⊗ ℤ[S]` as numerator maps satisfying the cokernel relation. -/
 noncomputable def pTensorHomSubtypeEquiv (S : LightProfinite) :
