@@ -12,6 +12,7 @@ import Mathlib.CategoryTheory.Functor.Derived.Adjunction
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
 import Mathlib.CategoryTheory.Functor.Derived.PointwiseRightDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
+import Mathlib.CategoryTheory.Generator.Basic
 
 /-!
 # Scaffold for derived light solid abelian groups
@@ -35,7 +36,41 @@ all named below.
 
 noncomputable section
 
+universe w v u
+
 open CategoryTheory Functor Limits LightCondensed MonoidalCategory MonoidalClosed
+
+namespace CategoryTheory
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A projective separator gives enough projectives.  The coproduct is indexed by `Shrink (G ⟶ X)`
+so that this applies in locally small categories whose hom types are not themselves small enough for
+available coproducts. -/
+lemma enoughProjectives_of_projective_separator_shrink {C : Type u} [Category.{v} C]
+    [LocallySmall.{w} C] (G : C) [Projective G] (hG : IsSeparator G)
+    [∀ X : C, HasCoproduct (fun _ : Shrink (G ⟶ X) => G)] : EnoughProjectives C := by
+  refine ⟨fun X => ⟨{
+    p := ∐ fun _ : Shrink (G ⟶ X) => G,
+    projective := by
+      constructor
+      intro E Y f e he
+      letI : Epi e := he
+      refine ⟨Sigma.desc fun i : Shrink (G ⟶ X) =>
+        Projective.factorThru (Sigma.ι (fun _ : Shrink (G ⟶ X) => G) i ≫ f) e, ?_⟩
+      apply colimit.hom_ext
+      intro i
+      simp
+    f := Sigma.desc fun i : Shrink (G ⟶ X) => (equivShrink (G ⟶ X)).symm i,
+    epi := by
+      constructor
+      intro Y u v huv
+      refine hG.def u v ?_
+      intro h
+      have hh := congrArg (fun e => Sigma.ι (fun _ : Shrink (G ⟶ X) => G)
+        (equivShrink (G ⟶ X) h) ≫ e) huv
+      simpa [Category.assoc] using hh }⟩⟩
+
+end CategoryTheory
 
 namespace LightCondensed
 namespace Solid
@@ -195,28 +230,28 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 
 open CategoryTheory.DerivedCategory.TwoVariable
 
-/-- Obligation: light condensed abelian groups have enough projective objects.  This should be
-proved from explicit free light condensed abelian groups. -/
-instance lightCondAb_enoughProjectives : EnoughProjectives LightCondAb := by
+/-- The solid abelian group `ℤ`, using the current `isSolid_int` obligation. -/
+noncomputable abbrev solidInteger : Solid :=
+  ⟨(LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ), isSolid_int⟩
+
+/-- The intended projective generator of solid abelian groups: a countable product of copies of
+`ℤ`. -/
+noncomputable abbrev solidProjectiveGenerator : Solid :=
+  ∏ᶜ fun _ : ℕ => solidInteger
+
+/-- Obligation: the countable product of copies of `ℤ` is projective in solid abelian groups. -/
+instance solidProjectiveGenerator_projective : Projective solidProjectiveGenerator := by
   sorry
 
-/-- Solid abelian groups have enough projective objects, obtained by solidifying projective
-presentations in light condensed abelian groups. -/
-instance solid_enoughProjectives : EnoughProjectives Solid where
-  presentation X := by
-    let Y : ProjectivePresentation (solidification.obj (isSolid.ι.obj X)) :=
-      solidificationAdjunction.mapProjectivePresentation (isSolid.ι.obj X)
-        (Classical.choice (EnoughProjectives.presentation (isSolid.ι.obj X)))
-    haveI : IsIso (solidificationAdjunction.counit.app X) := inferInstance
-    have hε : Epi (solidificationAdjunction.counit.app X) :=
-      (inferInstance : IsSplitEpi (solidificationAdjunction.counit.app X)).exists_splitEpi.some.epi
-    exact ⟨{
-      p := Y.p
-      projective := Y.projective
-      f := Y.f ≫ solidificationAdjunction.counit.app X
-      epi := by
-        exact @CategoryTheory.epi_comp Solid _ _ _ _ Y.f Y.epi
-          (solidificationAdjunction.counit.app X) hε }⟩
+/-- Obligation: the countable product of copies of `ℤ` is a separator/generator for solid abelian
+groups. -/
+lemma solidProjectiveGenerator_isSeparator : IsSeparator solidProjectiveGenerator := by
+  sorry
+
+/-- Solid abelian groups have enough projective objects, using the explicit projective generator. -/
+instance solid_enoughProjectives : EnoughProjectives Solid :=
+  enoughProjectives_of_projective_separator_shrink solidProjectiveGenerator
+    solidProjectiveGenerator_isSeparator
 
 /-- Solid abelian groups have enough K-projective complex resolutions, once they have enough
 projective objects. -/
