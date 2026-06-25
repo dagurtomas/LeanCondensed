@@ -319,6 +319,42 @@ lemma freeHomDiscreteEquiv_zero_apply (x : T) :
   change (show LocallyConstant T M from w) x = 0
   simp [w]
 
+set_option backward.isDefEq.respectTransparency false in
+lemma freeHomDiscreteEquiv_sub_apply
+    (f g : (LightCondensed.free R).obj T.toCondensed ⟶
+      (LightCondensed.discrete (ModuleCat R)).obj M)
+    (x : T) :
+    freeHomDiscreteEquiv R T M (f - g) x =
+      freeHomDiscreteEquiv R T M f x - freeHomDiscreteEquiv R T M g x := by
+  dsimp [freeHomDiscreteEquiv]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  let y := ((ConcreteCategory.hom
+    (((LightCondensed.freeForgetAdjunction R).unit.app T.toCondensed).hom.app (Opposite.op T)))
+      (𝟙 T))
+  let Fiso := (LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M
+  change (show LocallyConstant T M from Fiso.hom.app (Opposite.op T)
+      (((f - g).hom.app (Opposite.op T)) y)) x =
+    (show LocallyConstant T M from Fiso.hom.app (Opposite.op T)
+      ((f.hom.app (Opposite.op T)) y)) x -
+    (show LocallyConstant T M from Fiso.hom.app (Opposite.op T)
+      ((g.hom.app (Opposite.op T)) y)) x
+  have hfg : (((f - g).hom.app (Opposite.op T)) y) =
+      ((f.hom.app (Opposite.op T)) y) - ((g.hom.app (Opposite.op T)) y) := by
+    rfl
+  rw [hfg]
+  have hF : Fiso.hom.app (Opposite.op T)
+        (((f.hom.app (Opposite.op T)) y) - ((g.hom.app (Opposite.op T)) y)) =
+      Fiso.hom.app (Opposite.op T) ((f.hom.app (Opposite.op T)) y) -
+        Fiso.hom.app (Opposite.op T) ((g.hom.app (Opposite.op T)) y) := by
+    exact (Fiso.hom.app (Opposite.op T)).hom.map_sub _ _
+  rw [hF]
+  rfl
+
 end FreeDiscrete
 
 /-- The product test object `(ℕ∪{∞}) × S`, written in the cartesian monoidal structure on
@@ -419,6 +455,40 @@ noncomputable def pTensorHomSubtypeEquiv (S : LightProfinite) :
   let C := (free ℤ).obj S.toCondensed
   let e : P ℤ ⊗ C ≅ cokernel (P_map ℤ ▷ C) := tensorCokerIsoInt (P_map ℤ)
   exact (Iso.homCongr e (Iso.refl Zdisc)).trans (cokernelHomEquiv (P_map ℤ ▷ C))
+
+set_option backward.isDefEq.respectTransparency false in
+lemma tensorCokerIsoInt_π_inv {C : LightCondAb} :
+    cokernel.π (P_map ℤ ▷ C) ≫
+        (tensorCokerIsoInt (P_map ℤ) : P ℤ ⊗ C ≅ cokernel (P_map ℤ ▷ C)).inv =
+      P_proj ℤ ▷ C := by
+  simp [tensorCokerIsoInt, P_proj]
+  change 𝟙 ((free ℤ).obj (ℕ∪{∞}).toCondensed ⊗ C) ≫ P_proj ℤ ▷ C = P_proj ℤ ▷ C
+  rw [Category.id_comp]
+
+set_option backward.isDefEq.respectTransparency false in
+lemma pTensorHomSubtypeEquiv_apply_coe (S : LightProfinite)
+    (f : (P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) :
+    (pTensorHomSubtypeEquiv S f).1 = (P_proj ℤ ▷ (free ℤ).obj S.toCondensed) ≫ f := by
+  dsimp [pTensorHomSubtypeEquiv, cokernelHomEquiv]
+  simp only [Iso.homCongr_apply, Iso.refl_hom, Category.comp_id]
+  simpa [Category.assoc] using congrArg (fun k => k ≫ f)
+    (tensorCokerIsoInt_π_inv (C := (free ℤ).obj S.toCondensed))
+
+lemma freeProductHomEquiv_sub_apply (A S : LightProfinite)
+    (f g : (free ℤ).obj A.toCondensed ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc)
+    (x : (A ⊗ S : LightProfinite)) :
+    freeProductHomEquiv A S (f - g) x =
+      freeProductHomEquiv A S f x - freeProductHomEquiv A S g x := by
+  dsimp [freeProductHomEquiv]
+  simp only [Iso.homCongr_apply, Iso.refl_hom, Category.comp_id]
+  rw [Preadditive.comp_sub]
+  exact freeHomDiscreteEquiv_sub_apply ℤ (A ⊗ S : LightProfinite) (ModuleCat.of ℤ ℤ)
+    ((freeTensorIsoInt A S).inv ≫ f) ((freeTensorIsoInt A S).inv ≫ g) x
+
+lemma sub_whiskerRight {X Y C : LightCondAb} (f g : X ⟶ Y) :
+    (f - g) ▷ C = f ▷ C - g ▷ C := by
+  change (tensorRight C).map (f - g) = (tensorRight C).map f - (tensorRight C).map g
+  exact Functor.map_sub (F := tensorRight C) (f := f) (g := g)
 
 end CokernelAndFreeTensor
 
@@ -663,6 +733,15 @@ integer sequences. -/
 noncomputable def nullSeqPointsEquiv (S : LightProfinite) :
     ((P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃ LocallyConstant S SeqZ :=
   (pTensorHomVanishEquiv S).trans (vanishAtInfinityEquiv S)
+
+set_option backward.isDefEq.respectTransparency false in
+lemma nullSeqPointsEquiv_apply (S : LightProfinite)
+    (f : (P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) (s : S) (n : ℕ) :
+    nullSeqPointsEquiv S f s n =
+      numeratorHomEquiv S ((pTensorHomSubtypeEquiv S f).1) ((n : ℕ∪{∞}), s) := by
+  dsimp [nullSeqPointsEquiv, pTensorHomVanishEquiv, vanishAtInfinityEquiv]
+  rw [vanishToSeq_apply]
+  rfl
 
 end PTensorHom
 

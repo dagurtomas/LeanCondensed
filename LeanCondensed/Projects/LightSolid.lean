@@ -89,6 +89,94 @@ def oneMinusShift : P R ⟶ P R := by
   simp only [sub_eq_zero, P_map, ← Functor.map_comp]
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
+lemma P_proj_oneMinusShift :
+    P_proj ℤ ≫ oneMinusShift ℤ = oneMinusShift' ℤ ≫ P_proj ℤ := by
+  simp [oneMinusShift, P_homMk, P_proj]
+
+lemma P_proj_tensor_oneMinusShift (C : LightCondAb) :
+    (P_proj ℤ ▷ C) ≫ (oneMinusShift ℤ ▷ C) =
+      (oneMinusShift' ℤ ▷ C) ≫ (P_proj ℤ ▷ C) := by
+  simpa only [comp_whiskerRight] using
+    congrArg (fun f => f ▷ C) P_proj_oneMinusShift
+
+set_option backward.isDefEq.respectTransparency false in
+lemma pTensorHomSubtypeEquiv_oneMinusShift_coe (S : LightProfinite)
+    (f : (P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Solid.IntProof.Zdisc) :
+    (Solid.IntProof.pTensorHomSubtypeEquiv S
+        ((oneMinusShift ℤ ▷ (free ℤ).obj S.toCondensed) ≫ f)).1 =
+      (oneMinusShift' ℤ ▷ (free ℤ).obj S.toCondensed) ≫
+        (Solid.IntProof.pTensorHomSubtypeEquiv S f).1 := by
+  rw [Solid.IntProof.pTensorHomSubtypeEquiv_apply_coe]
+  rw [Solid.IntProof.pTensorHomSubtypeEquiv_apply_coe]
+  rw [← Category.assoc]
+  rw [P_proj_tensor_oneMinusShift]
+  rw [Category.assoc]
+
+set_option backward.isDefEq.respectTransparency false in
+lemma numeratorHomEquiv_oneMinusShift'_apply (S : LightProfinite)
+    (g : (((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗
+      (free ℤ).obj S.toCondensed ⟶ Solid.IntProof.Zdisc))
+    (s : S) (n : ℕ) :
+    Solid.IntProof.numeratorHomEquiv S
+        ((oneMinusShift' ℤ ▷ (free ℤ).obj S.toCondensed) ≫ g) ((n : ℕ∪{∞}), s) =
+      Solid.IntProof.numeratorHomEquiv S g ((n : ℕ∪{∞}), s) -
+        Solid.IntProof.numeratorHomEquiv S g (((n + 1 : ℕ) : ℕ∪{∞}), s) := by
+  have hwhisk : oneMinusShift' ℤ ▷ (free ℤ).obj S.toCondensed =
+      (𝟙 ((lightProfiniteToLightCondSet ⋙ free ℤ).obj (ℕ∪{∞})) ▷
+          (free ℤ).obj S.toCondensed) -
+        (((lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift) ▷
+          (free ℤ).obj S.toCondensed) := by
+    dsimp [oneMinusShift']
+    exact Solid.IntProof.sub_whiskerRight (𝟙 _) _
+  rw [hwhisk]
+  rw [Preadditive.sub_comp]
+  change Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S
+      (((𝟙 ((lightProfiniteToLightCondSet ⋙ free ℤ).obj (ℕ∪{∞})) ▷
+          (free ℤ).obj S.toCondensed) ≫ g) -
+        ((((lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift) ▷
+          (free ℤ).obj S.toCondensed) ≫ g))
+      ((n : ℕ∪{∞}), s) =
+    Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S g ((n : ℕ∪{∞}), s) -
+      Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S g (((n + 1 : ℕ) : ℕ∪{∞}), s)
+  rw [Solid.IntProof.freeProductHomEquiv_sub_apply]
+  have hid : Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S
+        ((𝟙 ((lightProfiniteToLightCondSet ⋙ free ℤ).obj (ℕ∪{∞})) ▷
+          (free ℤ).obj S.toCondensed) ≫ g) =
+      Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S g := by
+    simp only [id_whiskerRight]
+    change Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S
+        (𝟙 ((free ℤ).obj (ℕ∪{∞}).toCondensed ⊗ (free ℤ).obj S.toCondensed) ≫ g) =
+      Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S g
+    rw [Category.id_comp]
+  have hshift : Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S
+        ((((lightProfiniteToLightCondSet ⋙ free ℤ).map LightProfinite.shift) ▷
+          (free ℤ).obj S.toCondensed) ≫ g) =
+      (Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S g).comap
+        (LightProfinite.shift ▷ S).hom.hom := by
+    simpa using Solid.IntProof.freeProductHomEquiv_precomp_left (S := S) LightProfinite.shift g
+  rw [hid, hshift]
+  rw [LocallyConstant.coe_comap_apply]
+  change ((Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S) g) ((n : ℕ∪{∞}), s) -
+      ((Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S) g) (((n + 1 : ℕ) : ℕ∪{∞}), s) =
+    ((Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S) g) ((n : ℕ∪{∞}), s) -
+      ((Solid.IntProof.freeProductHomEquiv (ℕ∪{∞}) S) g) (((n + 1 : ℕ) : ℕ∪{∞}), s)
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+lemma nullSeqPointsEquiv_oneMinusShift (S : LightProfinite)
+    (f : (P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Solid.IntProof.Zdisc) :
+    Solid.IntProof.nullSeqPointsEquiv S
+        ((oneMinusShift ℤ ▷ (free ℤ).obj S.toCondensed) ≫ f) =
+      LocallyConstant.map Solid.IntProof.seqDiff (Solid.IntProof.nullSeqPointsEquiv S f) := by
+  ext s n
+  rw [Solid.IntProof.nullSeqPointsEquiv_apply]
+  rw [pTensorHomSubtypeEquiv_oneMinusShift_coe]
+  rw [numeratorHomEquiv_oneMinusShift'_apply]
+  rw [← Solid.IntProof.nullSeqPointsEquiv_apply]
+  rw [← Solid.IntProof.nullSeqPointsEquiv_apply]
+  simp [LocallyConstant.map, Solid.IntProof.seqDiff_apply]
+
 variable {R : Type} [CommRing R]
 
 /-- A light condensed abelian group `A` is *solid* if the identity minus the map induced by the
