@@ -28,8 +28,8 @@ The general two-variable localization scaffold is in
 
 The scaffold keeps the remaining mathematical obligations as explicit declarations with `sorry`,
 rather than hiding them as assumptions on downstream definitions.  In particular, existence of the
-relevant total derived functors, K-flat/adapted tensor data, and the derived solidification
-adjunction are all named below.
+relevant total derived functors, K-flat tensor data, and the derived solidification adjunction are
+all named below.
 -/
 
 noncomputable section
@@ -211,26 +211,20 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 
 open CategoryTheory.DerivedCategory.TwoVariable
 
-/-- Obligation: choose the adapted complexes used to compute the solid derived tensor product.
-The intended choice is K-flat complexes of solid abelian groups. -/
-noncomputable def solidKFlat : AdaptedProperty Solid := by
+/-- Obligation: K-flat solid complexes compute the derived category of solid abelian groups. -/
+lemma solid_hasEnoughKFlats : HasEnoughKFlats Solid := by
   sorry
 
-/-- Obligation: the adapted complexes compute the derived category of solid abelian groups. -/
-instance solidKFlat_isLocalizedEquivalence :
-    (adaptedLocalizer solidKFlat).IsLocalizedEquivalence := by
-  sorry
-
-/-- Obligation: tensoring adapted solid complexes sends adapted quasi-isomorphisms in both variables
+/-- Obligation: tensoring K-flat solid complexes sends K-flat quasi-isomorphisms in both variables
 to quasi-isomorphisms. -/
-lemma solidTensorComplex_inverts_kflat :
-    InvertsAdaptedQuasiIso₂ solidKFlat solidKFlat solidTensorComplex := by
+lemma solidTensorComplex_inverts_kflat : InvertsKFlatQuasiIso₂ solidTensorComplex := by
   sorry
 
 /-- The bifunctorial derived tensor product on the derived category of solid abelian groups,
-computed from the adapted replacement class `solidKFlat`. -/
+computed from K-flat replacements. -/
 noncomputable def derivedTensor : DSolid ⥤ DSolid ⥤ DSolid :=
-  derived₂Curried solidKFlat solidKFlat solidTensorComplex solidTensorComplex_inverts_kflat
+  leftDerived₂ByKFlatsCurried solidTensorComplex solidTensorComplex_inverts_kflat
+    solid_hasEnoughKFlats solid_hasEnoughKFlats
 
 /-- Obligation: the composite `derivedSolidification ⋙ derivedInclusion` is the left-derived
 composite needed by `Adjunction.derived`.  This is the absoluteness input in the general derived

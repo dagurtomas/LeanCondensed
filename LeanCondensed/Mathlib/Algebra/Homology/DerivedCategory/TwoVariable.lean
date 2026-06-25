@@ -5,38 +5,29 @@ Authors: Dagur Asgeirsson
 -/
 import Mathlib.Algebra.Homology.DerivedCategory.KProjective
 import Mathlib.Algebra.Homology.DerivedCategory.KInjective
+import Mathlib.Algebra.Homology.Monoidal
 import Mathlib.CategoryTheory.Localization.Prod
 import Mathlib.CategoryTheory.Localization.DerivabilityStructure.Derives
 
 /-!
-# Two-variable derived functors from adapted replacements
+# Two-variable derived functors from concrete replacements
 
-This file is a general scaffold for constructing derived bifunctors. The input is a bifunctor on
-cochain complexes
+This file packages the localization construction of derived bifunctors using the concrete classes of
+complexes which usually compute derived functors:
 
-```
-T : CochainComplex C₁ ℤ ⥤ CochainComplex C₂ ℤ ⥤ CochainComplex C₃ ℤ
-```
+* K-projective complexes for left-derived bifunctors;
+* K-injective complexes for right-derived bifunctors;
+* K-flat complexes for monoidal left-derived tensor products.
 
-together with two object properties `P₁`, `P₂` of complexes, thought of as the adapted objects
-(K-projective, K-injective, K-flat, ...). If `T`, restricted to `P₁ × P₂`, sends pairs of adapted
-quasi-isomorphisms to quasi-isomorphisms, and if the inclusions of adapted objects induce
-equivalences after localizing at quasi-isomorphisms, then `derived₂` produces a functor
-
-```
-DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃.
-```
-
-The point of the setup is that the hard category-specific input is isolated into typeclass
-assumptions about the chosen adapted properties. For example, in a category with enough
-K-projective replacements one should use `kProjective`; for right-derived constructions one should
-use `kInjective`; and a future/available K-flat API can be plugged in as another
-`AdaptedProperty`.
+The construction is intentionally phrased with explicit hypotheses saying that the corresponding
+subcategory of replacement complexes computes the derived category.  In applications, those
+hypotheses should be proved from enough K-projective/K-injective/K-flat resolutions, rather than
+being hidden in an artificial adapted-object abstraction.
 -/
 
 noncomputable section
 
-open CategoryTheory Limits
+open CategoryTheory Limits MonoidalCategory
 open CategoryTheory.Localization
 
 namespace CategoryTheory
@@ -55,109 +46,314 @@ abbrev W (C : Type u₁) [Category.{v₁} C] [Abelian C] :
     MorphismProperty (Complex C) :=
   HomologicalComplex.quasiIso C (ComplexShape.up ℤ)
 
-/-- An adapted class of complexes used to compute derived functors. -/
-abbrev AdaptedProperty (C : Type u₁) [Category.{v₁} C] [Abelian C] :=
-  ObjectProperty (Complex C)
+section KProjective
 
-/-- The quasi-isomorphisms in the full subcategory of adapted complexes. -/
-abbrev adaptedQuasiIso {C : Type u₁} [Category.{v₁} C] [Abelian C]
-    (P : AdaptedProperty C) : MorphismProperty P.FullSubcategory :=
-  (W C).inverseImage P.ι
+/-- The object property of being K-projective. -/
+abbrev kProjectiveComplexes (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    ObjectProperty (Complex C) :=
+  fun K => CochainComplex.IsKProjective K
 
-/-- The inclusion of adapted complexes as a morphism of localizers. -/
-def adaptedLocalizer {C : Type u₁} [Category.{v₁} C] [Abelian C]
-    (P : AdaptedProperty C) : LocalizerMorphism (adaptedQuasiIso P) (W C) where
-  functor := P.ι
+/-- The full subcategory of K-projective cochain complexes. -/
+abbrev KProjectiveComplex (C : Type u₁) [Category.{v₁} C] [Abelian C] :=
+  (kProjectiveComplexes C).FullSubcategory
+
+/-- The inclusion of K-projective complexes. -/
+abbrev kProjectiveInclusion (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    KProjectiveComplex C ⥤ Complex C :=
+  (kProjectiveComplexes C).ι
+
+/-- Quasi-isomorphisms between K-projective complexes. -/
+abbrev kProjectiveQuasiIso (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    MorphismProperty (KProjectiveComplex C) :=
+  (W C).inverseImage (kProjectiveInclusion C)
+
+/-- The inclusion of K-projective complexes as a morphism of localizers. -/
+def kProjectiveLocalizer (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    LocalizerMorphism (kProjectiveQuasiIso C) (W C) where
+  functor := kProjectiveInclusion C
   map _ _ _ hf := hf
 
-/-- `P` has enough left adapted resolutions, in the sense of localization derivability structures. -/
-abbrev IsLeftAdapted {C : Type u₁} [Category.{v₁} C] [Abelian C]
-    (P : AdaptedProperty C) : Prop :=
-  (adaptedLocalizer P).IsLeftDerivabilityStructure
+/-- A K-projective resolution of a complex `K` is a quasi-isomorphism `P ⟶ K` from a
+K-projective complex. -/
+def HasKProjectiveResolution {C : Type u₁} [Category.{v₁} C] [Abelian C]
+    (K : Complex C) : Prop :=
+  ∃ (P : Complex C), CochainComplex.IsKProjective P ∧ ∃ q : P ⟶ K, W C q
 
-/-- `P` has enough right adapted resolutions, in the sense of localization derivability structures. -/
-abbrev IsRightAdapted {C : Type u₁} [Category.{v₁} C] [Abelian C]
-    (P : AdaptedProperty C) : Prop :=
-  (adaptedLocalizer P).IsRightDerivabilityStructure
+/-- The concrete enough-K-projectives hypothesis: every complex has a K-projective resolution. -/
+abbrev HasEnoughKProjectives (C : Type u₁) [Category.{v₁} C] [Abelian C] : Prop :=
+  ∀ K : Complex C, HasKProjectiveResolution K
+
+/-- Obligation: enough K-projective resolutions imply that K-projective complexes compute the
+derived category. -/
+lemma kProjectiveLocalizer_isLocalizedEquivalence_of_hasEnoughKProjectives
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] (hC : HasEnoughKProjectives C) :
+    (kProjectiveLocalizer C).IsLocalizedEquivalence := by
+  sorry
 
 variable {C₁ : Type u₁} {C₂ : Type u₂} {C₃ : Type u₃}
 variable [Category.{v₁} C₁] [Category.{v₂} C₂] [Category.{v₃} C₃]
 variable [Abelian C₁] [Abelian C₂] [Abelian C₃]
 
-/-- Restrict a bifunctor on complexes to adapted complexes in both variables. -/
-abbrev restrict₂ (P₁ : AdaptedProperty C₁) (P₂ : AdaptedProperty C₂)
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) :
-    P₁.FullSubcategory × P₂.FullSubcategory ⥤ Complex C₃ :=
-  (P₁.ι.prod P₂.ι) ⋙ Functor.uncurry.obj T
+/-- Restrict a bifunctor on complexes to K-projective complexes in both variables. -/
+abbrev restrict₂KProjective (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) :
+    KProjectiveComplex C₁ × KProjectiveComplex C₂ ⥤ Complex C₃ :=
+  ((kProjectiveInclusion C₁).prod (kProjectiveInclusion C₂)) ⋙ Functor.uncurry.obj T
 
-/-- The condition that `T`, on adapted objects, sends adapted quasi-isomorphisms in both variables
-to quasi-isomorphisms after passing to `DerivedCategory C₃`. -/
-abbrev InvertsAdaptedQuasiIso₂ (P₁ : AdaptedProperty C₁) (P₂ : AdaptedProperty C₂)
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) : Prop :=
-  ((adaptedQuasiIso P₁).prod (adaptedQuasiIso P₂)).IsInvertedBy
-    (restrict₂ P₁ P₂ T ⋙ DerivedCategory.Q)
+/-- The condition that a bifunctor sends quasi-isomorphisms between K-projective complexes in both
+variables to quasi-isomorphisms after localization. -/
+abbrev InvertsKProjectiveQuasiIso₂ (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) : Prop :=
+  ((kProjectiveQuasiIso C₁).prod (kProjectiveQuasiIso C₂)).IsInvertedBy
+    (restrict₂KProjective T ⋙ DerivedCategory.Q)
 
-/-- The functor on the localized categories of adapted complexes induced by `T`. -/
-noncomputable def adaptedDerived₂ (P₁ : AdaptedProperty C₁) (P₂ : AdaptedProperty C₂)
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    (hT : InvertsAdaptedQuasiIso₂ P₁ P₂ T) :
-    (adaptedQuasiIso P₁).Localization × (adaptedQuasiIso P₂).Localization ⥤ DerivedCategory C₃ :=
-  Localization.lift (restrict₂ P₁ P₂ T ⋙ DerivedCategory.Q) hT
-    ((adaptedQuasiIso P₁).Q.prod (adaptedQuasiIso P₂).Q)
+/-- The functor on the localized categories of K-projective complexes induced by a bifunctor. -/
+noncomputable def localized₂ByKProjectives (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKProjectiveQuasiIso₂ T) :
+    (kProjectiveQuasiIso C₁).Localization × (kProjectiveQuasiIso C₂).Localization ⥤
+      DerivedCategory C₃ :=
+  Localization.lift (restrict₂KProjective T ⋙ DerivedCategory.Q) hT
+    ((kProjectiveQuasiIso C₁).Q.prod (kProjectiveQuasiIso C₂).Q)
 
-/-- If adapted complexes compute the derived category, their localized category is equivalent to the
-usual derived category. -/
-noncomputable def adaptedLocalizationEquivalence (P : AdaptedProperty C₁)
-    [(adaptedLocalizer P).IsLocalizedEquivalence] :
-    (adaptedQuasiIso P).Localization ≌ DerivedCategory C₁ :=
-  ((adaptedLocalizer P).localizedFunctor (adaptedQuasiIso P).Q DerivedCategory.Q).asEquivalence
+/-- If K-projective complexes compute the derived category, their localized category is equivalent
+to the usual derived category. -/
+noncomputable def kProjectiveLocalizationEquivalence
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] (hC : HasEnoughKProjectives C) :
+    (kProjectiveQuasiIso C).Localization ≌ DerivedCategory C := by
+  letI : (kProjectiveLocalizer C).IsLocalizedEquivalence :=
+    kProjectiveLocalizer_isLocalizedEquivalence_of_hasEnoughKProjectives C hC
+  exact ((kProjectiveLocalizer C).localizedFunctor (kProjectiveQuasiIso C).Q
+    DerivedCategory.Q).asEquivalence
 
-/-- The two-variable derived functor computed by adapted replacements in both variables. -/
-noncomputable def derived₂ (P₁ : AdaptedProperty C₁) (P₂ : AdaptedProperty C₂)
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    (hT : InvertsAdaptedQuasiIso₂ P₁ P₂ T)
-    [(adaptedLocalizer P₁).IsLocalizedEquivalence]
-    [(adaptedLocalizer P₂).IsLocalizedEquivalence] :
+/-- The two-variable left-derived functor computed by K-projective replacements. -/
+noncomputable def leftDerived₂ByKProjectives (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKProjectiveQuasiIso₂ T)
+    (hC₁ : HasEnoughKProjectives C₁) (hC₂ : HasEnoughKProjectives C₂) :
     DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
-  ((adaptedLocalizationEquivalence P₁).inverse.prod
-      (adaptedLocalizationEquivalence P₂).inverse) ⋙ adaptedDerived₂ P₁ P₂ T hT
+  ((kProjectiveLocalizationEquivalence C₁ hC₁).inverse.prod
+      (kProjectiveLocalizationEquivalence C₂ hC₂).inverse) ⋙
+    localized₂ByKProjectives T hT
 
-/-- Curried form of `derived₂`, convenient for monoidal closed applications. -/
-noncomputable def derived₂Curried (P₁ : AdaptedProperty C₁) (P₂ : AdaptedProperty C₂)
+/-- Curried form of `leftDerived₂ByKProjectives`. -/
+noncomputable def leftDerived₂ByKProjectivesCurried
     (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    (hT : InvertsAdaptedQuasiIso₂ P₁ P₂ T)
-    [(adaptedLocalizer P₁).IsLocalizedEquivalence]
-    [(adaptedLocalizer P₂).IsLocalizedEquivalence] :
+    (hT : InvertsKProjectiveQuasiIso₂ T)
+    (hC₁ : HasEnoughKProjectives C₁) (hC₂ : HasEnoughKProjectives C₂) :
     DerivedCategory C₁ ⥤ DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
-  Functor.curry.obj (derived₂ P₁ P₂ T hT)
+  Functor.curry.obj (leftDerived₂ByKProjectives T hT hC₁ hC₂)
 
-/-- The adapted property of K-projective complexes. -/
-abbrev kProjective (C : Type u₁) [Category.{v₁} C] [Abelian C] : AdaptedProperty C :=
-  fun K => CochainComplex.IsKProjective K
+end KProjective
 
-/-- The adapted property of K-injective complexes. -/
-abbrev kInjective (C : Type u₁) [Category.{v₁} C] [Abelian C] : AdaptedProperty C :=
+section KInjective
+
+/-- The object property of being K-injective. -/
+abbrev kInjectiveComplexes (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    ObjectProperty (Complex C) :=
   fun K => CochainComplex.IsKInjective K
 
-/-- Left-derived bifunctor computed using K-projective replacements in both variables, assuming the
-ambient categories have enough such replacements and `T` respects quasi-isomorphisms between them. -/
-noncomputable abbrev leftDerived₂ByKProjectives
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    (hT : InvertsAdaptedQuasiIso₂ (kProjective C₁) (kProjective C₂) T)
-    [(adaptedLocalizer (kProjective C₁)).IsLocalizedEquivalence]
-    [(adaptedLocalizer (kProjective C₂)).IsLocalizedEquivalence] :
-    DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
-  derived₂ (kProjective C₁) (kProjective C₂) T hT
+/-- The full subcategory of K-injective cochain complexes. -/
+abbrev KInjectiveComplex (C : Type u₁) [Category.{v₁} C] [Abelian C] :=
+  (kInjectiveComplexes C).FullSubcategory
 
-/-- Right-derived bifunctor computed using K-injective replacements in both variables, assuming the
-ambient categories have enough such replacements and `T` respects quasi-isomorphisms between them. -/
-noncomputable abbrev rightDerived₂ByKInjectives
-    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
-    (hT : InvertsAdaptedQuasiIso₂ (kInjective C₁) (kInjective C₂) T)
-    [(adaptedLocalizer (kInjective C₁)).IsLocalizedEquivalence]
-    [(adaptedLocalizer (kInjective C₂)).IsLocalizedEquivalence] :
+/-- The inclusion of K-injective complexes. -/
+abbrev kInjectiveInclusion (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    KInjectiveComplex C ⥤ Complex C :=
+  (kInjectiveComplexes C).ι
+
+/-- Quasi-isomorphisms between K-injective complexes. -/
+abbrev kInjectiveQuasiIso (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    MorphismProperty (KInjectiveComplex C) :=
+  (W C).inverseImage (kInjectiveInclusion C)
+
+/-- The inclusion of K-injective complexes as a morphism of localizers. -/
+def kInjectiveLocalizer (C : Type u₁) [Category.{v₁} C] [Abelian C] :
+    LocalizerMorphism (kInjectiveQuasiIso C) (W C) where
+  functor := kInjectiveInclusion C
+  map _ _ _ hf := hf
+
+/-- A K-injective resolution of a complex `K` is a quasi-isomorphism `K ⟶ I` to a
+K-injective complex. -/
+def HasKInjectiveResolution {C : Type u₁} [Category.{v₁} C] [Abelian C]
+    (K : Complex C) : Prop :=
+  ∃ (I : Complex C), CochainComplex.IsKInjective I ∧ ∃ q : K ⟶ I, W C q
+
+/-- The concrete enough-K-injectives hypothesis: every complex has a K-injective resolution. -/
+abbrev HasEnoughKInjectives (C : Type u₁) [Category.{v₁} C] [Abelian C] : Prop :=
+  ∀ K : Complex C, HasKInjectiveResolution K
+
+/-- Obligation: enough K-injective resolutions imply that K-injective complexes compute the
+derived category. -/
+lemma kInjectiveLocalizer_isLocalizedEquivalence_of_hasEnoughKInjectives
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] (hC : HasEnoughKInjectives C) :
+    (kInjectiveLocalizer C).IsLocalizedEquivalence := by
+  sorry
+
+variable {C₁ : Type u₁} {C₂ : Type u₂} {C₃ : Type u₃}
+variable [Category.{v₁} C₁] [Category.{v₂} C₂] [Category.{v₃} C₃]
+variable [Abelian C₁] [Abelian C₂] [Abelian C₃]
+
+/-- Restrict a bifunctor on complexes to K-injective complexes in both variables. -/
+abbrev restrict₂KInjective (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) :
+    KInjectiveComplex C₁ × KInjectiveComplex C₂ ⥤ Complex C₃ :=
+  ((kInjectiveInclusion C₁).prod (kInjectiveInclusion C₂)) ⋙ Functor.uncurry.obj T
+
+/-- The condition that a bifunctor sends quasi-isomorphisms between K-injective complexes in both
+variables to quasi-isomorphisms after localization. -/
+abbrev InvertsKInjectiveQuasiIso₂ (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) : Prop :=
+  ((kInjectiveQuasiIso C₁).prod (kInjectiveQuasiIso C₂)).IsInvertedBy
+    (restrict₂KInjective T ⋙ DerivedCategory.Q)
+
+/-- The functor on the localized categories of K-injective complexes induced by a bifunctor. -/
+noncomputable def localized₂ByKInjectives (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKInjectiveQuasiIso₂ T) :
+    (kInjectiveQuasiIso C₁).Localization × (kInjectiveQuasiIso C₂).Localization ⥤
+      DerivedCategory C₃ :=
+  Localization.lift (restrict₂KInjective T ⋙ DerivedCategory.Q) hT
+    ((kInjectiveQuasiIso C₁).Q.prod (kInjectiveQuasiIso C₂).Q)
+
+/-- If K-injective complexes compute the derived category, their localized category is equivalent
+to the usual derived category. -/
+noncomputable def kInjectiveLocalizationEquivalence
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] (hC : HasEnoughKInjectives C) :
+    (kInjectiveQuasiIso C).Localization ≌ DerivedCategory C := by
+  letI : (kInjectiveLocalizer C).IsLocalizedEquivalence :=
+    kInjectiveLocalizer_isLocalizedEquivalence_of_hasEnoughKInjectives C hC
+  exact ((kInjectiveLocalizer C).localizedFunctor (kInjectiveQuasiIso C).Q
+    DerivedCategory.Q).asEquivalence
+
+/-- The two-variable right-derived functor computed by K-injective replacements. -/
+noncomputable def rightDerived₂ByKInjectives (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKInjectiveQuasiIso₂ T)
+    (hC₁ : HasEnoughKInjectives C₁) (hC₂ : HasEnoughKInjectives C₂) :
     DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
-  derived₂ (kInjective C₁) (kInjective C₂) T hT
+  ((kInjectiveLocalizationEquivalence C₁ hC₁).inverse.prod
+      (kInjectiveLocalizationEquivalence C₂ hC₂).inverse) ⋙
+    localized₂ByKInjectives T hT
+
+/-- Curried form of `rightDerived₂ByKInjectives`. -/
+noncomputable def rightDerived₂ByKInjectivesCurried
+    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKInjectiveQuasiIso₂ T)
+    (hC₁ : HasEnoughKInjectives C₁) (hC₂ : HasEnoughKInjectives C₂) :
+    DerivedCategory C₁ ⥤ DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
+  Functor.curry.obj (rightDerived₂ByKInjectives T hT hC₁ hC₂)
+
+end KInjective
+
+section KFlat
+
+/-- A K-flat complex is a complex for which tensoring on either side preserves quasi-isomorphisms.
+This definition is phrased relative to a monoidal structure on the category of cochain complexes. -/
+class IsKFlat {C : Type u₁} [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] (K : Complex C) : Prop where
+  tensorLeft_quasiIso {X Y : Complex C} (f : X ⟶ Y) (hf : W C f) :
+    W C ((tensorLeft K).map f)
+  tensorRight_quasiIso {X Y : Complex C} (f : X ⟶ Y) (hf : W C f) :
+    W C ((tensorRight K).map f)
+
+/-- The object property of being K-flat. -/
+abbrev kFlatComplexes (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] : ObjectProperty (Complex C) :=
+  fun K => IsKFlat K
+
+/-- The full subcategory of K-flat cochain complexes. -/
+abbrev KFlatComplex (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] :=
+  (kFlatComplexes C).FullSubcategory
+
+/-- The inclusion of K-flat complexes. -/
+abbrev kFlatInclusion (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] : KFlatComplex C ⥤ Complex C :=
+  (kFlatComplexes C).ι
+
+/-- Quasi-isomorphisms between K-flat complexes. -/
+abbrev kFlatQuasiIso (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] : MorphismProperty (KFlatComplex C) :=
+  (W C).inverseImage (kFlatInclusion C)
+
+/-- The inclusion of K-flat complexes as a morphism of localizers. -/
+def kFlatLocalizer (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] : LocalizerMorphism (kFlatQuasiIso C) (W C) where
+  functor := kFlatInclusion C
+  map _ _ _ hf := hf
+
+/-- A K-flat resolution of a complex `K` is a quasi-isomorphism `F ⟶ K` from a K-flat complex. -/
+def HasKFlatResolution {C : Type u₁} [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] (K : Complex C) : Prop :=
+  ∃ (F : Complex C), IsKFlat F ∧ ∃ q : F ⟶ K, W C q
+
+/-- The concrete enough-K-flats hypothesis: every complex has a K-flat resolution. -/
+abbrev HasEnoughKFlats (C : Type u₁) [Category.{v₁} C] [Abelian C]
+    [MonoidalCategory (Complex C)] : Prop :=
+  ∀ K : Complex C, HasKFlatResolution K
+
+/-- If every K-projective complex is K-flat, then enough K-projective resolutions give enough
+K-flat resolutions. -/
+lemma hasEnoughKFlats_of_hasEnoughKProjectives
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [MonoidalCategory (Complex C)]
+    (hC : HasEnoughKProjectives C)
+    (hflat : ∀ K : Complex C, CochainComplex.IsKProjective K → IsKFlat K) :
+    HasEnoughKFlats C := by
+  intro K
+  rcases hC K with ⟨P, hP, q, hq⟩
+  exact ⟨P, hflat P hP, q, hq⟩
+
+/-- Obligation: enough K-flat resolutions imply that K-flat complexes compute the derived category. -/
+lemma kFlatLocalizer_isLocalizedEquivalence_of_hasEnoughKFlats
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [MonoidalCategory (Complex C)]
+    (hC : HasEnoughKFlats C) :
+    (kFlatLocalizer C).IsLocalizedEquivalence := by
+  sorry
+
+variable {C₁ : Type u₁} {C₂ : Type u₂} {C₃ : Type u₃}
+variable [Category.{v₁} C₁] [Category.{v₂} C₂] [Category.{v₃} C₃]
+variable [Abelian C₁] [Abelian C₂] [Abelian C₃]
+variable [MonoidalCategory (Complex C₁)] [MonoidalCategory (Complex C₂)]
+
+/-- Restrict a bifunctor on complexes to K-flat complexes in both variables. -/
+abbrev restrict₂KFlat (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) :
+    KFlatComplex C₁ × KFlatComplex C₂ ⥤ Complex C₃ :=
+  ((kFlatInclusion C₁).prod (kFlatInclusion C₂)) ⋙ Functor.uncurry.obj T
+
+/-- The condition that a bifunctor sends quasi-isomorphisms between K-flat complexes in both
+variables to quasi-isomorphisms after localization. -/
+abbrev InvertsKFlatQuasiIso₂ (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃) : Prop :=
+  ((kFlatQuasiIso C₁).prod (kFlatQuasiIso C₂)).IsInvertedBy
+    (restrict₂KFlat T ⋙ DerivedCategory.Q)
+
+/-- The functor on the localized categories of K-flat complexes induced by a bifunctor. -/
+noncomputable def localized₂ByKFlats (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKFlatQuasiIso₂ T) :
+    (kFlatQuasiIso C₁).Localization × (kFlatQuasiIso C₂).Localization ⥤
+      DerivedCategory C₃ :=
+  Localization.lift (restrict₂KFlat T ⋙ DerivedCategory.Q) hT
+    ((kFlatQuasiIso C₁).Q.prod (kFlatQuasiIso C₂).Q)
+
+/-- If K-flat complexes compute the derived category, their localized category is equivalent to the
+usual derived category. -/
+noncomputable def kFlatLocalizationEquivalence
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [MonoidalCategory (Complex C)]
+    (hC : HasEnoughKFlats C) :
+    (kFlatQuasiIso C).Localization ≌ DerivedCategory C := by
+  letI : (kFlatLocalizer C).IsLocalizedEquivalence :=
+    kFlatLocalizer_isLocalizedEquivalence_of_hasEnoughKFlats C hC
+  exact ((kFlatLocalizer C).localizedFunctor (kFlatQuasiIso C).Q DerivedCategory.Q).asEquivalence
+
+/-- The two-variable left-derived functor computed by K-flat replacements. -/
+noncomputable def leftDerived₂ByKFlats (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKFlatQuasiIso₂ T)
+    (hC₁ : HasEnoughKFlats C₁) (hC₂ : HasEnoughKFlats C₂) :
+    DerivedCategory C₁ × DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
+  ((kFlatLocalizationEquivalence C₁ hC₁).inverse.prod
+      (kFlatLocalizationEquivalence C₂ hC₂).inverse) ⋙ localized₂ByKFlats T hT
+
+/-- Curried form of `leftDerived₂ByKFlats`. -/
+noncomputable def leftDerived₂ByKFlatsCurried
+    (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
+    (hT : InvertsKFlatQuasiIso₂ T)
+    (hC₁ : HasEnoughKFlats C₁) (hC₂ : HasEnoughKFlats C₂) :
+    DerivedCategory C₁ ⥤ DerivedCategory C₂ ⥤ DerivedCategory C₃ :=
+  Functor.curry.obj (leftDerived₂ByKFlats T hT hC₁ hC₂)
+
+end KFlat
 
 end TwoVariable
 end DerivedCategory
