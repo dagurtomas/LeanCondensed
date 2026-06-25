@@ -195,9 +195,33 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 
 open CategoryTheory.DerivedCategory.TwoVariable
 
-/-- Obligation: solid abelian groups have enough K-projective complex resolutions. -/
-lemma solid_hasEnoughKProjectives : HasEnoughKProjectives Solid := by
+/-- Obligation: light condensed abelian groups have enough projective objects.  This should be
+proved from explicit free light condensed abelian groups. -/
+instance lightCondAb_enoughProjectives : EnoughProjectives LightCondAb := by
   sorry
+
+/-- Solid abelian groups have enough projective objects, obtained by solidifying projective
+presentations in light condensed abelian groups. -/
+instance solid_enoughProjectives : EnoughProjectives Solid where
+  presentation X := by
+    let Y : ProjectivePresentation (solidification.obj (isSolid.ι.obj X)) :=
+      solidificationAdjunction.mapProjectivePresentation (isSolid.ι.obj X)
+        (Classical.choice (EnoughProjectives.presentation (isSolid.ι.obj X)))
+    haveI : IsIso (solidificationAdjunction.counit.app X) := inferInstance
+    have hε : Epi (solidificationAdjunction.counit.app X) :=
+      (inferInstance : IsSplitEpi (solidificationAdjunction.counit.app X)).exists_splitEpi.some.epi
+    exact ⟨{
+      p := Y.p
+      projective := Y.projective
+      f := Y.f ≫ solidificationAdjunction.counit.app X
+      epi := by
+        exact @CategoryTheory.epi_comp Solid _ _ _ _ Y.f Y.epi
+          (solidificationAdjunction.counit.app X) hε }⟩
+
+/-- Solid abelian groups have enough K-projective complex resolutions, once they have enough
+projective objects. -/
+lemma solid_hasEnoughKProjectives : HasEnoughKProjectives Solid :=
+  hasEnoughKProjectives_of_enoughProjectives Solid
 
 /-- Obligation: K-projective complexes of solid abelian groups are K-flat for the solid tensor
 product. -/

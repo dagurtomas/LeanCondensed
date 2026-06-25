@@ -83,6 +83,13 @@ def HasKProjectiveResolution {C : Type u₁} [Category.{v₁} C] [Abelian C]
 abbrev HasEnoughKProjectives (C : Type u₁) [Category.{v₁} C] [Abelian C] : Prop :=
   ∀ K : Complex C, HasKProjectiveResolution K
 
+/-- Obligation: an abelian category with enough projective objects has enough K-projective
+resolutions of complexes. -/
+lemma hasEnoughKProjectives_of_enoughProjectives
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [EnoughProjectives C] :
+    HasEnoughKProjectives C := by
+  sorry
+
 /-- Obligation: enough K-projective resolutions imply that K-projective complexes compute the
 derived category. -/
 lemma kProjectiveLocalizer_isLocalizedEquivalence_of_hasEnoughKProjectives
@@ -178,6 +185,13 @@ def HasKInjectiveResolution {C : Type u₁} [Category.{v₁} C] [Abelian C]
 /-- The concrete enough-K-injectives hypothesis: every complex has a K-injective resolution. -/
 abbrev HasEnoughKInjectives (C : Type u₁) [Category.{v₁} C] [Abelian C] : Prop :=
   ∀ K : Complex C, HasKInjectiveResolution K
+
+/-- Obligation: an abelian category with enough injective objects has enough K-injective
+resolutions of complexes. -/
+lemma hasEnoughKInjectives_of_enoughInjectives
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [EnoughInjectives C] :
+    HasEnoughKInjectives C := by
+  sorry
 
 /-- Obligation: enough K-injective resolutions imply that K-injective complexes compute the
 derived category. -/
