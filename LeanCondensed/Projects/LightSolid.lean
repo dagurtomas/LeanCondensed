@@ -6,6 +6,7 @@ Authors: Dagur Asgeirsson
 import LeanCondensed.Mathlib.CategoryTheory.Limits.Constructions.Filtered
 import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.AdjointFunctorTheorem
+import LeanCondensed.Projects.LightSolidInt
 import LeanCondensed.Projects.LightSolidFilteredScaffold
 import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Light.Sequence
