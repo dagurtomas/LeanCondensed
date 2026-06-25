@@ -1,6 +1,7 @@
 import Mathlib.Data.Finsupp.Basic
 import Mathlib.Algebra.BigOperators.Finsupp.Basic
 import Mathlib.Algebra.Module.LinearMap.Defs
+import LeanCondensed.Mathlib.Condensed.Light.Monoidal
 import LeanCondensed.Projects.Sequence
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.InternallyProjective
@@ -20,9 +21,14 @@ open scoped BigOperators
 
 noncomputable section
 
-open CategoryTheory LightCondensed LightProfinite OnePoint MonoidalCategory MonoidalClosed Filter Topology
+open CategoryTheory LightCondensed LightProfinite OnePoint MonoidalCategory MonoidalClosed Limits
+  Filter Topology
 
 namespace LightCondensed.Solid.IntProof
+
+/-- The discrete light condensed abelian group `ℤ`. -/
+abbrev Zdisc : LightCondAb :=
+  (discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)
 
 /-- Finitely supported integer sequences. -/
 abbrev SeqZ := ℕ →₀ ℤ
@@ -243,12 +249,62 @@ noncomputable def freeHomDiscreteEquiv :
 
 end FreeDiscrete
 
-section VanishingAtInfinity
-
 /-- The product test object `(ℕ∪{∞}) × S`, written in the cartesian monoidal structure on
 `LightProfinite`. -/
 abbrev NinfTensor (S : LightProfinite) : LightProfinite :=
   (ℕ∪{∞} : LightProfinite) ⊗ S
+
+section CokernelAndFreeTensor
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Local copy of the cokernel/tensor isomorphism, avoiding an import cycle with `LightSolid`. -/
+noncomputable def tensorCokerIsoInt {A B C : LightCondAb} (f : A ⟶ B) :
+    cokernel f ⊗ C ≅ cokernel (f ▷ C) := by
+  letI : PreservesColimits (tensorRight C) :=
+    preservesColimits_of_natIso (BraidedCategory.tensorLeftIsoTensorRight C)
+  exact preservesColimitIso (tensorRight C) _ ≪≫
+    HasColimit.isoOfNatIso (parallelPair.ext (Iso.refl _) (Iso.refl _) rfl (by simp))
+
+/-- Maps out of a cokernel are maps out of the numerator that kill the denominator. -/
+noncomputable def cokernelHomEquiv {C : Type*} [Category C] [HasZeroMorphisms C]
+    {A B X : C} (f : A ⟶ B) [HasCokernel f] :
+    (cokernel f ⟶ X) ≃ {g : B ⟶ X // f ≫ g = 0} where
+  toFun k := ⟨cokernel.π f ≫ k, by simp⟩
+  invFun g := cokernel.desc f g.1 g.2
+  left_inv k := by
+    apply Cofork.IsColimit.hom_ext (cokernelIsCokernel f)
+    change cokernel.π f ≫ cokernel.desc f (cokernel.π f ≫ k) _ = cokernel.π f ≫ k
+    rw [cokernel.π_desc]
+  right_inv g := by
+    ext
+    simp
+
+/-- Tensor product of two free light condensed abelian groups as the free object on the product. -/
+noncomputable def freeTensorIsoInt (S T : LightProfinite) :
+    (free ℤ).obj S.toCondensed ⊗ (free ℤ).obj T.toCondensed ≅
+      (free ℤ).obj (S ⊗ T).toCondensed :=
+  Functor.Monoidal.μIso (free ℤ) S.toCondensed T.toCondensed ≪≫
+    (free ℤ).mapIso (Functor.Monoidal.μIso lightProfiniteToLightCondSet S T)
+
+/-- Maps out of the free numerator `(ℕ∪{∞}) × S` are locally constant integer-valued functions. -/
+noncomputable def numeratorHomEquiv (S : LightProfinite) :
+    ((((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃
+      LocallyConstant (NinfTensor S) ℤ :=
+  (Iso.homCongr (freeTensorIsoInt (ℕ∪{∞}) S) (Iso.refl Zdisc)).trans
+    (freeHomDiscreteEquiv ℤ (NinfTensor S) (ModuleCat.of ℤ ℤ))
+
+/-- Maps out of `P ℤ ⊗ ℤ[S]` as numerator maps satisfying the cokernel relation. -/
+noncomputable def pTensorHomSubtypeEquiv (S : LightProfinite) :
+    ((P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃
+      {g : (((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc) //
+        (P_map ℤ ▷ (free ℤ).obj S.toCondensed) ≫ g = 0} := by
+  let C := (free ℤ).obj S.toCondensed
+  let e : P ℤ ⊗ C ≅ cokernel (P_map ℤ ▷ C) := tensorCokerIsoInt (P_map ℤ)
+  exact (Iso.homCongr e (Iso.refl Zdisc)).trans (cokernelHomEquiv (P_map ℤ ▷ C))
+
+end CokernelAndFreeTensor
+
+section VanishingAtInfinity
 
 /-- Locally constant integer-valued functions on `(ℕ∪{∞}) × S` vanishing along `{∞} × S`. -/
 abbrev VanishAtInfinity (S : LightProfinite) :=
