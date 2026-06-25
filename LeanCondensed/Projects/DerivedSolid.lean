@@ -10,6 +10,7 @@ import Mathlib.Algebra.Homology.Monoidal
 import Mathlib.CategoryTheory.Monoidal.Preadditive
 import Mathlib.CategoryTheory.Functor.Derived.Adjunction
 import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
+import Mathlib.CategoryTheory.Functor.Derived.PointwiseRightDerived
 import Mathlib.CategoryTheory.Functor.Derived.RightDerived
 
 /-!
@@ -139,12 +140,12 @@ noncomputable abbrev derivedInclusionComparison :
     inclusionComplexes ⋙ DerivedCategory.Q ⟶ DerivedCategory.Q ⋙ derivedInclusion :=
   derivedInclusionFactors.inv
 
-/-- Obligation: the exact derived inclusion is the right-derived functor of the degreewise
-inclusion.  This should follow formally from the exact-functor derived-category API. -/
+/-- The exact derived inclusion is the right-derived functor of the degreewise inclusion. -/
 instance derivedInclusion_isRightDerivedFunctor :
     derivedInclusion.IsRightDerivedFunctor derivedInclusionComparison
-      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) := by
-  sorry
+      (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) :=
+  Functor.isRightDerivedFunctor_of_inverts
+    (HomologicalComplex.quasiIso Solid (ComplexShape.up ℤ)) derivedInclusion derivedInclusionFactors
 
 /-- The tensor product bifunctor on cochain complexes of solid abelian groups. -/
 noncomputable abbrev solidTensorComplex :
