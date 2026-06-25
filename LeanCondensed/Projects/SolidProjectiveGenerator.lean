@@ -148,6 +148,79 @@ end ShiftRetractData
 
 end CategoryTheory
 
+namespace LightProfinite
+
+/-- A surjection of light profinite spaces onto a finite target admits a section. -/
+lemma exists_section_of_epi_to_finite {X Y : LightProfinite} [Finite Y]
+    (f : X ⟶ Y) [Epi f] : ∃ s : Y ⟶ X, s ≫ f = 𝟙 Y := by
+  have hf : Function.Surjective f := (LightProfinite.epi_iff_surjective f).mp inferInstance
+  let sFun : Y → X := fun y => (hf y).choose
+  have hsFun : ∀ y, f (sFun y) = y := fun y => (hf y).choose_spec
+  letI : DiscreteTopology Y := Finite.instDiscreteTopology
+  let s : Y ⟶ X := ConcreteCategory.ofHom ⟨sFun, continuous_of_discreteTopology⟩
+  refine ⟨s, ?_⟩
+  ext y
+  exact hsFun y
+
+/-- A chosen section of a surjection of light profinite spaces onto a finite target. -/
+noncomputable def sectionOfEpiToFinite {X Y : LightProfinite} [Finite Y]
+    (f : X ⟶ Y) [Epi f] : Y ⟶ X :=
+  (exists_section_of_epi_to_finite f).choose
+
+@[simp]
+lemma sectionOfEpiToFinite_comp {X Y : LightProfinite} [Finite Y]
+    (f : X ⟶ Y) [Epi f] :
+    sectionOfEpiToFinite f ≫ f = 𝟙 Y :=
+  (exists_section_of_epi_to_finite f).choose_spec
+
+/-- The finite stages in the standard inverse-limit presentation are finite. -/
+instance finite_component (T : LightProfinite) (n : ℕ) : Finite (T.component n) :=
+  inferInstanceAs (Finite (FintypeCat.toLightProfinite.obj (T.fintypeDiagram.obj ⟨n⟩)))
+
+/-- A chosen section of the projection from a light profinite set to a finite stage. -/
+noncomputable def projSection (T : LightProfinite) (n : ℕ) : T.component n ⟶ T := by
+  haveI : Epi (T.proj n) :=
+    (LightProfinite.epi_iff_surjective _).mpr (T.proj_surjective n)
+  exact sectionOfEpiToFinite (T.proj n)
+
+@[simp]
+lemma projSection_proj (T : LightProfinite) (n : ℕ) :
+    projSection T n ≫ T.proj n = 𝟙 (T.component n) := by
+  dsimp [projSection]
+  haveI : Epi (T.proj n) :=
+    (LightProfinite.epi_iff_surjective _).mpr (T.proj_surjective n)
+  exact sectionOfEpiToFinite_comp (T.proj n)
+
+/-- A section of the `n`th projection has the expected projection to every earlier finite stage. -/
+lemma projSection_proj_le (T : LightProfinite) {k n : ℕ} (h : k ≤ n) :
+    projSection T n ≫ T.proj k = T.transitionMapLE h := by
+  rw [← T.proj_comp_transitionMapLE h]
+  rw [← Category.assoc, projSection_proj]
+  simp
+
+/-- The finite-rank endomorphism of `T` obtained by projecting to the `n`th finite quotient and
+returning along the chosen section. -/
+noncomputable def finiteApproxRetraction (T : LightProfinite) (n : ℕ) : T ⟶ T :=
+  T.proj n ≫ projSection T n
+
+@[simp]
+lemma finiteApproxRetraction_proj (T : LightProfinite) (n : ℕ) :
+    finiteApproxRetraction T n ≫ T.proj n = T.proj n := by
+  simp [finiteApproxRetraction, Category.assoc]
+
+/-- The finite-rank retraction agrees with the identity on all finite stages up to `n`. -/
+lemma finiteApproxRetraction_proj_le (T : LightProfinite) {k n : ℕ} (h : k ≤ n) :
+    finiteApproxRetraction T n ≫ T.proj k = T.proj k := by
+  calc
+    finiteApproxRetraction T n ≫ T.proj k
+        = T.proj n ≫ (projSection T n ≫ T.proj k) := by
+          rw [finiteApproxRetraction, Category.assoc]
+    _ = T.proj n ≫ T.transitionMapLE h := by
+          rw [projSection_proj_le]
+    _ = T.proj k := T.proj_comp_transitionMapLE h
+
+end LightProfinite
+
 namespace LightCondensed
 namespace Solid
 
@@ -334,6 +407,18 @@ noncomputable def freeRetractIntoInfinite (S : LightProfinite) :
   simpa [infiniteEnvelope] using
     CategoryTheory.functor_obj_retract_coprod
       (lightProfiniteToLightCondSet ⋙ free ℤ) S (ℕ∪{∞} : LightProfinite)
+
+/-- The free-module endomorphism induced by the finite-rank retraction of an infinite test object. -/
+noncomputable def freeFiniteApproxRetraction (T : LightProfinite) (n : ℕ) :
+    (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed :=
+  (lightProfiniteToLightCondSet ⋙ free ℤ).map (LightProfinite.finiteApproxRetraction T n)
+
+/-- The tail endomorphisms used in Lemma 3.3.2: the zeroth term is the identity, and the successor
+terms are `id -` the finite-rank approximations. -/
+noncomputable def freeTailEndomorphism (T : LightProfinite) : ℕ →
+    ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed)
+  | 0 => 𝟙 _
+  | n + 1 => 𝟙 _ - freeFiniteApproxRetraction T n
 
 /-- Obligation: for an infinite light profinite set, construct the map from the sequence object
 `P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
