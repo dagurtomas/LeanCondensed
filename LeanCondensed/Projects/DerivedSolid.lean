@@ -35,37 +35,33 @@ all named below.
 
 noncomputable section
 
-open CategoryTheory Limits LightCondensed MonoidalCategory MonoidalClosed
+open CategoryTheory Functor Limits LightCondensed MonoidalCategory MonoidalClosed
 
 namespace LightCondensed
 namespace Solid
 
 attribute [local instance] HasDerivedCategory.standard
 
-instance (X : Solid) : PreservesFiniteColimits (tensorRight X) :=
-  preservesFiniteColimits_of_natIso (BraidedCategory.tensorLeftIsoTensorRight X)
+instance (X : Solid) : PreservesColimits (tensorRight X) :=
+  preservesColimits_of_natIso (BraidedCategory.tensorLeftIsoTensorRight X)
 
-instance (X : Solid) : (tensorLeft X).Additive := by
+instance (X : Solid) : (tensorLeft X).Additive :=
   haveI := preservesBinaryBiproducts_of_preservesBinaryCoproducts (tensorLeft X)
-  exact Functor.additive_of_preservesBinaryBiproducts _
+  additive_of_preservesBinaryBiproducts _
 
-instance (X : Solid) : (tensorRight X).Additive := by
+instance (X : Solid) : (tensorRight X).Additive :=
   haveI := preservesBinaryBiproducts_of_preservesBinaryCoproducts (tensorRight X)
-  exact Functor.additive_of_preservesBinaryBiproducts _
+  additive_of_preservesBinaryBiproducts _
 
 instance : MonoidalPreadditive Solid where
-  whiskerLeft_zero {X Y Z} := by
-    change (tensorLeft X).map (0 : Y ⟶ Z) = 0
-    exact Functor.map_zero (tensorLeft X) Y Z
-  zero_whiskerRight {X Y Z} := by
-    change (tensorRight X).map (0 : Y ⟶ Z) = 0
-    exact Functor.map_zero (tensorRight X) Y Z
+  whiskerLeft_zero {X Y Z} := Functor.map_zero (tensorLeft X) Y Z
+  zero_whiskerRight {X Y Z} := Functor.map_zero (tensorRight X) Y Z
   whiskerLeft_add {X Y Z} f g := by
     change (tensorLeft X).map (f + g) = (tensorLeft X).map f + (tensorLeft X).map g
-    simpa using (Functor.map_add (F := tensorLeft X) (f := f) (g := g))
+    simpa using (map_add (F := tensorLeft X) (f := f) (g := g))
   add_whiskerRight {X Y Z} f g := by
     change (tensorRight X).map (f + g) = (tensorRight X).map f + (tensorRight X).map g
-    simpa using (Functor.map_add (F := tensorRight X) (f := f) (g := g))
+    simpa using (map_add (F := tensorRight X) (f := f) (g := g))
 
 /-- The derived category of light condensed abelian groups. -/
 abbrev DLightCondAb := DerivedCategory LightCondAb
@@ -101,19 +97,6 @@ noncomputable abbrev derivedSolidificationCounit :
     DerivedCategory.Q ⋙ derivedSolidification ⟶ solidificationToDerived :=
   solidificationToDerived.totalLeftDerivedCounit DerivedCategory.Q
     (HomologicalComplex.quasiIso LightCondAb (ComplexShape.up ℤ))
-
-/-- If solidification is later shown to preserve finite limits, the left-derived construction above
-agrees with the derived functor induced by the exact functor `solidification`. -/
-noncomputable abbrev exactDerivedSolidification [PreservesFiniteLimits solidification] :
-    DLightCondAb ⥤ DSolid :=
-  solidification.mapDerivedCategory
-
-/-- The exact-derived solidification functor is induced by applying solidification degreewise to
-complexes. -/
-noncomputable abbrev exactDerivedSolidificationFactors [PreservesFiniteLimits solidification] :
-    DerivedCategory.Q ⋙ exactDerivedSolidification ≅
-      solidification.mapHomologicalComplex (ComplexShape.up ℤ) ⋙ DerivedCategory.Q :=
-  solidification.mapDerivedCategoryFactors
 
 /-- The inclusion of solid abelian groups, applied degreewise to cochain complexes. -/
 noncomputable abbrev inclusionComplexes :
