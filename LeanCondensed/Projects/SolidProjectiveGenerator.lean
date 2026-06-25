@@ -15,12 +15,11 @@ This file isolates the categorical shell for the proof that the countable produc
 as explicit named obligations:
 
 * `solidPIsoProduct`, identifying `solidification.obj (P ℤ)` with the countable product of `ℤ`;
-* `solidifiedFreeRetractSolidP`, saying solidified free representables retract from
-  `solidification.obj (P ℤ)`.
+* `solidifiedFreeRetractSolidPInfinite`, the infinite-test-object shift-retract calculation.
 
 The remaining declarations are formal category-theory consequences of these named inputs, together
-with the ordinary projectivity of `P ℤ` and the separation statement for solidified free
-representables proved below.
+with the ordinary projectivity of `P ℤ`, the separation statement for solidified free
+representables, and the finite-coproduct reduction proved below.
 -/
 
 noncomputable section
@@ -57,6 +56,21 @@ lemma isSeparator_of_retracts_of_hom_ext
   have hk := hG (ri.r ≫ k)
   have h := congrArg (fun t => ri.i ≫ t) hk
   simpa [Category.assoc, ri.retract] using h
+
+/-- If a functor preserves a binary coproduct and the target has zero morphisms, the image of the
+first summand is a retract of the image of the coproduct. -/
+noncomputable def functor_obj_retract_coprod
+    {C D : Type*} [Category C] [Category D] [HasZeroMorphisms D]
+    (F : C ⥤ D) (X Y : C)
+    [HasBinaryCoproduct X Y] [HasBinaryCoproduct (F.obj X) (F.obj Y)]
+    [PreservesColimit (pair X Y) F] :
+    Retract (F.obj X) (F.obj (X ⨿ Y)) := by
+  letI : IsIso (coprodComparison F X Y) := inferInstance
+  refine {
+    i := F.map (coprod.inl : X ⟶ X ⨿ Y)
+    r := inv (coprodComparison F X Y) ≫ coprod.desc (𝟙 (F.obj X)) 0
+    retract := ?_ }
+  rw [map_inl_inv_coprodComparison_assoc, coprod.inl_desc]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- If the tensor unit is projective, internal projectivity implies ordinary projectivity.
@@ -297,13 +311,98 @@ lemma solidifiedFree_hom_ext
   rw [hx] at hpoint
   exact hpoint
 
-/-- Obligation: every solidified free representable is a retract of `solidification.obj (P ℤ)`. -/
+/-- Enlarge a light profinite set by adding the convergent-sequence object.  This is infinite and
+contains the original object as a coproduct summand. -/
+noncomputable abbrev infiniteEnvelope (S : LightProfinite) : LightProfinite :=
+  S ⨿ (ℕ∪{∞} : LightProfinite)
+
+instance infiniteEnvelope_infinite (S : LightProfinite) : Infinite (infiniteEnvelope S) := by
+  let f : (ℕ∪{∞} : LightProfinite) → ↑(infiniteEnvelope S).toTop := fun x =>
+    (ConcreteCategory.hom (coprod.inr : (ℕ∪{∞} : LightProfinite) ⟶ infiniteEnvelope S)) x
+  have hf : Function.Injective f := by
+    dsimp [f, infiniteEnvelope]
+    exact (CompHausLike.mono_iff_injective
+      (coprod.inr : (ℕ∪{∞} : LightProfinite) ⟶ S ⨿ ℕ∪{∞})).mp inferInstance
+  exact Infinite.of_injective (α := ↑(infiniteEnvelope S).toTop)
+    (β := (ℕ∪{∞} : LightProfinite)) f hf
+
+/-- The free object on `S` is a retract of the free object on its infinite envelope. -/
+noncomputable def freeRetractIntoInfinite (S : LightProfinite) :
+    Retract
+      ((free ℤ).obj S.toCondensed)
+      ((free ℤ).obj (infiniteEnvelope S).toCondensed) := by
+  simpa [infiniteEnvelope] using
+    CategoryTheory.functor_obj_retract_coprod
+      (lightProfiniteToLightCondSet ⋙ free ℤ) S (ℕ∪{∞} : LightProfinite)
+
+/-- Obligation: for an infinite light profinite set, construct the map from the sequence object
+`P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
+noncomputable def infinitePToFree (T : LightProfinite) [Infinite T] :
+    P ℤ ⟶ (free ℤ).obj T.toCondensed := by
+  sorry
+
+/-- Obligation: the tail endomorphisms in Lemma 3.3.2, packaged as a map out of
+`P ℤ ⊗ ℤ[T]`. -/
+noncomputable def infiniteTailMap (T : LightProfinite) [Infinite T] :
+    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed := by
+  sorry
+
+/-- Obligation: the finite-difference factorization in Lemma 3.3.2. -/
+noncomputable def infiniteDifferenceMap (T : LightProfinite) [Infinite T] :
+    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ := by
+  sorry
+
+/-- Obligation: the section of the tail map in Lemma 3.3.2. -/
+noncomputable def infiniteTailSection (T : LightProfinite) [Infinite T] :
+    (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed := by
+  sorry
+
+/-- Obligation: the shift-retract square for Lemma 3.3.2. -/
+lemma infiniteShiftRetract_comm (T : LightProfinite) [Infinite T] :
+    ((oneMinusShift ℤ) ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailMap T =
+      infiniteDifferenceMap T ≫ infinitePToFree T := by
+  sorry
+
+/-- Obligation: the tail-map section equation for Lemma 3.3.2. -/
+lemma infiniteTailSection_fac (T : LightProfinite) [Infinite T] :
+    infiniteTailSection T ≫ infiniteTailMap T = 𝟙 ((free ℤ).obj T.toCondensed) := by
+  sorry
+
+/-- The concrete shift-retract data for Lemma 3.3.2, assembled from the named map and equation
+obligations above. -/
+noncomputable def solidifiedFreeShiftRetractData
+    (T : LightProfinite) [Infinite T] :
+    CategoryTheory.ShiftRetractData solidification where
+  xObj := P ℤ ⊗ (free ℤ).obj T.toCondensed
+  aObj := P ℤ
+  bObj := (free ℤ).obj T.toCondensed
+  s := (oneMinusShift ℤ) ▷ (free ℤ).obj T.toCondensed
+  toB := infiniteTailMap T
+  toA := infiniteDifferenceMap T
+  g := infinitePToFree T
+  comm := infiniteShiftRetract_comm T
+  sect := infiniteTailSection T
+  sect_fac := infiniteTailSection_fac T
+  inverted := solidification_map_oneMinusShift_tensor_isIso ((free ℤ).obj T.toCondensed)
+
+/-- For an infinite light profinite set, its solidified free representable is a retract of
+`solidification.obj (P ℤ)`.  This is the heart-level retract form of Lemma 3.3.2. -/
+noncomputable def solidifiedFreeRetractSolidPInfinite
+    (T : LightProfinite) [Infinite T] :
+    Retract
+      (solidification.obj ((free ℤ).obj T.toCondensed))
+      solidP :=
+  (solidifiedFreeShiftRetractData T).retract
+
+/-- Every solidified free representable is a retract of `solidification.obj (P ℤ)`, by first adding
+an infinite coproduct summand. -/
 noncomputable def solidifiedFreeRetractSolidP
     (S : LightProfinite) :
     Retract
       (solidification.obj ((free ℤ).obj S.toCondensed))
-      solidP := by
-  sorry
+      solidP :=
+  (freeRetractIntoInfinite S).map solidification |>.trans
+    (solidifiedFreeRetractSolidPInfinite (infiniteEnvelope S))
 
 /-- The solidification of `P ℤ` is a separator of solid abelian groups. -/
 lemma solidP_isSeparator : IsSeparator solidP := by
