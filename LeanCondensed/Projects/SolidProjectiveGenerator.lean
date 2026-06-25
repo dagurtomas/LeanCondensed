@@ -420,27 +420,88 @@ noncomputable def freeTailEndomorphism (T : LightProfinite) : ℕ →
   | 0 => 𝟙 _
   | n + 1 => 𝟙 _ - freeFiniteApproxRetraction T n
 
-/-- Obligation: for an infinite light profinite set, construct the map from the sequence object
-`P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
-noncomputable def infinitePToFree (T : LightProfinite) [Infinite T] :
-    P ℤ ⟶ (free ℤ).obj T.toCondensed := by
+/-- The map from the point to `ℕ∪∞` selecting the natural number `n`. -/
+noncomputable def natPoint (n : ℕ) : LightProfinite.of PUnit.{1} ⟶ ℕ∪{∞} :=
+  ConcreteCategory.ofHom ⟨fun _ => (n : ℕ∪{∞}), continuous_const⟩
+
+/-- The class in `P ℤ` represented by the `n`th finite point of `ℕ∪∞`. -/
+noncomputable def pBasis (n : ℕ) : 𝟙_ LightCondAb ⟶ P ℤ :=
+  freePointIsoUnit.inv ≫
+    (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint n)) ≫ P_proj ℤ
+
+/-- The zeroth-coordinate section used for the tail map in Lemma 3.3.2. -/
+noncomputable def tailSection (T : LightProfinite) :
+    (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed :=
+  (λ_ ((free ℤ).obj T.toCondensed)).inv ≫ pBasis 0 ▷ (free ℤ).obj T.toCondensed
+
+/-- Descend a map out of `ℤ[ℕ∪∞] ⊗ M` which kills the basepoint summand to a map out of
+`P ℤ ⊗ M`. -/
+noncomputable def pTensorDesc (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N)
+    (hf : (P_map ℤ ▷ M) ≫ f = 0) :
+    P ℤ ⊗ M ⟶ N :=
+  (tensorCokerIso ℤ (P_map ℤ)).hom ≫ cokernel.desc (P_map ℤ ▷ M) f hf
+
+/-- Obligation: the numerator of the tail map.  It should be the map
+`ℤ[ℕ∪∞] ⊗ ℤ[T] ⟶ ℤ[T]` whose `n`th slice is `freeTailEndomorphism T n` and whose
+`∞` slice is zero. -/
+noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶
+      (free ℤ).obj T.toCondensed := by
   sorry
 
-/-- Obligation: the tail endomorphisms in Lemma 3.3.2, packaged as a map out of
+/-- Obligation: the tail numerator vanishes on the basepoint summand, so it descends through
 `P ℤ ⊗ ℤ[T]`. -/
+lemma infiniteTailNumerator_kills (T : LightProfinite) [Infinite T] :
+    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T = 0 := by
+  sorry
+
+/-- Obligation: the numerator of the map from the sequence object to the free object on an
+infinite test object.  It should send the finite points of `ℕ∪∞` to an enumeration of the
+successive finite-stage differences and send `∞` to zero. -/
+noncomputable def infinitePToFreeNumerator (T : LightProfinite) [Infinite T] :
+    (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ (free ℤ).obj T.toCondensed := by
+  sorry
+
+/-- Obligation: the numerator of `infinitePToFree` kills the basepoint summand. -/
+lemma infinitePToFreeNumerator_kills (T : LightProfinite) [Infinite T] :
+    P_map ℤ ≫ infinitePToFreeNumerator T = 0 := by
+  sorry
+
+/-- The map from the sequence object `P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
+noncomputable def infinitePToFree (T : LightProfinite) [Infinite T] :
+    P ℤ ⟶ (free ℤ).obj T.toCondensed :=
+  P_homMk ℤ ((free ℤ).obj T.toCondensed) (infinitePToFreeNumerator T)
+    (infinitePToFreeNumerator_kills T)
+
+/-- The tail endomorphisms in Lemma 3.3.2, packaged as a map out of `P ℤ ⊗ ℤ[T]`. -/
 noncomputable def infiniteTailMap (T : LightProfinite) [Infinite T] :
-    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed := by
+    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed :=
+  pTensorDesc ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
+    (infiniteTailNumerator T) (infiniteTailNumerator_kills T)
+
+/-- Obligation: the numerator of the finite-difference factorization in Lemma 3.3.2.  Its
+`n`th slice should be the map to `P ℤ` induced by the difference between consecutive tail
+endomorphisms. -/
+noncomputable def infiniteDifferenceNumerator (T : LightProfinite) [Infinite T] :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ := by
   sorry
 
-/-- Obligation: the finite-difference factorization in Lemma 3.3.2. -/
+/-- Obligation: the finite-difference numerator vanishes on the basepoint summand. -/
+lemma infiniteDifferenceNumerator_kills (T : LightProfinite) [Infinite T] :
+    (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteDifferenceNumerator T = 0 := by
+  sorry
+
+/-- The finite-difference factorization in Lemma 3.3.2. -/
 noncomputable def infiniteDifferenceMap (T : LightProfinite) [Infinite T] :
-    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ := by
-  sorry
+    P ℤ ⊗ (free ℤ).obj T.toCondensed ⟶ P ℤ :=
+  pTensorDesc ((free ℤ).obj T.toCondensed) (P ℤ)
+    (infiniteDifferenceNumerator T) (infiniteDifferenceNumerator_kills T)
 
-/-- Obligation: the section of the tail map in Lemma 3.3.2. -/
+/-- The section of the tail map in Lemma 3.3.2. -/
 noncomputable def infiniteTailSection (T : LightProfinite) [Infinite T] :
-    (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed := by
-  sorry
+    (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed :=
+  tailSection T
 
 /-- Obligation: the shift-retract square for Lemma 3.3.2. -/
 lemma infiniteShiftRetract_comm (T : LightProfinite) [Infinite T] :
