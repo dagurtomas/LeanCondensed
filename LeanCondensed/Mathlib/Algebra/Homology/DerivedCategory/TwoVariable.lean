@@ -319,6 +319,36 @@ abbrev InvertsKFlatQuasiIso₂ (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C�
   ((kFlatQuasiIso C₁).prod (kFlatQuasiIso C₂)).IsInvertedBy
     (restrict₂KFlat T ⋙ DerivedCategory.Q)
 
+/-- The tensor product bifunctor sends quasi-isomorphisms between K-flat complexes in both
+variables to quasi-isomorphisms. -/
+lemma curriedTensor_invertsKFlatQuasiIso₂
+    (C : Type u₁) [Category.{v₁} C] [Abelian C] [MonoidalCategory (Complex C)] :
+    InvertsKFlatQuasiIso₂ (C₁ := C) (C₂ := C) (C₃ := C) (curriedTensor (Complex C)) := by
+  intro X Y f hf
+  let f' := ((kFlatInclusion C).prod (kFlatInclusion C)).map f
+  have hW : W C ((Functor.uncurry.obj (curriedTensor (Complex C))).map f') := by
+    rw [Functor.uncurry_obj_map]
+    dsimp [f'] at hf ⊢
+    simp only [Functor.prod_map]
+    haveI : IsKFlat X.2.1 := X.2.2
+    haveI : IsKFlat Y.1.1 := Y.1.2
+    let φ := ((curriedTensor (Complex C)).map ((kFlatInclusion C).map f.1)).app X.2.1
+    let ψ := ((curriedTensor (Complex C)).obj Y.1.1).map ((kFlatInclusion C).map f.2)
+    have h₁ : QuasiIso φ := by
+      dsimp [φ]
+      change W C (((curriedTensor (Complex C)).map ((kFlatInclusion C).map f.1)).app X.2.1)
+      exact IsKFlat.tensorRight_quasiIso ((kFlatInclusion C).map f.1) hf.1
+    have h₂ : QuasiIso ψ := by
+      dsimp [ψ]
+      change W C (((curriedTensor (Complex C)).obj Y.1.1).map ((kFlatInclusion C).map f.2))
+      exact IsKFlat.tensorLeft_quasiIso ((kFlatInclusion C).map f.2) hf.2
+    change QuasiIso (φ ≫ ψ)
+    constructor
+    intro i
+    exact @quasiIsoAt_comp ℤ C _ _ (ComplexShape.up ℤ) _ _ _ φ ψ i _ _ _
+      (h₁.quasiIsoAt i) (h₂.quasiIsoAt i)
+  exact Localization.inverts DerivedCategory.Q (W C) _ hW
+
 /-- The functor on the localized categories of K-flat complexes induced by a bifunctor. -/
 noncomputable def localized₂ByKFlats (T : Complex C₁ ⥤ Complex C₂ ⥤ Complex C₃)
     (hT : InvertsKFlatQuasiIso₂ T) :

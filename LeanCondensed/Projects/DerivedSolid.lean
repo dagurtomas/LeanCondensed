@@ -211,14 +211,26 @@ noncomputable abbrev derivedTensorUnit : DSolid :=
 
 open CategoryTheory.DerivedCategory.TwoVariable
 
-/-- Obligation: K-flat solid complexes compute the derived category of solid abelian groups. -/
-lemma solid_hasEnoughKFlats : HasEnoughKFlats Solid := by
+/-- Obligation: solid abelian groups have enough K-projective complex resolutions. -/
+lemma solid_hasEnoughKProjectives : HasEnoughKProjectives Solid := by
   sorry
 
-/-- Obligation: tensoring K-flat solid complexes sends K-flat quasi-isomorphisms in both variables
-to quasi-isomorphisms. -/
-lemma solidTensorComplex_inverts_kflat : InvertsKFlatQuasiIso₂ solidTensorComplex := by
+/-- Obligation: K-projective complexes of solid abelian groups are K-flat for the solid tensor
+product. -/
+lemma solid_kProjective_isKFlat (K : CochainComplex Solid ℤ) (hK : CochainComplex.IsKProjective K) :
+    IsKFlat K := by
   sorry
+
+/-- K-flat solid complexes compute the derived category of solid abelian groups, once enough
+K-projectives are available and K-projective complexes are known to be K-flat. -/
+lemma solid_hasEnoughKFlats : HasEnoughKFlats Solid :=
+  hasEnoughKFlats_of_hasEnoughKProjectives Solid solid_hasEnoughKProjectives
+    solid_kProjective_isKFlat
+
+/-- Tensoring K-flat solid complexes sends K-flat quasi-isomorphisms in both variables to
+quasi-isomorphisms. -/
+lemma solidTensorComplex_inverts_kflat : InvertsKFlatQuasiIso₂ solidTensorComplex :=
+  curriedTensor_invertsKFlatQuasiIso₂ Solid
 
 /-- The bifunctorial derived tensor product on the derived category of solid abelian groups,
 computed from K-flat replacements. -/
