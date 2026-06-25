@@ -282,6 +282,43 @@ lemma freeHomDiscreteEquiv_map {T T' : LightProfinite} (φ : T' ⟶ T)
     (F := (LightCondensed.forget R).obj ((LightCondMod.LocallyConstant.functor R).obj M))
     (t := (coherentTopology LightProfinite).yonedaEquiv m)).symm
 
+set_option backward.isDefEq.respectTransparency false in
+lemma freeHomDiscreteEquiv_zero_apply (x : T) :
+    freeHomDiscreteEquiv R T M
+      (0 : (LightCondensed.free R).obj T.toCondensed ⟶
+        (LightCondensed.discrete (ModuleCat R)).obj M) x = 0 := by
+  dsimp [freeHomDiscreteEquiv]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  let y := ((ConcreteCategory.hom
+    (((LightCondensed.freeForgetAdjunction R).unit.app T.toCondensed).hom.app (Opposite.op T)))
+      (𝟙 T))
+  have hy : (ConcreteCategory.hom (((LightCondensed.forget R).map
+        (0 : (LightCondensed.free R).obj T.toCondensed ⟶
+          (LightCondensed.discrete (ModuleCat R)).obj M)).hom.app (Opposite.op T))) y =
+      (0 : ((LightCondensed.discrete (ModuleCat R)).obj M).obj.obj (Opposite.op T)) := by
+    change ((0 : (LightCondensed.free R).obj T.toCondensed ⟶
+      (LightCondensed.discrete (ModuleCat R)).obj M).hom.app (Opposite.op T)) y = 0
+    simp
+  let z : LocallyConstant T M :=
+    ((((LightCondensed.forget R).map
+      ((LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M)).hom.app (Opposite.op T))
+        ((((LightCondensed.forget R).map
+          (0 : (LightCondensed.free R).obj T.toCondensed ⟶
+            (LightCondensed.discrete (ModuleCat R)).obj M)).hom.app (Opposite.op T)) y))
+  change z x = 0
+  rw [show z = (((LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M).hom.app
+      (Opposite.op T))
+        ((((LightCondensed.forget R).map
+          (0 : (LightCondensed.free R).obj T.toCondensed ⟶
+            (LightCondensed.discrete (ModuleCat R)).obj M)).hom.app (Opposite.op T)) y) from rfl]
+  rw [hy]
+  let w : ((LightCondMod.LocallyConstant.functor R).obj M).obj.obj (Opposite.op T) :=
+    (((LightCondMod.LocallyConstant.functorIsoDiscrete R).inv.app M).hom.app (Opposite.op T))
+      (0 : ((LightCondensed.discrete (ModuleCat R)).obj M).obj.obj (Opposite.op T))
+  change (show LocallyConstant T M from w) x = 0
+  simp [w]
+
 end FreeDiscrete
 
 /-- The product test object `(ℕ∪{∞}) × S`, written in the cartesian monoidal structure on
@@ -359,6 +396,14 @@ lemma freeProductHomEquiv_precomp_left {A' A S : LightProfinite} (φ : A' ⟶ A)
     rw [← Category.assoc, freeTensorIsoInt_inv_naturality_left, Category.assoc]
   rw [hcomp]
   rw [freeHomDiscreteEquiv_map]
+
+lemma freeProductHomEquiv_zero_apply (A S : LightProfinite) (x : (A ⊗ S : LightProfinite)) :
+    freeProductHomEquiv A S
+      (0 : (free ℤ).obj A.toCondensed ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc) x = 0 := by
+  dsimp [freeProductHomEquiv]
+  simp only [Iso.homCongr_apply, Iso.refl_hom, Category.comp_id]
+  simpa using freeHomDiscreteEquiv_zero_apply ℤ (A ⊗ S : LightProfinite)
+    (ModuleCat.of ℤ ℤ) x
 
 /-- Maps out of the free numerator `(ℕ∪{∞}) × S` are locally constant integer-valued functions. -/
 noncomputable def numeratorHomEquiv (S : LightProfinite) :
@@ -559,5 +604,66 @@ noncomputable def vanishAtInfinityEquiv (S : LightProfinite) :
     rw [vanishToSeq_apply, seqToVanish_apply_nat]
 
 end VanishingAtInfinity
+
+section PTensorHom
+
+/-- The inclusion `{∞} × S → (ℕ∪{∞}) × S`. -/
+noncomputable def iotaTensorMap (S : LightProfinite) :
+    (LightProfinite.of PUnit.{1}) ⊗ S ⟶ NinfTensor S :=
+  ι ⊗ₘ 𝟙 S
+
+@[simp]
+lemma iotaTensorMap_apply (S : LightProfinite) (s : S) :
+    iotaTensorMap S (PUnit.unit, s) = ((∞ : ℕ∪{∞}), s) := rfl
+
+/-- The cokernel relation on numerator maps is exactly vanishing along `{∞} × S`. -/
+noncomputable def numeratorSubtypeVanishEquiv (S : LightProfinite) :
+    {g : (((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc) //
+        (P_map ℤ ▷ (free ℤ).obj S.toCondensed) ≫ g = 0} ≃ VanishAtInfinity S where
+  toFun q := by
+    refine ⟨numeratorHomEquiv S q.1, ?_⟩
+    intro s
+    have hfun := congrArg (freeProductHomEquiv (LightProfinite.of PUnit.{1}) S) q.2
+    dsimp [P_map] at hfun
+    rw [freeProductHomEquiv_precomp_left] at hfun
+    have hpoint := LocallyConstant.congr_fun hfun (PUnit.unit, s)
+    rw [freeProductHomEquiv_zero_apply] at hpoint
+    change ((numeratorHomEquiv S) q.1)
+      ((TopCat.Hom.hom (ι ▷ S).hom) (PUnit.unit, s)) = 0
+    simpa [numeratorHomEquiv] using hpoint
+  invFun h := by
+    refine ⟨(numeratorHomEquiv S).symm h.1, ?_⟩
+    apply (freeProductHomEquiv (LightProfinite.of PUnit.{1}) S).injective
+    ext x
+    rcases x with ⟨u, s⟩
+    cases u
+    dsimp [P_map]
+    rw [freeProductHomEquiv_precomp_left]
+    rw [show (freeProductHomEquiv (ℕ∪{∞}) S) ((numeratorHomEquiv S).symm h.1) = h.1 by
+      simp [numeratorHomEquiv]]
+    change h.1 ((∞ : ℕ∪{∞}), s) =
+      freeProductHomEquiv (LightProfinite.of PUnit.{1}) S
+        (0 : (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⊗
+          (free ℤ).obj S.toCondensed ⟶ Zdisc) (PUnit.unit, s)
+    simp [h.2 s, freeProductHomEquiv_zero_apply]
+  left_inv q := by
+    ext
+    simp
+  right_inv h := by
+    ext x
+    simp [numeratorHomEquiv]
+
+/-- Maps from `P ℤ ⊗ ℤ[S]` to `ℤ` as vanishing-at-infinity locally constant functions. -/
+noncomputable def pTensorHomVanishEquiv (S : LightProfinite) :
+    ((P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃ VanishAtInfinity S :=
+  (pTensorHomSubtypeEquiv S).trans (numeratorSubtypeVanishEquiv S)
+
+/-- Maps from `P ℤ ⊗ ℤ[S]` to `ℤ` as locally constant `S`-families of finitely supported
+integer sequences. -/
+noncomputable def nullSeqPointsEquiv (S : LightProfinite) :
+    ((P ℤ ⊗ (free ℤ).obj S.toCondensed) ⟶ Zdisc) ≃ LocallyConstant S SeqZ :=
+  (pTensorHomVanishEquiv S).trans (vanishAtInfinityEquiv S)
+
+end PTensorHom
 
 end LightCondensed.Solid.IntProof
