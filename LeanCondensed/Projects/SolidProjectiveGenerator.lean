@@ -408,10 +408,24 @@ noncomputable def freeRetractIntoInfinite (S : LightProfinite) :
     CategoryTheory.functor_obj_retract_coprod
       (lightProfiniteToLightCondSet ⋙ free ℤ) S (ℕ∪{∞} : LightProfinite)
 
+/-- The free-module map induced by the `n`th finite projection of a light profinite set. -/
+noncomputable def freeProj (T : LightProfinite) (n : ℕ) :
+    (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj (T.component n).toCondensed :=
+  (lightProfiniteToLightCondSet ⋙ free ℤ).map (T.proj n)
+
 /-- The free-module endomorphism induced by the finite-rank retraction of an infinite test object. -/
 noncomputable def freeFiniteApproxRetraction (T : LightProfinite) (n : ℕ) :
     (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed :=
   (lightProfiniteToLightCondSet ⋙ free ℤ).map (LightProfinite.finiteApproxRetraction T n)
+
+/-- The finite-rank free-module retraction agrees with the identity after projection to any earlier
+finite stage. -/
+lemma freeFiniteApproxRetraction_freeProj_le (T : LightProfinite) {k n : ℕ} (h : k ≤ n) :
+    freeFiniteApproxRetraction T n ≫ freeProj T k = freeProj T k := by
+  dsimp [freeFiniteApproxRetraction, freeProj]
+  rw [← Functor.map_comp]
+  rw [← Functor.map_comp]
+  rw [LightProfinite.finiteApproxRetraction_proj_le T h]
 
 /-- The tail endomorphisms used in Lemma 3.3.2: the zeroth term is the identity, and the successor
 terms are `id -` the finite-rank approximations. -/
@@ -420,27 +434,87 @@ noncomputable def freeTailEndomorphism (T : LightProfinite) : ℕ →
   | 0 => 𝟙 _
   | n + 1 => 𝟙 _ - freeFiniteApproxRetraction T n
 
+/-- Every fixed finite projection kills all sufficiently far tail endomorphisms. -/
+lemma freeTailEndomorphism_succ_freeProj_zero (T : LightProfinite) {k n : ℕ} (h : k ≤ n) :
+    freeTailEndomorphism T (n + 1) ≫ freeProj T k = 0 := by
+  dsimp [freeTailEndomorphism]
+  rw [Preadditive.sub_comp]
+  rw [Category.id_comp]
+  rw [freeFiniteApproxRetraction_freeProj_le T h]
+  abel
+
+/-- Along every fixed finite quotient of `T`, the tail endomorphisms are eventually zero. -/
+lemma freeTailEndomorphism_eventually_freeProj_zero (T : LightProfinite) (k : ℕ) :
+    ∀ᶠ n : ℕ in Filter.atTop, freeTailEndomorphism T n ≫ freeProj T k = 0 := by
+  refine Filter.eventually_atTop.2 ⟨k + 1, ?_⟩
+  intro m hm
+  cases m with
+  | zero => omega
+  | succ n =>
+      apply freeTailEndomorphism_succ_freeProj_zero T
+      omega
+
 /-- The map from the point to `ℕ∪∞` selecting the natural number `n`. -/
 noncomputable def natPoint (n : ℕ) : LightProfinite.of PUnit.{1} ⟶ ℕ∪{∞} :=
   ConcreteCategory.ofHom ⟨fun _ => (n : ℕ∪{∞}), continuous_const⟩
 
+/-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
+noncomputable def freeNatBasis (n : ℕ) :
+    𝟙_ LightCondAb ⟶ (free ℤ).obj (ℕ∪{∞}).toCondensed :=
+  freePointIsoUnit.inv ≫
+    (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint n))
+
 /-- The class in `P ℤ` represented by the `n`th finite point of `ℕ∪∞`. -/
 noncomputable def pBasis (n : ℕ) : 𝟙_ LightCondAb ⟶ P ℤ :=
-  freePointIsoUnit.inv ≫
-    (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint n)) ≫ P_proj ℤ
+  freeNatBasis n ≫ P_proj ℤ
 
 /-- The zeroth-coordinate section used for the tail map in Lemma 3.3.2. -/
 noncomputable def tailSection (T : LightProfinite) :
     (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed :=
   (λ_ ((free ℤ).obj T.toCondensed)).inv ≫ pBasis 0 ▷ (free ℤ).obj T.toCondensed
 
+/-- The `n`th finite slice of a numerator map `ℤ[ℕ∪∞] ⊗ M ⟶ N`. -/
+noncomputable def numeratorSlice (M N : LightCondAb) (n : ℕ)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) : M ⟶ N :=
+  (λ_ M).inv ≫ freeNatBasis n ▷ M ≫ f
+
 /-- Descend a map out of `ℤ[ℕ∪∞] ⊗ M` which kills the basepoint summand to a map out of
 `P ℤ ⊗ M`. -/
 noncomputable def pTensorDesc (M N : LightCondAb)
     (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N)
     (hf : (P_map ℤ ▷ M) ≫ f = 0) :
-    P ℤ ⊗ M ⟶ N :=
-  (tensorCokerIso ℤ (P_map ℤ)).hom ≫ cokernel.desc (P_map ℤ ▷ M) f hf
+    P ℤ ⊗ M ⟶ N := by
+  refine (PreservesCoequalizer.iso (tensorRight M) (P_map ℤ) 0).inv ≫ coequalizer.desc f ?_
+  rw [Functor.map_zero, zero_comp]
+  exact hf
+
+set_option backward.isDefEq.respectTransparency false in
+lemma epi_P_proj_tensor (M : LightCondAb) : Epi (P_proj ℤ ▷ M) := by
+  change Epi ((tensorRight M).map (coequalizer.π (P_map ℤ) 0))
+  infer_instance
+
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma pTensorDesc_comp_proj (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N)
+    (hf : (P_map ℤ ▷ M) ≫ f = 0) :
+    (P_proj ℤ ▷ M) ≫ pTensorDesc M N f hf = f := by
+  dsimp [pTensorDesc, P_proj]
+  simpa using (map_π_preserves_coequalizer_inv_desc (G := tensorRight M)
+    (f := P_map ℤ) (g := 0) (k := f) (by rw [Functor.map_zero, zero_comp]; exact hf))
+
+/-- Slicing a descended numerator at a finite basis element recovers the corresponding numerator
+slice. -/
+lemma pTensorDesc_slice (M N : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N)
+    (hf : (P_map ℤ ▷ M) ≫ f = 0) (n : ℕ) :
+    ((λ_ M).inv ≫ pBasis n ▷ M) ≫ pTensorDesc M N f hf =
+      numeratorSlice M N n f := by
+  dsimp [pBasis, numeratorSlice]
+  simp only [Category.assoc]
+  rw [comp_whiskerRight]
+  simp only [Category.assoc]
+  rw [pTensorDesc_comp_proj]
 
 /-- Obligation: the numerator of the tail map.  It should be the map
 `ℤ[ℕ∪∞] ⊗ ℤ[T] ⟶ ℤ[T]` whose `n`th slice is `freeTailEndomorphism T n` and whose
@@ -454,6 +528,12 @@ noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
 `P ℤ ⊗ ℤ[T]`. -/
 lemma infiniteTailNumerator_kills (T : LightProfinite) [Infinite T] :
     (P_map ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T = 0 := by
+  sorry
+
+/-- Obligation: the zeroth finite slice of the tail numerator is the identity. -/
+lemma infiniteTailNumerator_zero (T : LightProfinite) [Infinite T] :
+    numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) 0
+      (infiniteTailNumerator T) = 𝟙 ((free ℤ).obj T.toCondensed) := by
   sorry
 
 /-- Obligation: the numerator of the map from the sequence object to the free object on an
@@ -503,16 +583,34 @@ noncomputable def infiniteTailSection (T : LightProfinite) [Infinite T] :
     (free ℤ).obj T.toCondensed ⟶ P ℤ ⊗ (free ℤ).obj T.toCondensed :=
   tailSection T
 
-/-- Obligation: the shift-retract square for Lemma 3.3.2. -/
+/-- Obligation: the numerator-level shift-retract square for Lemma 3.3.2. -/
+lemma infiniteShiftRetract_numerator_comm (T : LightProfinite) [Infinite T] :
+    (oneMinusShift' ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T =
+      infiniteDifferenceNumerator T ≫ infinitePToFree T := by
+  sorry
+
+/-- The shift-retract square for Lemma 3.3.2. -/
 lemma infiniteShiftRetract_comm (T : LightProfinite) [Infinite T] :
     ((oneMinusShift ℤ) ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailMap T =
       infiniteDifferenceMap T ≫ infinitePToFree T := by
-  sorry
+  let M := (free ℤ).obj T.toCondensed
+  haveI : Epi (P_proj ℤ ▷ M) := epi_P_proj_tensor M
+  apply (cancel_epi (P_proj ℤ ▷ M)).1
+  dsimp [infiniteTailMap, infiniteDifferenceMap, M]
+  rw [← Category.assoc]
+  rw [P_proj_tensor_oneMinusShift]
+  rw [Category.assoc]
+  rw [pTensorDesc_comp_proj]
+  rw [← Category.assoc]
+  rw [pTensorDesc_comp_proj]
+  exact infiniteShiftRetract_numerator_comm T
 
-/-- Obligation: the tail-map section equation for Lemma 3.3.2. -/
+/-- The tail-map section equation for Lemma 3.3.2. -/
 lemma infiniteTailSection_fac (T : LightProfinite) [Infinite T] :
     infiniteTailSection T ≫ infiniteTailMap T = 𝟙 ((free ℤ).obj T.toCondensed) := by
-  sorry
+  rw [infiniteTailSection, tailSection, infiniteTailMap]
+  rw [pTensorDesc_slice]
+  exact infiniteTailNumerator_zero T
 
 /-- The concrete shift-retract data for Lemma 3.3.2, assembled from the named map and equation
 obligations above. -/
