@@ -279,6 +279,15 @@ lemma freeHomEquivPoints_symm_map {T T' : LightProfinite} (φ : T' ⟶ T)
   rw [freeHomEquivPoints_map]
   simp
 
+/-- The point-value description of maps out of a free object is natural in the target. -/
+lemma freeHomEquivPoints_comp (T : LightProfinite) {A B : LightCondAb}
+    (f : (free ℤ).obj T.toCondensed ⟶ A) (φ : A ⟶ B) :
+    freeHomEquivPoints T B (f ≫ φ) =
+      φ.hom.app ⟨T⟩ (freeHomEquivPoints T A f) := by
+  dsimp [freeHomEquivPoints]
+  erw [Adjunction.homEquiv_naturality_right]
+  erw [GrothendieckTopology.yonedaEquiv_comp]
+
 /-- The free light condensed abelian group on the point is the tensor unit. -/
 noncomputable def freePointIsoUnit :
     (LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ≅ 𝟙_ LightCondAb :=
@@ -478,6 +487,23 @@ lemma freePointMap_comp (T S : LightProfinite) (f : T ⟶ S) (t : T) :
 lemma freePointMap_comp_freeProj (T : LightProfinite) (k : ℕ) (t : T) :
     freePointMap T t ≫ freeProj T k = freePointMap (T.component k) (T.proj k t) := by
   exact freePointMap_comp T (T.component k) (T.proj k) t
+
+/-- Maps from a free object to the discrete integers are determined by their values on ordinary
+points. -/
+lemma zdisc_hom_ext_of_points (T : LightProfinite)
+    (f g : (free ℤ).obj T.toCondensed ⟶ Zdisc)
+    (h : ∀ t : T, freePointMap T t ≫ f = freePointMap T t ≫ g) :
+    f = g := by
+  apply (freeHomEquivPoints T Zdisc).injective
+  apply (zdiscSectionsEquiv T).injective
+  ext t
+  let pt : LightProfinite := LightProfinite.of PUnit.{1}
+  have hp := congrArg (freeHomEquivPoints pt Zdisc) (h t)
+  dsimp [freePointMap] at hp
+  rw [freeHomEquivPoints_map, freeHomEquivPoints_map] at hp
+  have hz := congrArg (zdiscSectionsEquiv pt) hp
+  rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at hz
+  exact congrFun (congrArg LocallyConstant.toFun hz) PUnit.unit
 
 /-- The free-module endomorphism induced by the finite-rank retraction of an infinite test object. -/
 noncomputable def freeFiniteApproxRetraction (T : LightProfinite) (n : ℕ) :
@@ -950,6 +976,23 @@ lemma freeTarget_section_ext_of_zdisc_eval (T S : LightProfinite)
     x = y := by
   sorry
 
+/-- Endomorphisms of the free object `ℤ[T]` are determined by their composites with the free point
+maps.  The proof reduces to the existing `Zdisc`-valued separation obligation. -/
+lemma freeTarget_hom_ext_of_points (T : LightProfinite)
+    (f g : (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed)
+    (h : ∀ t : T, freePointMap T t ≫ f = freePointMap T t ≫ g) :
+    f = g := by
+  apply (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).injective
+  apply freeTarget_section_ext_of_zdisc_eval T T
+  intro φ
+  rw [← freeHomEquivPoints_comp T f φ]
+  rw [← freeHomEquivPoints_comp T g φ]
+  congr 1
+  apply zdisc_hom_ext_of_points
+  intro t
+  change (freePointMap T t ≫ f) ≫ φ = (freePointMap T t ≫ g) ≫ φ
+  rw [h t]
+
 /-- Sections of the free object `ℤ[T]` over `(ℕ∪∞) × T` are determined by all finite slices and
  the `∞` slice, assuming the standard separation of `ℤ[T]` by `ℤ`-valued functions. -/
 lemma freeTarget_section_ext_of_slices (T : LightProfinite)
@@ -1420,15 +1463,185 @@ noncomputable def infiniteDifferenceFiniteSlice (T : LightProfinite) [Infinite T
   (lightProfiniteToLightCondSet ⋙ free ℤ).map (T.proj n ≫ finiteDifferenceIndexMap T n) ≫
     P_proj ℤ
 
-/-- Obligation: each finite difference of tail endomorphisms factors through the chosen map
+-- The finite natural generator, followed by `P_proj` and `infinitePToFree`, gives the
+-- corresponding finite value in the chosen null sequence.
+set_option backward.isDefEq.respectTransparency false in
+lemma freeNatMap_comp_infinitePToFree (T : LightProfinite) [Infinite T] (i : ℕ) :
+    (free ℤ).map (lightProfiniteToLightCondSet.map (natPoint i)) ≫ P_proj ℤ ≫
+      infinitePToFree T = infinitePToFreeFiniteValue T i := by
+  dsimp [infinitePToFree]
+  rw [P_proj_comp_P_homMk]
+  change freeNatValue ((free ℤ).obj T.toCondensed) i (infinitePToFreeNumerator T) =
+    infinitePToFreeFiniteValue T i
+  rw [infinitePToFreeNumerator_finite]
+
+-- Precomposing the finite-difference slice with a point of `T` selects the corresponding
+-- coordinate of `P ℤ`.
+set_option backward.isDefEq.respectTransparency false in
+lemma freePointMap_comp_infiniteDifferenceFiniteSlice (T : LightProfinite) [Infinite T]
+    (n : ℕ) (t : T) :
+    freePointMap T t ≫ infiniteDifferenceFiniteSlice T n =
+      (free ℤ).map (lightProfiniteToLightCondSet.map
+        (natPoint (finiteDifferenceIndex T ⟨n, T.proj n t⟩))) ≫ P_proj ℤ := by
+  dsimp [freePointMap, infiniteDifferenceFiniteSlice]
+  change (lightProfiniteToLightCondSet ⋙ free ℤ).map (pointMap T t) ≫
+      ((lightProfiniteToLightCondSet ⋙ free ℤ).map
+        (T.proj n ≫ finiteDifferenceIndexMap T n) ≫ P_proj ℤ) =
+      (lightProfiniteToLightCondSet ⋙ free ℤ).map
+        (natPoint (finiteDifferenceIndex T ⟨n, T.proj n t⟩)) ≫ P_proj ℤ
+  rw [← Category.assoc]
+  rw [← Functor.map_comp]
+  congr 1
+
+/-- Pointwise, the finite-difference slice followed by `infinitePToFree` is the finite-stage
+value indexed by the point's finite projection. -/
+lemma freePointMap_comp_infiniteDifferenceFiniteSlice_comp (T : LightProfinite) [Infinite T]
+    (n : ℕ) (t : T) :
+    freePointMap T t ≫ infiniteDifferenceFiniteSlice T n ≫ infinitePToFree T =
+      finiteDifferenceValue T n (T.proj n t) := by
+  rw [← Category.assoc]
+  rw [freePointMap_comp_infiniteDifferenceFiniteSlice]
+  rw [Category.assoc]
+  rw [freeNatMap_comp_infinitePToFree]
+  rw [infinitePToFreeFiniteValue_index]
+
+lemma freePointMap_comp_freeFiniteApproxRetraction (T : LightProfinite) (n : ℕ) (t : T) :
+    freePointMap T t ≫ freeFiniteApproxRetraction T n =
+      freePointMap T (LightProfinite.finiteApproxRetraction T n t) := by
+  exact freePointMap_comp T T (LightProfinite.finiteApproxRetraction T n) t
+
+@[simp]
+lemma finiteApproxRetraction_apply (T : LightProfinite) (n : ℕ) (t : T) :
+    LightProfinite.finiteApproxRetraction T n t = LightProfinite.projSection T n (T.proj n t) :=
+  rfl
+
+/-- The finite-stage value at the `n`th projection of a point is the pointwise value of the
+finite difference of tail endomorphisms. -/
+lemma finiteDifferenceValue_eq_point_tail_diff (T : LightProfinite) (n : ℕ) (t : T) :
+    finiteDifferenceValue T n (T.proj n t) =
+      freePointMap T t ≫ (freeTailEndomorphism T n - freeTailEndomorphism T (n + 1)) := by
+  cases n with
+  | zero =>
+      dsimp [finiteDifferenceValue, freeTailEndomorphism]
+      change freePointMap T (LightProfinite.projSection T 0 (T.proj 0 t)) =
+        freePointMap T t - (freePointMap T t -
+          freePointMap T t ≫ freeFiniteApproxRetraction T 0)
+      rw [freePointMap_comp_freeFiniteApproxRetraction]
+      rw [finiteApproxRetraction_apply]
+      abel
+  | succ m =>
+      dsimp [finiteDifferenceValue, freeTailEndomorphism]
+      change freePointMap T (LightProfinite.projSection T (m + 1) (T.proj (m + 1) t)) -
+          freePointMap T (LightProfinite.projSection T m (T.transitionMap m (T.proj (m + 1) t))) =
+        (freePointMap T t - freePointMap T t ≫ freeFiniteApproxRetraction T m) -
+          (freePointMap T t - freePointMap T t ≫ freeFiniteApproxRetraction T (m + 1))
+      rw [freePointMap_comp_freeFiniteApproxRetraction]
+      rw [freePointMap_comp_freeFiniteApproxRetraction]
+      rw [finiteApproxRetraction_apply]
+      rw [finiteApproxRetraction_apply]
+      have hproj : T.proj m t = T.transitionMap m (T.proj (m + 1) t) := by
+        have hmap := congrArg (fun f : T ⟶ T.component m => f t)
+          (T.proj_comp_transitionMap m)
+        simpa using hmap.symm
+      rw [hproj]
+      abel
+
+/-- Pointwise form of the finite-difference factorization. -/
+lemma infiniteDifferenceFiniteSlice_comp_pointwise (T : LightProfinite) [Infinite T]
+    (n : ℕ) (t : T) :
+    freePointMap T t ≫ (infiniteDifferenceFiniteSlice T n ≫ infinitePToFree T) =
+      freePointMap T t ≫ (freeTailEndomorphism T n - freeTailEndomorphism T (n + 1)) := by
+  rw [freePointMap_comp_infiniteDifferenceFiniteSlice_comp]
+  rw [finiteDifferenceValue_eq_point_tail_diff]
+
+/-- Each finite difference of tail endomorphisms factors through the chosen map
 `infinitePToFree`. -/
 lemma infiniteDifferenceFiniteSlice_comp (T : LightProfinite) [Infinite T] (n : ℕ) :
     infiniteDifferenceFiniteSlice T n ≫ infinitePToFree T =
       freeTailEndomorphism T n - freeTailEndomorphism T (n + 1) := by
+  apply freeTarget_hom_ext_of_points
+  intro t
+  exact infiniteDifferenceFiniteSlice_comp_pointwise T n t
+
+/-- The function on `(ℕ∪∞) × T` whose finite slices record the chosen finite-difference
+coordinate and whose `∞` slice is `∞`. -/
+noncomputable def finiteDifferenceIndexOverNinfFun (T : LightProfinite) [Infinite T] :
+    ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) → ℕ∪{∞}
+  | (∞, _) => ∞
+  | (OnePoint.some n, t) => (finiteDifferenceIndex T ⟨n, T.proj n t⟩ : ℕ∪{∞})
+
+/-- Obligation: the finite-difference index function is continuous.  This is the topological
+uniform-null part of the AsLimit enumeration: for every finite set of output coordinates, only
+finitely many finite input slices can hit it. -/
+lemma continuous_finiteDifferenceIndexOverNinfFun (T : LightProfinite) [Infinite T] :
+    Continuous (finiteDifferenceIndexOverNinfFun T) := by
   sorry
 
-/-- Obligation: the finite-difference slices form a null sequence, hence give a section of `P ℤ`
-over `(ℕ∪∞) × T` with zero `∞` slice. -/
+/-- The finite-difference index map `(ℕ∪∞) × T → ℕ∪∞`. -/
+noncomputable def finiteDifferenceIndexOverNinf (T : LightProfinite) [Infinite T] :
+    ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) ⟶ ℕ∪{∞} :=
+  ConcreteCategory.ofHom ⟨finiteDifferenceIndexOverNinfFun T,
+    continuous_finiteDifferenceIndexOverNinfFun T⟩
+
+@[simp]
+lemma finiteDifferenceIndexOverNinf_finite (T : LightProfinite) [Infinite T]
+    (n : ℕ) (t : T) :
+    finiteDifferenceIndexOverNinf T ((n : ℕ∪{∞}), t) =
+      (finiteDifferenceIndex T ⟨n, T.proj n t⟩ : ℕ∪{∞}) := rfl
+
+@[simp]
+lemma finiteDifferenceIndexOverNinf_infty (T : LightProfinite) [Infinite T] (t : T) :
+    finiteDifferenceIndexOverNinf T ((∞ : ℕ∪{∞}), t) = (∞ : ℕ∪{∞}) := rfl
+
+@[simp]
+lemma finiteTensorPoint_comp_finiteDifferenceIndexOverNinf (T : LightProfinite) [Infinite T]
+    (n : ℕ) :
+    finiteTensorPoint T n ≫ finiteDifferenceIndexOverNinf T =
+      T.proj n ≫ finiteDifferenceIndexMap T n := by
+  ext t
+  rfl
+
+/-- The constant map from `T` to the point `∞ ∈ ℕ∪∞`. -/
+noncomputable def constInftyMap (T : LightProfinite) : T ⟶ ℕ∪{∞} :=
+  ConcreteCategory.ofHom ⟨fun _ => (∞ : ℕ∪{∞}), continuous_const⟩
+
+@[simp]
+lemma inftyTensorPoint_comp_finiteDifferenceIndexOverNinf (T : LightProfinite) [Infinite T] :
+    inftyTensorPoint T ≫ finiteDifferenceIndexOverNinf T = constInftyMap T := by
+  ext t
+  rfl
+
+/-- The unique map from `T` to the point. -/
+noncomputable def toPointMap (T : LightProfinite) : T ⟶ LightProfinite.of PUnit.{1} :=
+  ConcreteCategory.ofHom ⟨fun _ => PUnit.unit, continuous_const⟩
+
+lemma constInftyMap_eq (T : LightProfinite) : constInftyMap T = toPointMap T ≫ ι := by
+  ext t
+  rfl
+
+/-- The constant-`∞` map dies after passing to `P ℤ`. -/
+lemma free_constInftyMap_comp_P_proj (T : LightProfinite) :
+    (free ℤ).map (lightProfiniteToLightCondSet.map (constInftyMap T)) ≫ P_proj ℤ = 0 := by
+  rw [constInftyMap_eq]
+  change (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T ≫ ι) ≫ P_proj ℤ = 0
+  rw [Functor.map_comp]
+  change ((lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫ P_map ℤ) ≫
+    P_proj ℤ = 0
+  have hzero : P_map ℤ ≫ P_proj ℤ = 0 := by
+    change P_map ℤ ≫ cokernel.π (P_map ℤ) = 0
+    exact cokernel.condition (P_map ℤ)
+  calc
+    ((lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫ P_map ℤ) ≫ P_proj ℤ
+        = (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫
+            (P_map ℤ ≫ P_proj ℤ) := by
+          rw [Category.assoc]
+    _ = (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫ 0 := by
+          exact congrArg
+            (fun q => (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫ q) hzero
+    _ = 0 := by simp
+
+/-- The finite-difference slices form a section of `P ℤ` over `(ℕ∪∞) × T` with zero `∞` slice,
+assuming continuity of the finite-difference index map. -/
 lemma exists_infiniteDifferenceElement (T : LightProfinite) [Infinite T] :
     ∃ x : (P ℤ).obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩,
       (∀ n : ℕ,
@@ -1437,7 +1650,31 @@ lemma exists_infiniteDifferenceElement (T : LightProfinite) [Infinite T] :
             infiniteDifferenceFiniteSlice T n) ∧
       (freeHomEquivPoints T (P ℤ)).symm
         ((P ℤ).obj.map (inftyTensorPoint T).op x) = 0 := by
-  sorry
+  let f : (free ℤ).obj (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite).toCondensed) ⟶ P ℤ :=
+    (free ℤ).map (lightProfiniteToLightCondSet.map (finiteDifferenceIndexOverNinf T)) ≫ P_proj ℤ
+  let x := freeHomEquivPoints (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)) (P ℤ) f
+  refine ⟨x, ?_, ?_⟩
+  · intro n
+    dsimp [x, f]
+    rw [← freeHomEquivPoints_symm_map]
+    rw [Equiv.symm_apply_apply]
+    change (lightProfiniteToLightCondSet ⋙ free ℤ).map (finiteTensorPoint T n) ≫
+        ((lightProfiniteToLightCondSet ⋙ free ℤ).map (finiteDifferenceIndexOverNinf T) ≫
+          P_proj ℤ) = infiniteDifferenceFiniteSlice T n
+    rw [← Category.assoc]
+    rw [← Functor.map_comp]
+    rw [finiteTensorPoint_comp_finiteDifferenceIndexOverNinf]
+    rfl
+  · dsimp [x, f]
+    rw [← freeHomEquivPoints_symm_map]
+    rw [Equiv.symm_apply_apply]
+    change (lightProfiniteToLightCondSet ⋙ free ℤ).map (inftyTensorPoint T) ≫
+        ((lightProfiniteToLightCondSet ⋙ free ℤ).map (finiteDifferenceIndexOverNinf T) ≫
+          P_proj ℤ) = 0
+    rw [← Category.assoc]
+    rw [← Functor.map_comp]
+    rw [inftyTensorPoint_comp_finiteDifferenceIndexOverNinf]
+    exact free_constInftyMap_comp_P_proj T
 
 /-- The section of `P ℤ` over `(ℕ∪∞) × T` whose finite slices encode the finite-difference
 factorization in Lemma 3.3.2 and whose `∞` slice is zero. -/
