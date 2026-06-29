@@ -787,12 +787,58 @@ lemma inftySlice_of_freeTensorElement (T : LightProfinite) (A : LightCondAb)
   rw [freeTensorIsoInt_hom_inftyTensorPoint_assoc]
   rw [freeHomEquivPoints_symm_map]
 
-/-- Obligation: the section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail
-endomorphisms and whose `∞` slice is zero. -/
+/-- Obligation: the AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]`
+which is eventually zero after every finite quotient of `T` into a continuous section over
+`(ℕ∪∞) × T`, with prescribed finite slices and zero `∞` slice. -/
+lemma exists_freeSectionOverNinf_of_eventually_freeProj_zero
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+    ∃ x : ((free ℤ).obj T.toCondensed).obj.obj
+        ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩,
+      (∀ n : ℕ,
+        (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+          (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op x) = u n) ∧
+      (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+        (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x) = 0 := by
+  sorry
+
+/-- The section over `(ℕ∪∞) × T` associated to a null sequence of endomorphisms of `ℤ[T]`. -/
+noncomputable def freeSectionOverNinfOfNullSequence
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+    ((free ℤ).obj T.toCondensed).obj.obj
+      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
+  (exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose
+
+/-- Finite slices of the section associated to a null sequence are the prescribed endomorphisms. -/
+lemma freeSectionOverNinfOfNullSequence_finite
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) (n : ℕ) :
+    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+      (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op
+        (freeSectionOverNinfOfNullSequence T u hu)) = u n :=
+  ((exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose_spec).1 n
+
+/-- The section associated to a null sequence has zero `∞` slice. -/
+lemma freeSectionOverNinfOfNullSequence_infty
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
+      (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
+        (freeSectionOverNinfOfNullSequence T u hu)) = 0 :=
+  ((exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose_spec).2
+
+/-- The section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail endomorphisms and
+whose `∞` slice is zero. -/
 noncomputable def infiniteTailElement (T : LightProfinite) [Infinite T] :
     ((free ℤ).obj T.toCondensed).obj.obj
-      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ := by
-  sorry
+      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
+  freeSectionOverNinfOfNullSequence T (freeTailEndomorphism T)
+    (freeTailEndomorphism_eventually_freeProj_zero T)
 
 /-- The numerator of the tail map, built from its section over `(ℕ∪∞) × T`. -/
 noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
@@ -802,14 +848,16 @@ noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
     (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
       ((free ℤ).obj T.toCondensed)).symm (infiniteTailElement T)
 
-/-- Obligation: restricting `infiniteTailElement` to the finite slice `n` gives the `n`th tail
+/-- Restricting `infiniteTailElement` to the finite slice `n` gives the `n`th tail
 endomorphism. -/
 lemma infiniteTailElement_finite (T : LightProfinite) [Infinite T] (n : ℕ) :
     (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op
         (infiniteTailElement T)) =
       freeTailEndomorphism T n := by
-  sorry
+  dsimp [infiniteTailElement]
+  exact freeSectionOverNinfOfNullSequence_finite T (freeTailEndomorphism T)
+    (freeTailEndomorphism_eventually_freeProj_zero T) n
 
 /-- Finite slices of the tail numerator are the prescribed tail endomorphisms. -/
 lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
@@ -818,12 +866,14 @@ lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
   rw [infiniteTailNumerator, numeratorSlice_of_freeTensorElement]
   exact infiniteTailElement_finite T n
 
-/-- Obligation: restricting `infiniteTailElement` to the `∞` slice gives zero. -/
+/-- Restricting `infiniteTailElement` to the `∞` slice gives zero. -/
 lemma infiniteTailElement_infty (T : LightProfinite) [Infinite T] :
     (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
         (infiniteTailElement T)) = 0 := by
-  sorry
+  dsimp [infiniteTailElement]
+  exact freeSectionOverNinfOfNullSequence_infty T (freeTailEndomorphism T)
+    (freeTailEndomorphism_eventually_freeProj_zero T)
 
 /-- The `∞` slice of the tail numerator is zero. -/
 lemma infiniteTailNumerator_infty (T : LightProfinite) [Infinite T] :
