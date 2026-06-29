@@ -582,6 +582,27 @@ noncomputable def freeInftyValue (N : LightCondAb)
     (f : (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ N) : 𝟙_ LightCondAb ⟶ N :=
   freeInftyBasis ≫ f
 
+/-- The `∞` value of a map built from a section over `ℕ∪∞` is obtained by restricting that
+section to the point `∞`. -/
+lemma freeInftyValue_of_freeElement (A : LightCondAb)
+    (x : A.obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩) :
+    freeInftyValue A ((freeHomEquivPoints (ℕ∪{∞}) A).symm x) =
+      freePointIsoUnit.inv ≫
+        (freeHomEquivPoints (LightProfinite.of PUnit.{1}) A).symm (A.obj.map ι.op x) := by
+  dsimp [freeInftyValue, freeInftyBasis, P_map]
+  rw [Category.assoc]
+  rw [freeHomEquivPoints_symm_map]
+
+/-- A section over `ℕ∪∞` whose restriction to `∞` is zero gives a free numerator with zero
+`∞` value. -/
+lemma freeInftyValue_zero_of_element_infty (A : LightCondAb)
+    (x : A.obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩)
+    (h : (freeHomEquivPoints (LightProfinite.of PUnit.{1}) A).symm (A.obj.map ι.op x) = 0) :
+    freeInftyValue A ((freeHomEquivPoints (ℕ∪{∞}) A).symm x) = 0 := by
+  rw [freeInftyValue_of_freeElement]
+  rw [h]
+  simp
+
 /-- If a map out of `ℤ[ℕ∪∞]` is zero at `∞`, then it kills the denominator defining `P ℤ`. -/
 lemma freeNumerator_kills_of_inftyValue_zero (N : LightCondAb)
     (f : (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ N)
@@ -672,23 +693,75 @@ lemma pTensorDesc_slice (M N : LightCondAb)
   simp only [Category.assoc]
   rw [pTensorDesc_comp_proj]
 
-/-- Obligation: compatibility of the free tensor isomorphism with finite slices. -/
+-- The free tensor isomorphism is natural in the left variable.
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma freeTensorIsoInt_hom_naturality_left {A' A S : LightProfinite} (φ : A' ⟶ A) :
+    ((free ℤ).map (lightProfiniteToLightCondSet.map φ) ▷ (free ℤ).obj S.toCondensed) ≫
+        (IntProof.freeTensorIsoInt A S).hom =
+      (IntProof.freeTensorIsoInt A' S).hom ≫
+        (free ℤ).map (lightProfiniteToLightCondSet.map (φ ⊗ₘ 𝟙 S)) := by
+  dsimp [IntProof.freeTensorIsoInt]
+  simp only [Iso.trans_hom, Functor.mapIso_hom, Functor.Monoidal.μIso_hom, Category.assoc]
+  rw [Functor.LaxMonoidal.μ_natural_left_assoc (free ℤ)
+    (lightProfiniteToLightCondSet.map φ) S.toCondensed
+    ((free ℤ).map (Functor.LaxMonoidal.μ lightProfiniteToLightCondSet A S))]
+  slice_lhs 2 4 => rw [← Functor.map_comp]
+  slice_rhs 2 4 => rw [← Functor.map_comp]
+  rw [Functor.LaxMonoidal.μ_natural_left lightProfiniteToLightCondSet]
+  simp [MonoidalCategory.tensorHom_id]
+
+-- The free tensor isomorphism is compatible with the left unit after identifying the chosen
+-- point-object with the tensor unit.
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma freeTensorIsoInt_hom_leftUnit (T : LightProfinite) :
+    (λ_ ((free ℤ).obj T.toCondensed)).inv ≫
+      freePointIsoUnit.inv ▷ (free ℤ).obj T.toCondensed ≫
+      (IntProof.freeTensorIsoInt (LightProfinite.of PUnit.{1}) T).hom =
+    (free ℤ).map (lightProfiniteToLightCondSet.map (λ_ T).inv) := by
+  dsimp [IntProof.freeTensorIsoInt, freePointIsoUnit]
+  simp [← Functor.map_comp]
+  change (free ℤ).map
+      ((λ_ (lightProfiniteToLightCondSet.obj T)).inv ≫
+        (Functor.LaxMonoidal.ε lightProfiniteToLightCondSet ▷ lightProfiniteToLightCondSet.obj T) ≫
+          Functor.LaxMonoidal.μ lightProfiniteToLightCondSet (𝟙_ LightProfinite) T) =
+    (free ℤ).map (lightProfiniteToLightCondSet.map (λ_ T).inv)
+  rw [Functor.LaxMonoidal.left_unitality_inv]
+
+-- Compatibility of the free tensor isomorphism with finite slices.
+set_option backward.isDefEq.respectTransparency false in
 @[reassoc]
 lemma freeTensorIsoInt_hom_finiteTensorPoint (T : LightProfinite) (n : ℕ) :
     (λ_ ((free ℤ).obj T.toCondensed)).inv ≫
       freeNatBasis n ▷ (free ℤ).obj T.toCondensed ≫
       (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom =
     (free ℤ).map (lightProfiniteToLightCondSet.map (finiteTensorPoint T n)) := by
-  sorry
+  dsimp [freeNatBasis]
+  rw [comp_whiskerRight]
+  simp only [Category.assoc]
+  slice_lhs 3 5 => rw [freeTensorIsoInt_hom_naturality_left]
+  rw [freeTensorIsoInt_hom_leftUnit_assoc]
+  dsimp [finiteTensorPoint]
+  rw [← Functor.map_comp]
+  congr 1
 
-/-- Obligation: compatibility of the free tensor isomorphism with the `∞` slice. -/
+-- Compatibility of the free tensor isomorphism with the `∞` slice.
+set_option backward.isDefEq.respectTransparency false in
 @[reassoc]
 lemma freeTensorIsoInt_hom_inftyTensorPoint (T : LightProfinite) :
     (λ_ ((free ℤ).obj T.toCondensed)).inv ≫
       freeInftyBasis ▷ (free ℤ).obj T.toCondensed ≫
       (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom =
     (free ℤ).map (lightProfiniteToLightCondSet.map (inftyTensorPoint T)) := by
-  sorry
+  dsimp [freeInftyBasis, P_map]
+  rw [comp_whiskerRight]
+  simp only [Category.assoc]
+  slice_lhs 3 5 => rw [freeTensorIsoInt_hom_naturality_left]
+  rw [freeTensorIsoInt_hom_leftUnit_assoc]
+  dsimp [inftyTensorPoint]
+  rw [← Functor.map_comp]
+  congr 1
 
 /-- Finite slices of a numerator built from a section over `(ℕ∪∞) × T` are obtained by
 restricting that section along the finite slice map. -/
@@ -794,10 +867,18 @@ noncomputable def infinitePToFreeNumerator (T : LightProfinite) [Infinite T] :
   (freeHomEquivPoints (ℕ∪{∞}) ((free ℤ).obj T.toCondensed)).symm
     (infinitePToFreeElement T)
 
-/-- Obligation: the numerator of `infinitePToFree` is zero at `∞`. -/
+/-- Obligation: restricting `infinitePToFreeElement` to `∞` gives zero. -/
+lemma infinitePToFreeElement_infty (T : LightProfinite) [Infinite T] :
+    (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)).symm
+      (((free ℤ).obj T.toCondensed).obj.map ι.op (infinitePToFreeElement T)) = 0 := by
+  sorry
+
+/-- The numerator of `infinitePToFree` is zero at `∞`. -/
 lemma infinitePToFreeNumerator_infty (T : LightProfinite) [Infinite T] :
     freeInftyValue ((free ℤ).obj T.toCondensed) (infinitePToFreeNumerator T) = 0 := by
-  sorry
+  dsimp [infinitePToFreeNumerator]
+  exact freeInftyValue_zero_of_element_infty ((free ℤ).obj T.toCondensed)
+    (infinitePToFreeElement T) (infinitePToFreeElement_infty T)
 
 /-- The numerator of `infinitePToFree` kills the basepoint summand. -/
 lemma infinitePToFreeNumerator_kills (T : LightProfinite) [Infinite T] :
@@ -830,10 +911,17 @@ noncomputable def infiniteDifferenceNumerator (T : LightProfinite) [Infinite T] 
     (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) (P ℤ)).symm
       (infiniteDifferenceElement T)
 
-/-- Obligation: the finite-difference numerator has zero `∞` slice. -/
+/-- Obligation: restricting `infiniteDifferenceElement` to the `∞` slice gives zero. -/
+lemma infiniteDifferenceElement_infty (T : LightProfinite) [Infinite T] :
+    (freeHomEquivPoints T (P ℤ)).symm
+      ((P ℤ).obj.map (inftyTensorPoint T).op (infiniteDifferenceElement T)) = 0 := by
+  sorry
+
+/-- The finite-difference numerator has zero `∞` slice. -/
 lemma infiniteDifferenceNumerator_infty (T : LightProfinite) [Infinite T] :
     inftySlice ((free ℤ).obj T.toCondensed) (P ℤ) (infiniteDifferenceNumerator T) = 0 := by
-  sorry
+  rw [infiniteDifferenceNumerator, inftySlice_of_freeTensorElement]
+  exact infiniteDifferenceElement_infty T
 
 /-- The finite-difference numerator vanishes on the basepoint summand. -/
 lemma infiniteDifferenceNumerator_kills (T : LightProfinite) [Infinite T] :
