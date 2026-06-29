@@ -803,17 +803,89 @@ lemma inftySlice_of_freeTensorElement (T : LightProfinite) (A : LightCondAb)
   rw [freeTensorIsoInt_hom_inftyTensorPoint_assoc]
   rw [freeHomEquivPoints_symm_map]
 
-/-- Obligation: maps out of `ℤ[(ℕ∪∞) × T]` are determined by all finite slices and the `∞`
-slice. -/
-lemma numerator_ext_of_slices (T : LightProfinite) (A : LightCondAb)
-    (f g : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ A)
+/-- Finite slices of an arbitrary numerator can be read from the corresponding section over
+`(ℕ∪∞) × T`. -/
+lemma numeratorSlice_eq_symm_map_finite (T : LightProfinite) (A : LightCondAb) (n : ℕ)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ A) :
+    numeratorSlice ((free ℤ).obj T.toCondensed) A n f =
+      (freeHomEquivPoints T A).symm
+        (A.obj.map (finiteTensorPoint T n).op
+          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+            ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f))) := by
+  let x := freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+    ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f)
+  have hf : f = (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+      (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A).symm x := by
+    dsimp [x]
+    simp
+  change numeratorSlice ((free ℤ).obj T.toCondensed) A n f =
+      (freeHomEquivPoints T A).symm (A.obj.map (finiteTensorPoint T n).op x)
+  rw [hf]
+  rw [numeratorSlice_of_freeTensorElement]
+
+/-- The `∞` slice of an arbitrary numerator can be read from the corresponding section over
+`(ℕ∪∞) × T`. -/
+lemma inftySlice_eq_symm_map_infty (T : LightProfinite) (A : LightCondAb)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶ A) :
+    inftySlice ((free ℤ).obj T.toCondensed) A f =
+      (freeHomEquivPoints T A).symm
+        (A.obj.map (inftyTensorPoint T).op
+          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+            ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f))) := by
+  let x := freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+    ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f)
+  have hf : f = (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).hom ≫
+      (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A).symm x := by
+    dsimp [x]
+    simp
+  change inftySlice ((free ℤ).obj T.toCondensed) A f =
+      (freeHomEquivPoints T A).symm (A.obj.map (inftyTensorPoint T).op x)
+  rw [hf]
+  rw [inftySlice_of_freeTensorElement]
+
+/-- Obligation: sections of the free object `ℤ[T]` over `(ℕ∪∞) × T` are determined by all
+finite slices and the `∞` slice. -/
+lemma freeTarget_section_ext_of_slices (T : LightProfinite)
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj
+      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩)
     (hfinite : ∀ n : ℕ,
-      numeratorSlice ((free ℤ).obj T.toCondensed) A n f =
-        numeratorSlice ((free ℤ).obj T.toCondensed) A n g)
-    (hinfty : inftySlice ((free ℤ).obj T.toCondensed) A f =
-      inftySlice ((free ℤ).obj T.toCondensed) A g) :
-    f = g := by
+      ((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op x =
+        ((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op y)
+    (hinfty : ((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x =
+      ((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op y) :
+    x = y := by
   sorry
+
+/-- Maps from `ℤ[(ℕ∪∞) × T]` to `ℤ[T]` are determined by all finite slices and the `∞` slice. -/
+lemma freeTarget_numerator_ext_of_slices (T : LightProfinite)
+    (f g : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj T.toCondensed ⟶
+      (free ℤ).obj T.toCondensed)
+    (hfinite : ∀ n : ℕ,
+      numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n f =
+        numeratorSlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) n g)
+    (hinfty : inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) f =
+      inftySlice ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed) g) :
+    f = g := by
+  let A := (free ℤ).obj T.toCondensed
+  let x := freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+    ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f)
+  let y := freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A
+    ((IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ g)
+  have hxy : x = y := by
+    apply freeTarget_section_ext_of_slices T
+    · intro n
+      have h := congrArg (freeHomEquivPoints T A) (hfinite n)
+      rw [numeratorSlice_eq_symm_map_finite, numeratorSlice_eq_symm_map_finite] at h
+      simpa [A, x, y] using h
+    · have h := congrArg (freeHomEquivPoints T A) hinfty
+      rw [inftySlice_eq_symm_map_infty, inftySlice_eq_symm_map_infty] at h
+      simpa [A, x, y] using h
+  have hmaps : (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ f =
+      (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv ≫ g := by
+    apply (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) A).injective
+    exact hxy
+  apply (cancel_epi (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv).1
+  exact hmaps
 
 /-- Obligation: the AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]`
 which is eventually zero after every finite quotient of `T` into a continuous section over
@@ -1142,7 +1214,7 @@ lemma differenceNumerator_comp_infty (T : LightProfinite) [Infinite T] :
 lemma infiniteShiftRetract_numerator_comm (T : LightProfinite) [Infinite T] :
     (oneMinusShift' ℤ ▷ (free ℤ).obj T.toCondensed) ≫ infiniteTailNumerator T =
       infiniteDifferenceNumerator T ≫ infinitePToFree T := by
-  apply numerator_ext_of_slices T ((free ℤ).obj T.toCondensed)
+  apply freeTarget_numerator_ext_of_slices T
   · intro n
     rw [shiftedTailNumerator_slice, differenceNumerator_comp_slice_eq]
   · rw [shiftedTailNumerator_infty, differenceNumerator_comp_infty]
