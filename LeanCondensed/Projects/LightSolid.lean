@@ -540,19 +540,6 @@ instance : SymmetricCategory Solid :=
 instance : MonoidalClosed Solid :=
   Monoidal.Reflective.monoidalClosed solidificationAdjunction
 
-instance : HasLimitsOfSize.{u, 0} Type := inferInstance
-
-instance : Category.{0, 1} (ModuleCat R) := inferInstance
-
-instance : SmallCategory.{1} (LightCondMod R) := inferInstance
-
-variable (A : LightCondMod R)
-
-instance : HasLimitsOfSize.{0, 0} (ModuleCat R) := inferInstance
-
-instance : HasLimitsOfSize.{0, 0} (LightCondMod R) :=
-  show (HasLimitsOfSize (Sheaf _ _)) from inferInstance
-
 end Solid
 
 end LightCondensed

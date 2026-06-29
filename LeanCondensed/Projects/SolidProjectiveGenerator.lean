@@ -33,44 +33,24 @@ lemma isSeparator_of_iso {C : Type*} [Category C]
     {G H : C} (e : G ≅ H) (hG : IsSeparator G) :
     IsSeparator H := by
   rw [isSeparator_def] at hG ⊢
-  intro X Y f g hH
-  apply hG f g
-  intro k
-  have hk := hH (e.inv ≫ k)
-  have h := congrArg (fun t => e.hom ≫ t) hk
-  simpa [Category.assoc] using h
+  exact fun _ _ f g hH ↦ hG f g fun k ↦ by simpa using e.hom ≫= hH (e.inv ≫ k)
 
 /-- If a jointly separating family consists of retracts of `G`, then `G` is a separator. -/
-lemma isSeparator_of_retracts_of_hom_ext
-    {C : Type*} [Category C]
-    {I : Type*} (F : I → C) (G : C)
-    (hjoint : ∀ {X Y : C} (f g : X ⟶ Y),
-      (∀ i (k : F i ⟶ X), k ≫ f = k ≫ g) → f = g)
-    (r : ∀ i, Retract (F i) G) :
-    IsSeparator G := by
+lemma isSeparator_of_retracts_of_hom_ext {C : Type*} [Category C] {I : Type*} (F : I → C) (G : C)
+    (hjoint : ∀ {X Y : C} (f g : X ⟶ Y), (∀ i (k : F i ⟶ X), k ≫ f = k ≫ g) → f = g)
+    (r : ∀ i, Retract (F i) G) : IsSeparator G := by
   rw [isSeparator_def]
-  intro X Y f g hG
-  apply hjoint f g
-  intro i k
-  let ri := r i
-  have hk := hG (ri.r ≫ k)
-  have h := congrArg (fun t => ri.i ≫ t) hk
-  simpa [Category.assoc, ri.retract] using h
+  exact fun _ _ f g hG ↦ hjoint f g fun i k ↦ by simpa using (r i).i ≫= hG ((r i).r ≫ k)
 
 /-- If a functor preserves a binary coproduct and the target has zero morphisms, the image of the
 first summand is a retract of the image of the coproduct. -/
 noncomputable def functor_obj_retract_coprod
     {C D : Type*} [Category C] [Category D] [HasZeroMorphisms D]
-    (F : C ⥤ D) (X Y : C)
-    [HasBinaryCoproduct X Y] [HasBinaryCoproduct (F.obj X) (F.obj Y)]
-    [PreservesColimit (pair X Y) F] :
-    Retract (F.obj X) (F.obj (X ⨿ Y)) := by
-  letI : IsIso (coprodComparison F X Y) := inferInstance
-  refine {
-    i := F.map (coprod.inl : X ⟶ X ⨿ Y)
-    r := inv (coprodComparison F X Y) ≫ coprod.desc (𝟙 (F.obj X)) 0
-    retract := ?_ }
-  rw [map_inl_inv_coprodComparison_assoc, coprod.inl_desc]
+    (F : C ⥤ D) (X Y : C) [HasBinaryCoproduct X Y] [HasBinaryCoproduct (F.obj X) (F.obj Y)]
+    [PreservesColimit (pair X Y) F] : Retract (F.obj X) (F.obj (X ⨿ Y)) where
+  i := F.map (coprod.inl : X ⟶ X ⨿ Y)
+  r := inv (coprodComparison F X Y) ≫ coprod.desc (𝟙 (F.obj X)) 0
+  retract := by rw [map_inl_inv_coprodComparison_assoc, coprod.inl_desc]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- If the tensor unit is projective, internal projectivity implies ordinary projectivity.
@@ -80,16 +60,10 @@ lemma projective_of_internallyProjective_of_projective_unit
     {C : Type*} [Category* C] [MonoidalCategory C] [MonoidalClosed C]
     (P : C) [Projective (𝟙_ C)] [InternallyProjective P] : Projective P where
   factors {E X} f e he := by
-    letI : Epi e := he
-    haveI : Epi ((ihom P).map e) := Functor.map_epi (ihom P) e
-    let f' : 𝟙_ C ⟶ (ihom P).obj X := MonoidalClosed.curry ((ρ_ P).hom ≫ f)
-    obtain ⟨g', hg'⟩ := Projective.factors f' ((ihom P).map e)
+    obtain ⟨g', hg'⟩ := Projective.factors (MonoidalClosed.curry ((ρ_ P).hom ≫ f)) ((ihom P).map e)
     refine ⟨(ρ_ P).inv ≫ MonoidalClosed.uncurry g', ?_⟩
-    rw [Category.assoc]
-    have huncurry := congrArg MonoidalClosed.uncurry hg'
-    dsimp [f'] at huncurry
-    rw [MonoidalClosed.uncurry_natural_right] at huncurry
-    simpa using congrArg (fun k => (ρ_ P).inv ≫ k) huncurry
+    simpa [MonoidalClosed.uncurry_natural_right] using (ρ_ P).inv ≫=
+      (congrArg MonoidalClosed.uncurry hg')
 
 universe v₁ u₁ v₂ u₂
 
