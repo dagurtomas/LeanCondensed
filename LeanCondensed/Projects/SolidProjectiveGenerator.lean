@@ -24,7 +24,7 @@ representables, and the finite-coproduct reduction proved below.
 
 noncomputable section
 
-open CategoryTheory Limits LightCondensed LightProfinite MonoidalCategory MonoidalClosed
+open CategoryTheory Limits LightCondensed LightProfinite MonoidalCategory MonoidalClosed OnePoint
 
 namespace CategoryTheory
 
@@ -212,6 +212,40 @@ namespace ProjectiveGeneratorProof
 /-- The discrete light condensed abelian group `ℤ`. -/
 abbrev Zdisc : LightCondAb :=
   (LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ)
+
+-- Sections of the discrete light condensed abelian group `ℤ` are locally constant integer-valued
+-- functions.
+set_option backward.isDefEq.respectTransparency false in
+noncomputable def zdiscSectionsEquiv (S : LightProfinite) :
+    Zdisc.obj.obj ⟨S⟩ ≃ LocallyConstant S ℤ where
+  toFun x := by
+    let y := ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app
+      (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩ x
+    change LocallyConstant S ℤ at y
+    exact y
+  invFun y := by
+    let x : ((LightCondMod.LocallyConstant.functor ℤ).obj (ModuleCat.of ℤ ℤ)).obj.obj ⟨S⟩ := y
+    exact ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).hom.app
+      (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩ x
+  left_inv x := by
+    let e := (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
+    change (e.inv ≫ e.hom).hom.app ⟨S⟩ x = x
+    rw [Iso.inv_hom_id]
+    rfl
+  right_inv y := by
+    let e := (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
+    change (e.hom ≫ e.inv).hom.app ⟨S⟩ y = y
+    rw [Iso.hom_inv_id]
+    rfl
+
+/-- The locally constant-function description of `ℤ`-sections is natural in the test object. -/
+lemma zdiscSectionsEquiv_map {S S' : LightProfinite} (φ : S' ⟶ S)
+    (x : Zdisc.obj.obj ⟨S⟩) :
+    zdiscSectionsEquiv S' (Zdisc.obj.map φ.op x) =
+      (zdiscSectionsEquiv S x).comap φ.hom.hom := by
+  dsimp [zdiscSectionsEquiv]
+  exact LightCondMod.hom_naturality_apply ℤ
+    ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)) φ.op x
 
 /-- The solidification of the sequence object `P ℤ`. -/
 noncomputable abbrev solidP : Solid :=
@@ -471,6 +505,14 @@ noncomputable def finiteTensorPoint (T : LightProfinite) (n : ℕ) :
 noncomputable def inftyTensorPoint (T : LightProfinite) :
     T ⟶ ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) :=
   (λ_ T).inv ≫ ι ▷ T
+
+@[simp]
+lemma finiteTensorPoint_apply (T : LightProfinite) (n : ℕ) (t : T) :
+    finiteTensorPoint T n t = ((n : ℕ∪{∞}), t) := rfl
+
+@[simp]
+lemma inftyTensorPoint_apply (T : LightProfinite) (t : T) :
+    inftyTensorPoint T t = ((∞ : ℕ∪{∞}), t) := rfl
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
@@ -843,8 +885,39 @@ lemma inftySlice_eq_symm_map_infty (T : LightProfinite) (A : LightCondAb)
   rw [hf]
   rw [inftySlice_of_freeTensorElement]
 
-/-- Obligation: sections of the free object `ℤ[T]` over `(ℕ∪∞) × T` are determined by all
-finite slices and the `∞` slice. -/
+/-- Sections of `ℤ` over `(ℕ∪∞) × T` are determined by all finite slices and the `∞` slice. -/
+lemma zdisc_section_ext_of_slices (T : LightProfinite)
+    (x y : Zdisc.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩)
+    (hfinite : ∀ n : ℕ,
+      Zdisc.obj.map (finiteTensorPoint T n).op x =
+        Zdisc.obj.map (finiteTensorPoint T n).op y)
+    (hinfty : Zdisc.obj.map (inftyTensorPoint T).op x =
+      Zdisc.obj.map (inftyTensorPoint T).op y) :
+    x = y := by
+  apply (zdiscSectionsEquiv ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)).injective
+  ext p
+  rcases p with ⟨a, t⟩
+  cases a using OnePoint.rec with
+  | infty =>
+      have h := congrArg (zdiscSectionsEquiv T) hinfty
+      rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
+      exact congrFun (congrArg LocallyConstant.toFun h) t
+  | coe n =>
+      have h := congrArg (zdiscSectionsEquiv T) (hfinite n)
+      rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
+      exact congrFun (congrArg LocallyConstant.toFun h) t
+
+/-- Obligation: sections of the free object `ℤ[T]` are separated by all locally constant
+integer-valued functions on `T`. -/
+lemma freeTarget_section_ext_of_zdisc_eval (T S : LightProfinite)
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+      φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
+    x = y := by
+  sorry
+
+/-- Sections of the free object `ℤ[T]` over `(ℕ∪∞) × T` are determined by all finite slices and
+ the `∞` slice, assuming the standard separation of `ℤ[T]` by `ℤ`-valued functions. -/
 lemma freeTarget_section_ext_of_slices (T : LightProfinite)
     (x y : ((free ℤ).obj T.toCondensed).obj.obj
       ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩)
@@ -854,7 +927,16 @@ lemma freeTarget_section_ext_of_slices (T : LightProfinite)
     (hinfty : ((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x =
       ((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op y) :
     x = y := by
-  sorry
+  apply freeTarget_section_ext_of_zdisc_eval
+  intro φ
+  apply zdisc_section_ext_of_slices T
+  · intro n
+    rw [← LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op x]
+    rw [← LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op y]
+    rw [hfinite]
+  · rw [← LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op x]
+    rw [← LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op y]
+    rw [hinfty]
 
 /-- Maps from `ℤ[(ℕ∪∞) × T]` to `ℤ[T]` are determined by all finite slices and the `∞` slice. -/
 lemma freeTarget_numerator_ext_of_slices (T : LightProfinite)
