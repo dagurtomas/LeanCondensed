@@ -445,6 +445,40 @@ noncomputable def freeProj (T : LightProfinite) (n : ℕ) :
     (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj (T.component n).toCondensed :=
   (lightProfiniteToLightCondSet ⋙ free ℤ).map (T.proj n)
 
+/-- The constant map from the point to a light profinite space selecting `x`. -/
+noncomputable def pointMap (X : LightProfinite) (x : X) :
+    LightProfinite.of PUnit.{1} ⟶ X :=
+  ConcreteCategory.ofHom ⟨fun _ => x, continuous_const⟩
+
+@[simp]
+lemma pointMap_apply (X : LightProfinite) (x : X) (u : LightProfinite.of PUnit.{1}) :
+    pointMap X x u = x := rfl
+
+/-- The free-module map induced by a point of a light profinite space. -/
+noncomputable def freePointMap (T : LightProfinite) (t : T) :
+    (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
+      (free ℤ).obj T.toCondensed :=
+  (lightProfiniteToLightCondSet ⋙ free ℤ).map (pointMap T t)
+
+@[simp]
+lemma pointMap_comp (T S : LightProfinite) (f : T ⟶ S) (t : T) :
+    pointMap T t ≫ f = pointMap S (f t) := by
+  ext u
+  rfl
+
+lemma freePointMap_comp (T S : LightProfinite) (f : T ⟶ S) (t : T) :
+    freePointMap T t ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map f =
+      freePointMap S (f t) := by
+  change (lightProfiniteToLightCondSet ⋙ free ℤ).map (pointMap T t) ≫
+      (lightProfiniteToLightCondSet ⋙ free ℤ).map f =
+    (lightProfiniteToLightCondSet ⋙ free ℤ).map (pointMap S (f t))
+  rw [← Functor.map_comp]
+  rw [pointMap_comp]
+
+lemma freePointMap_comp_freeProj (T : LightProfinite) (k : ℕ) (t : T) :
+    freePointMap T t ≫ freeProj T k = freePointMap (T.component k) (T.proj k t) := by
+  exact freePointMap_comp T (T.component k) (T.proj k) t
+
 /-- The free-module endomorphism induced by the finite-rank retraction of an infinite test object. -/
 noncomputable def freeFiniteApproxRetraction (T : LightProfinite) (n : ℕ) :
     (free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed :=
@@ -1087,16 +1121,189 @@ lemma infiniteTailNumerator_eventually_freeProj_zero (T : LightProfinite) [Infin
   rw [infiniteTailNumerator_slice]
   exact hn
 
-/-- Obligation: the `n`th finite value of the null sequence defining the map
-`P ℤ ⟶ ℤ[T]`.  This is where the enumeration of the successive finite-stage differences of the
-chosen AsLimit approximation of `T` belongs. -/
+/-- Points in the successive finite quotients whose lifted differences generate the sequence map
+`P ℤ ⟶ ℤ[T]`. -/
+abbrev finiteDifferencePoint (T : LightProfinite) := Σ m : ℕ, T.component m
+
+/-- A block enumeration of the finite sets `T.component m`, with the stage tending to infinity.
+The surjectivity field records that every finite-stage point is eventually included. -/
+structure NullFiniteDifferenceEnumeration (T : LightProfinite) where
+  seq : ℕ → finiteDifferencePoint T
+  stage_eventually_ge : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, k ≤ (seq n).1
+  surjective : Function.Surjective seq
+
+/-- The points in all stages below a fixed bound form a finite set. -/
+lemma finiteDifferencePoint_initial_finite (T : LightProfinite) (k : ℕ) :
+    Set.Finite {p : finiteDifferencePoint T | p.1 < k} := by
+  classical
+  letI (m : ℕ) : Fintype (T.component m) := Fintype.ofFinite _
+  let s : Finset (finiteDifferencePoint T) :=
+    (Finset.range k).sigma (fun m => (Finset.univ : Finset (T.component m)))
+  have hs : {p : finiteDifferencePoint T | p.1 < k} = (s : Set (finiteDifferencePoint T)) := by
+    ext p
+    constructor
+    · intro hp
+      rcases p with ⟨m, a⟩
+      simpa [s] using hp
+    · intro hp
+      rcases p with ⟨m, a⟩
+      simpa [s] using hp
+  rw [hs]
+  exact s.finite_toSet
+
+/-- The countable type of finite-difference points is equivalent to `ℕ` for an infinite test
+object. -/
+noncomputable def finiteDifferencePointEquivNat (T : LightProfinite) [Infinite T] :
+    ℕ ≃ finiteDifferencePoint T := by
+  classical
+  haveI : Countable (finiteDifferencePoint T) := inferInstance
+  haveI : Infinite (finiteDifferencePoint T) := by
+    let t : T := Classical.arbitrary T
+    let f : ℕ → finiteDifferencePoint T := fun n => ⟨n, T.proj n t⟩
+    have hf : Function.Injective f := by
+      intro a b h
+      exact congrArg Sigma.fst h
+    exact Infinite.of_injective f hf
+  exact Classical.choice (inferInstance : Nonempty (ℕ ≃ finiteDifferencePoint T))
+
+/-- Enumerate the countable union of the successive finite quotients in finite blocks, so that the
+stage index tends to infinity. -/
+lemma exists_nullFiniteDifferenceEnumeration (T : LightProfinite) [Infinite T] :
+    Nonempty (NullFiniteDifferenceEnumeration T) := by
+  classical
+  let e : ℕ ≃ finiteDifferencePoint T := finiteDifferencePointEquivNat T
+  refine ⟨{ seq := e, stage_eventually_ge := ?_, surjective := e.surjective }⟩
+  intro k
+  have hbad : Set.Finite {n : ℕ | (e n).1 < k} := by
+    have hinit := finiteDifferencePoint_initial_finite T k
+    simpa [Set.preimage, e] using Set.Finite.preimage (Equiv.injective e).injOn hinit
+  obtain ⟨N, hN⟩ := hbad.bddAbove
+  refine Filter.eventually_atTop.2 ⟨N + 1, ?_⟩
+  intro n hn
+  by_contra hlt
+  have hnmem : n ∈ {n : ℕ | (e n).1 < k} := by
+    dsimp
+    omega
+  have := hN hnmem
+  omega
+
+/-- A chosen null enumeration of the points in the successive finite quotients of an infinite test
+object. -/
+noncomputable def nullFiniteDifferenceEnumeration (T : LightProfinite) [Infinite T] :
+    NullFiniteDifferenceEnumeration T :=
+  Classical.choice (exists_nullFiniteDifferenceEnumeration T)
+
+/-- A chosen index at which a finite-stage point appears in the null enumeration. -/
+noncomputable def finiteDifferenceIndex (T : LightProfinite) [Infinite T]
+    (p : finiteDifferencePoint T) : ℕ :=
+  ((nullFiniteDifferenceEnumeration T).surjective p).choose
+
+/-- The chosen index really enumerates the requested finite-stage point. -/
+lemma nullFiniteDifferenceEnumeration_seq_index (T : LightProfinite) [Infinite T]
+    (p : finiteDifferencePoint T) :
+    (nullFiniteDifferenceEnumeration T).seq (finiteDifferenceIndex T p) = p :=
+  ((nullFiniteDifferenceEnumeration T).surjective p).choose_spec
+
+/-- The free point-map associated to a point in a finite stage.  Stage `0` contributes the
+initial finite approximation; stage `m+1` contributes the difference between adjacent chosen
+finite-stage sections. -/
+noncomputable def finiteDifferenceValue (T : LightProfinite) :
+    (m : ℕ) → T.component m →
+      ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
+        (free ℤ).obj T.toCondensed)
+  | 0, a => freePointMap T (LightProfinite.projSection T 0 a)
+  | m + 1, a =>
+      freePointMap T (LightProfinite.projSection T (m + 1) a) -
+        freePointMap T (LightProfinite.projSection T m (T.transitionMap m a))
+
+/-- A positive-stage finite difference vanishes after projection to every strictly earlier finite
+quotient. -/
+lemma finiteDifferenceValue_comp_freeProj_zero (T : LightProfinite) {k m : ℕ} (h : k < m)
+    (a : T.component m) :
+    finiteDifferenceValue T m a ≫ freeProj T k = 0 := by
+  cases m with
+  | zero => omega
+  | succ m =>
+      have hle : k ≤ m := by omega
+      dsimp [finiteDifferenceValue]
+      rw [Preadditive.sub_comp]
+      rw [freePointMap_comp_freeProj]
+      rw [freePointMap_comp_freeProj]
+      have h₁ : T.proj k (LightProfinite.projSection T (m + 1) a) =
+          T.transitionMapLE (show k ≤ m + 1 by omega) a := by
+        have hmap := congrArg (fun f : T.component (m + 1) ⟶ T.component k => f a)
+          (LightProfinite.projSection_proj_le T (show k ≤ m + 1 by omega))
+        simpa using hmap
+      have h₂ : T.proj k (LightProfinite.projSection T m (T.transitionMap m a)) =
+          T.transitionMapLE hle (T.transitionMap m a) := by
+        have hmap := congrArg
+          (fun f : T.component m ⟶ T.component k => f (T.transitionMap m a))
+          (LightProfinite.projSection_proj_le T hle)
+        simpa using hmap
+      have htrans : T.transitionMap m ≫ T.transitionMapLE hle =
+          T.transitionMapLE (show k ≤ m + 1 by omega) := by
+        change T.diagram.map ⟨homOfLE (Nat.le_succ m)⟩ ≫ T.diagram.map ⟨homOfLE hle⟩ =
+          T.diagram.map ⟨homOfLE (show k ≤ m + 1 by omega)⟩
+        rw [← T.diagram.map_comp]
+        congr 1
+      have hpts : T.proj k (LightProfinite.projSection T (m + 1) a) =
+          T.proj k (LightProfinite.projSection T m (T.transitionMap m a)) := by
+        rw [h₁, h₂]
+        change T.transitionMapLE (show k ≤ m + 1 by omega) a =
+          (T.transitionMap m ≫ T.transitionMapLE hle) a
+        rw [htrans]
+      have hmaps := congrArg (freePointMap (T.component k)) hpts
+      rw [hmaps]
+      change freePointMap (T.component k)
+            (T.proj k (LightProfinite.projSection T m (T.transitionMap m a))) -
+          freePointMap (T.component k)
+            (T.proj k (LightProfinite.projSection T m (T.transitionMap m a))) = 0
+      abel
+
+/-- The `n`th finite value of the null sequence defining the map `P ℤ ⟶ ℤ[T]`, obtained by
+enumerating the successive finite-stage differences of the chosen AsLimit approximation of `T`. -/
 noncomputable def infinitePToFreeFiniteValue (T : LightProfinite) [Infinite T] (n : ℕ) :
     (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
-      (free ℤ).obj T.toCondensed := by
+      (free ℤ).obj T.toCondensed :=
+  finiteDifferenceValue T ((nullFiniteDifferenceEnumeration T).seq n).1
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+/-- Looking up a finite-stage point and then reading the corresponding finite value returns the
+finite-stage difference attached to that point. -/
+lemma infinitePToFreeFiniteValue_index (T : LightProfinite) [Infinite T] (m : ℕ)
+    (a : T.component m) :
+    infinitePToFreeFiniteValue T (finiteDifferenceIndex T ⟨m, a⟩) =
+      finiteDifferenceValue T m a := by
+  dsimp [infinitePToFreeFiniteValue]
+  rw [nullFiniteDifferenceEnumeration_seq_index]
+
+/-- The chosen finite values form a null sequence after every finite quotient of `T`. -/
+lemma infinitePToFreeFiniteValue_eventually_freeProj_zero (T : LightProfinite) [Infinite T]
+    (k : ℕ) :
+    ∀ᶠ n : ℕ in Filter.atTop, infinitePToFreeFiniteValue T n ≫ freeProj T k = 0 := by
+  filter_upwards [(nullFiniteDifferenceEnumeration T).stage_eventually_ge (k + 1)] with n hn
+  exact finiteDifferenceValue_comp_freeProj_zero T (by omega)
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+/-- Obligation: a null sequence of point-valued sections of `ℤ[T]` gives a section over `ℕ∪∞`
+with value zero at `∞`. -/
+lemma exists_freeElementOverNinf_of_eventually_freeProj_zero
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
+      (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+    ∃ x : ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩,
+      (∀ n : ℕ,
+        (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+          ((free ℤ).obj T.toCondensed)).symm
+          (((free ℤ).obj T.toCondensed).obj.map (natPoint n).op x) = u n) ∧
+      (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+        ((free ℤ).obj T.toCondensed)).symm
+        (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 := by
   sorry
 
-/-- Obligation: the finite values `infinitePToFreeFiniteValue` form a null sequence, hence give a
-section over `ℕ∪∞` with value zero at `∞`. -/
+/-- The finite values `infinitePToFreeFiniteValue` form a null sequence, hence give a section over
+`ℕ∪∞` with value zero at `∞`. -/
 lemma exists_infinitePToFreeElement (T : LightProfinite) [Infinite T] :
     ∃ x : ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩,
       (∀ n : ℕ,
@@ -1106,8 +1313,9 @@ lemma exists_infinitePToFreeElement (T : LightProfinite) [Infinite T] :
             infinitePToFreeFiniteValue T n) ∧
       (freeHomEquivPoints (LightProfinite.of PUnit.{1})
         ((free ℤ).obj T.toCondensed)).symm
-        (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 := by
-  sorry
+        (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 :=
+  exists_freeElementOverNinf_of_eventually_freeProj_zero T (infinitePToFreeFiniteValue T)
+    (infinitePToFreeFiniteValue_eventually_freeProj_zero T)
 
 /-- The section of `ℤ[T]` over `ℕ∪∞` whose finite values enumerate the successive finite-stage
 differences and whose `∞` value is zero. -/
@@ -1157,11 +1365,33 @@ lemma infinitePToFreeNumerator_kills (T : LightProfinite) [Infinite T] :
   freeNumerator_kills_of_inftyValue_zero ((free ℤ).obj T.toCondensed)
     (infinitePToFreeNumerator T) (infinitePToFreeNumerator_infty T)
 
+set_option backward.isDefEq.respectTransparency false in
+@[reassoc]
+lemma P_proj_comp_P_homMk (A : LightCondAb)
+    (f : (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ A) (hf : P_map ℤ ≫ f = 0) :
+    P_proj ℤ ≫ P_homMk ℤ A f hf = f := by
+  change cokernel.π (P_map ℤ) ≫ cokernel.desc (P_map ℤ) f hf = f
+  exact cokernel.π_desc (P_map ℤ) f hf
+
 /-- The map from the sequence object `P ℤ` to the free object on `T` used in Lemma 3.3.2. -/
 noncomputable def infinitePToFree (T : LightProfinite) [Infinite T] :
     P ℤ ⟶ (free ℤ).obj T.toCondensed :=
   P_homMk ℤ ((free ℤ).obj T.toCondensed) (infinitePToFreeNumerator T)
     (infinitePToFreeNumerator_kills T)
+
+/-- The basis element of `P ℤ` at coordinate `i`, followed by `infinitePToFree`, is the chosen
+finite-stage value at `i`. -/
+lemma pBasis_comp_infinitePToFree (T : LightProfinite) [Infinite T] (i : ℕ) :
+    pBasis i ≫ infinitePToFree T = freePointIsoUnit.inv ≫ infinitePToFreeFiniteValue T i := by
+  dsimp [pBasis, infinitePToFree]
+  rw [Category.assoc]
+  rw [P_proj_comp_P_homMk]
+  dsimp [freeNatBasis]
+  rw [Category.assoc]
+  change freePointIsoUnit.inv ≫
+      freeNatValue ((free ℤ).obj T.toCondensed) i (infinitePToFreeNumerator T) =
+    freePointIsoUnit.inv ≫ infinitePToFreeFiniteValue T i
+  rw [infinitePToFreeNumerator_finite]
 
 /-- The tail endomorphisms in Lemma 3.3.2, packaged as a map out of `P ℤ ⊗ ℤ[T]`. -/
 noncomputable def infiniteTailMap (T : LightProfinite) [Infinite T] :
@@ -1169,10 +1399,26 @@ noncomputable def infiniteTailMap (T : LightProfinite) [Infinite T] :
   pTensorDesc ((free ℤ).obj T.toCondensed) ((free ℤ).obj T.toCondensed)
     (infiniteTailNumerator T) (infiniteTailNumerator_kills T)
 
-/-- Obligation: the `n`th finite slice of the finite-difference factorization through `P ℤ`. -/
+/-- The locally constant finite-stage index map sending a point of `T.component n` to the place
+where it appears in the null enumeration of finite-stage points. -/
+noncomputable def finiteDifferenceIndexMap (T : LightProfinite) [Infinite T] (n : ℕ) :
+    T.component n ⟶ ℕ∪{∞} :=
+  ConcreteCategory.ofHom ⟨fun a => (finiteDifferenceIndex T ⟨n, a⟩ : ℕ∪{∞}),
+    continuous_of_discreteTopology⟩
+
+@[simp]
+lemma finiteDifferenceIndexMap_apply (T : LightProfinite) [Infinite T] (n : ℕ)
+    (a : T.component n) :
+    finiteDifferenceIndexMap T n a =
+      (finiteDifferenceIndex T ⟨n, a⟩ : ℕ∪{∞}) := rfl
+
+/-- The `n`th finite slice of the finite-difference factorization through `P ℤ`: project to the
+`n`th finite quotient, look up the corresponding enumerating coordinate of `P`, and pass to the
+quotient `P ℤ`. -/
 noncomputable def infiniteDifferenceFiniteSlice (T : LightProfinite) [Infinite T] (n : ℕ) :
-    (free ℤ).obj T.toCondensed ⟶ P ℤ := by
-  sorry
+    (free ℤ).obj T.toCondensed ⟶ P ℤ :=
+  (lightProfiniteToLightCondSet ⋙ free ℤ).map (T.proj n ≫ finiteDifferenceIndexMap T n) ≫
+    P_proj ℤ
 
 /-- Obligation: each finite difference of tail endomorphisms factors through the chosen map
 `infinitePToFree`. -/
