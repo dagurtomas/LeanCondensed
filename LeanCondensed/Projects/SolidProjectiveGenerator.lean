@@ -26,6 +26,7 @@ representables, and the finite-coproduct reduction proved below.
 noncomputable section
 
 open CategoryTheory Limits LightCondensed LightProfinite MonoidalCategory MonoidalClosed OnePoint
+open scoped BigOperators
 
 namespace CategoryTheory
 
@@ -205,6 +206,19 @@ lemma exists_locallyConstant_factor_proj (T : LightProfinite) {α : Type*}
   obtain ⟨j, g, hg⟩ := Profinite.exists_locallyConstant
     (C := lightToProfinite.mapCone T.asLimitCone) hlim f
   exact ⟨j.unop, g, hg⟩
+
+/-- In a light profinite space, a point outside a finite set has a clopen neighborhood disjoint from
+that finite set. -/
+lemma exists_clopen_avoiding_finset (T : LightProfinite)
+    (s : Finset T) {t : T} (ht : t ∉ s) :
+    ∃ U : Set T, IsClopen U ∧ t ∈ U ∧ ∀ u ∈ s, u ∉ U := by
+  have hsclosed : IsClosed ((s : Set T)) := s.finite_toSet.isClosed
+  have hopen : IsOpen ((s : Set T)ᶜ) := hsclosed.isOpen_compl
+  have htmem : t ∈ ((s : Set T)ᶜ) := by simpa using ht
+  obtain ⟨U, hU, htU, hUsub⟩ := compact_exists_isClopen_in_isOpen hopen htmem
+  refine ⟨U, hU, htU, ?_⟩
+  intro u hus huU
+  exact hUsub huU hus
 
 end LightProfinite
 
@@ -1275,6 +1289,94 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
       have h := congrArg (zdiscSectionsEquiv T) (hfinite n)
       rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
       exact congrFun (congrArg LocallyConstant.toFun h) t
+
+/-- Finite signed integer measures on a light profinite set. -/
+abbrev FreeMeasure (T : LightProfinite) := T →₀ ℤ
+
+/-- The clopen indicator as an integer-valued locally constant function. -/
+noncomputable def clopenIndicatorInt {X : Type*} [TopologicalSpace X]
+    (U : Set X) (hU : IsClopen U) : LocallyConstant X ℤ :=
+  (LocallyConstant.const X (1 : ℤ)).indicator hU
+
+@[simp]
+lemma clopenIndicatorInt_of_mem {X : Type*} [TopologicalSpace X]
+    {U : Set X} (hU : IsClopen U) {x : X} (hx : x ∈ U) :
+    clopenIndicatorInt U hU x = 1 := by
+  simp [clopenIndicatorInt, LocallyConstant.indicator_of_mem _ hU hx]
+
+@[simp]
+lemma clopenIndicatorInt_of_notMem {X : Type*} [TopologicalSpace X]
+    {U : Set X} (hU : IsClopen U) {x : X} (hx : x ∉ U) :
+    clopenIndicatorInt U hU x = 0 := by
+  simp [clopenIndicatorInt, LocallyConstant.indicator_of_notMem _ hU hx]
+
+/-- Evaluate a finite signed measure on a locally constant integer-valued function. -/
+noncomputable def freeMeasureEval (T : LightProfinite) (f : LocallyConstant T ℤ) :
+    FreeMeasure T →ₗ[ℤ] ℤ :=
+  Finsupp.linearCombination ℤ fun t : T => f t
+
+lemma freeMeasureEval_apply (T : LightProfinite) (f : LocallyConstant T ℤ)
+    (μ : FreeMeasure T) :
+    freeMeasureEval T f μ = μ.sum fun t n => n * f t := by
+  simp [freeMeasureEval, Finsupp.linearCombination_apply]
+
+/-- If a clopen set contains `t` and avoids the rest of the support of a finite measure, then its
+indicator evaluates the measure to the coefficient at `t`. -/
+lemma freeMeasureEval_clopenIndicator_eq_single
+    {T : LightProfinite} (δ : FreeMeasure T) {t : T}
+    (U : Set T) (hU : IsClopen U) (htU : t ∈ U)
+    (hU_support : ∀ u ∈ δ.support, u ≠ t → u ∉ U) :
+    freeMeasureEval T (clopenIndicatorInt U hU) δ = δ t := by
+  rw [freeMeasureEval_apply]
+  classical
+  rw [Finsupp.sum]
+  change (∑ b ∈ δ.support, δ b * clopenIndicatorInt U hU b) = δ t
+  calc
+    (∑ b ∈ δ.support, δ b * clopenIndicatorInt U hU b)
+        = δ t * clopenIndicatorInt U hU t := by
+          refine Finset.sum_eq_single t ?_ ?_
+          · intro b hb hbt
+            have hbU : b ∉ U := hU_support b hb hbt
+            simp [clopenIndicatorInt_of_notMem hU hbU]
+          · intro ht_not
+            have hδt : δ t = 0 := by
+              simpa [Finsupp.mem_support_iff] using ht_not
+            simp [hδt]
+    _ = δ t := by simp [clopenIndicatorInt_of_mem hU htU]
+
+/-- Finite signed integer measures on a light profinite set are separated by locally constant
+integer-valued functions. -/
+lemma freeMeasure_ext_of_eval
+    {T : LightProfinite} {μ ν : FreeMeasure T}
+    (h : ∀ f : LocallyConstant T ℤ,
+      freeMeasureEval T f μ = freeMeasureEval T f ν) :
+    μ = ν := by
+  classical
+  let δ : FreeMeasure T := μ - ν
+  have hδ_eval : ∀ f : LocallyConstant T ℤ, freeMeasureEval T f δ = 0 := by
+    intro f
+    dsimp [δ]
+    rw [map_sub, h f, sub_self]
+  have hδ : δ = 0 := by
+    by_contra hδ_ne
+    have hsupport_nonempty : δ.support.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro hsupp_empty
+      apply hδ_ne
+      ext t
+      have ht : t ∉ δ.support := by simp [hsupp_empty]
+      simpa [Finsupp.mem_support_iff] using ht
+    obtain ⟨t, ht_support⟩ := hsupport_nonempty
+    have ht_ne : δ t ≠ 0 := (Finsupp.mem_support_iff).1 ht_support
+    obtain ⟨U, hU, htU, hUavoid⟩ :=
+      LightProfinite.exists_clopen_avoiding_finset T (δ.support.erase t) (t := t) (by simp)
+    have hU_support : ∀ u ∈ δ.support, u ≠ t → u ∉ U := by
+      intro u hu hut
+      exact hUavoid u (Finset.mem_erase.mpr ⟨hut, hu⟩)
+    have heval := hδ_eval (clopenIndicatorInt U hU)
+    rw [freeMeasureEval_clopenIndicator_eq_single δ U hU htU hU_support] at heval
+    exact ht_ne heval
+  simpa [δ, sub_eq_zero] using hδ
 
 /-- A finite light profinite set, represented as a sheaf, is the locally constant sheaf on its
 underlying finite set. -/
