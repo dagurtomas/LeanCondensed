@@ -543,6 +543,85 @@ end FreeImage
 
 end LightProfinite
 
+namespace LightCondensed
+
+/-- The `ModuleCat`-valued presheaf of continuous maps from light profinite test objects into a
+topological abelian group. -/
+noncomputable def topModulePresheaf (M : TopModuleCat.{0} ℤ) :
+    LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ where
+  obj S := ModuleCat.of ℤ C(↑S.unop.toTop, M)
+  map {S T} f := by
+    let φ : C(↑T.unop.toTop, ↑S.unop.toTop) := f.unop.hom.hom
+    exact ModuleCat.ofHom {
+      toFun := fun g => g.comp φ
+      map_add' := by intro x y; ext s; rfl
+      map_smul' := by intro r x; ext s; rfl }
+  map_id := by intro S; ext f s; rfl
+  map_comp := by intro S T U f g; ext h s; rfl
+
+/-- Forgetting the module structure on `topModulePresheaf` gives the usual light-condensed set
+associated to the underlying topological space. -/
+noncomputable def topModulePresheafForgetIso (M : TopModuleCat.{0} ℤ) :
+    topModulePresheaf M ⋙ CategoryTheory.forget (ModuleCat.{0} ℤ) ≅
+      (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj := by
+  refine NatIso.ofComponents (fun _ => Iso.refl _) ?_
+  intro S T f
+  ext x
+  rfl
+
+noncomputable instance (M : TopModuleCat.{0} ℤ) :
+    PreservesFiniteProducts (topModulePresheaf M ⋙ CategoryTheory.forget (ModuleCat.{0} ℤ)) where
+  preserves n := by
+    let G := (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj
+    haveI : PreservesFiniteProducts G := inferInstance
+    exact preservesLimitsOfShape_of_natIso (J := Discrete (Fin n))
+      (topModulePresheafForgetIso M).symm
+
+/-- The light condensed abelian group represented by a topological abelian group. -/
+noncomputable def topModuleToLightCondAbObj (M : TopModuleCat.{0} ℤ) : LightCondAb := by
+  refine LightCondensed.ofSheafForgetLightProfinite (topModulePresheaf M) ?_
+  exact regularTopology.equalizerCondition_of_natIso (topModulePresheafForgetIso M).symm
+    (LightCondensed.equalizerCondition
+      (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)))
+
+/-- Postcomposition of continuous maps gives functoriality of `topModuleToLightCondAbObj`. -/
+noncomputable def topModuleToLightCondAbMap {M N : TopModuleCat.{0} ℤ} (f : M ⟶ N) :
+    topModuleToLightCondAbObj M ⟶ topModuleToLightCondAbObj N where
+  hom := {
+    app S := by
+      let φ : C(M, N) := ⟨f.hom, f.hom.continuous⟩
+      exact ModuleCat.ofHom {
+        toFun := fun g => φ.comp g
+        map_add' := by intro x y; ext s; simp [φ]
+        map_smul' := by intro r x; ext s; simp [φ] }
+    naturality := by
+      intro S T φ
+      ext g
+      rfl }
+
+/-- The underlying light condensed set of the light condensed abelian group represented by a
+topological abelian group is the usual light condensed set represented by its underlying
+space. -/
+noncomputable def topModuleToLightCondAbForgetIso (M : TopModuleCat.{0} ℤ) :
+    (forget ℤ).obj (topModuleToLightCondAbObj M) ≅
+      topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M) :=
+  (fullyFaithfulSheafToPresheaf _ _).preimageIso (topModulePresheafForgetIso M)
+
+/-- The functor from topological abelian groups to light condensed abelian groups. -/
+noncomputable def topModuleToLightCondAb : TopModuleCat.{0} ℤ ⥤ LightCondAb where
+  obj M := topModuleToLightCondAbObj M
+  map {M N} f := topModuleToLightCondAbMap f
+  map_id := by
+    intro M
+    ext S g
+    rfl
+  map_comp := by
+    intro M N K f g
+    ext S h
+    rfl
+
+end LightCondensed
+
 namespace LightCondAb
 
 variable (S : LightProfinite.{0})
