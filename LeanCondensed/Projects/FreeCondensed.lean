@@ -814,6 +814,24 @@ abbrev topologicalFreeDirac : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).
 lemma topologicalFreeDirac_apply (s : S) :
     (topologicalFreeDirac S) s = Finsupp.single s (1 : ℤ) := rfl
 
+/-- Functoriality of the topological free abelian group on light profinite maps. -/
+noncomputable def topologicalFreeMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
+    topologicalFree S ⟶ topologicalFree T :=
+  (TopModuleCat.free ℤ).map (LightProfinite.toTopCat.map f)
+
+@[simp]
+lemma topologicalFreeMap_single {S T : LightProfinite.{0}} (f : S ⟶ T) (s : S) :
+    (topologicalFreeMap f).hom (Finsupp.single s (1 : ℤ)) = Finsupp.single (f s) (1 : ℤ) := by
+  change (Finsupp.mapDomain (LightProfinite.toTopCat.map f).hom (Finsupp.single s (1 : ℤ))) =
+    Finsupp.single (f s) (1 : ℤ)
+  simp [Finsupp.mapDomain_single]
+  rfl
+
+/-- The induced map between represented topological free abelian groups. -/
+noncomputable def topologicalFreeCondensedMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
+    topologicalFreeCondensed S ⟶ topologicalFreeCondensed T :=
+  LightCondensed.topModuleToLightCondAbMap (topologicalFreeMap f)
+
 /-- The section of the underlying represented condensed set induced by the topological Dirac map. -/
 noncomputable def topologicalFreeDiracSection :
     S.toCondensed ⟶ (forget ℤ).obj (topologicalFreeCondensed S) :=
@@ -835,6 +853,48 @@ lemma topologicalFreeDiracSection_yoneda_apply (s : S) :
       Finsupp.single s (1 : ℤ)
   rw [LightCondensed.topModuleToLightCondAbForgetIso_inv_app]
   rfl
+
+/-- The topological Dirac section is natural in the light profinite source. -/
+lemma topologicalFreeDiracSection_naturality {S T : LightProfinite.{0}} (f : S ⟶ T) :
+    lightProfiniteToLightCondSet.map f ≫ topologicalFreeDiracSection T =
+      topologicalFreeDiracSection S ≫ (forget ℤ).map (topologicalFreeCondensedMap f) := by
+  ext U g
+  letI : TopologicalSpace ((topologicalFree T).toModuleCat : Type) := (topologicalFree T).topologicalSpace
+  change (show C(↑U.unop.toTop, ↑(topologicalFree T).toModuleCat) from
+      (lightProfiniteToLightCondSet.map f ≫ topologicalFreeDiracSection T).hom.app U g) =
+    (show C(↑U.unop.toTop, ↑(topologicalFree T).toModuleCat) from
+      (topologicalFreeDiracSection S ≫ (forget ℤ).map (topologicalFreeCondensedMap f)).hom.app U g)
+  let g' : C(↑U.unop.toTop, ↑S.toTop) :=
+    (lightProfiniteToLightCondSetIsoTopCatToLightCondSet.hom.app S).hom.app U g
+  ext u
+  dsimp [topologicalFreeDiracSection, topologicalFreeCondensedMap]
+  change Finsupp.single (f (g' u)) (1 : ℤ) =
+    (topologicalFreeMap f).hom (Finsupp.single (g' u) (1 : ℤ))
+  exact (topologicalFreeMap_single f (g' u)).symm
+
+/-- The topological free map sends the Dirac section to the Dirac section. -/
+lemma topologicalFreeCondensedMap_diracSection_apply {S T : LightProfinite.{0}} (f : S ⟶ T) :
+    (topologicalFreeCondensed T).obj.map f.op
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection T)) =
+      (topologicalFreeCondensedMap f).hom.app ⟨S⟩
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)) := by
+  letI : TopologicalSpace ((topologicalFree T).toModuleCat : Type) := (topologicalFree T).topologicalSpace
+  change (show C(↑S.toTop, ↑(topologicalFree T).toModuleCat) from
+      (topologicalFreeCondensed T).obj.map f.op
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection T))) =
+    (show C(↑S.toTop, ↑(topologicalFree T).toModuleCat) from
+      (topologicalFreeCondensedMap f).hom.app ⟨S⟩
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)))
+  ext s
+  dsimp [topologicalFreeCondensedMap]
+  change ((show C(↑T.toTop, ↑(topologicalFree T).toModuleCat) from
+      (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection T)) (f s)) =
+    (topologicalFreeMap f).hom
+      ((show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+        (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)) s)
+  rw [topologicalFreeDiracSection_yoneda_apply]
+  rw [topologicalFreeDiracSection_yoneda_apply]
+  exact (topologicalFreeMap_single f s).symm
 
 /-- The topological abelian group `ℤ` with its usual discrete topology. -/
 abbrev discreteIntTopModule : TopModuleCat.{0} ℤ :=
@@ -936,6 +996,24 @@ lemma topologicalFreeEval_apply (f : LocallyConstant S ℤ) (μ : topologicalFre
   convert topologicalFreeEval_single S f s
   rfl
 
+/-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
+lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
+    (g : LocallyConstant T ℤ) :
+    topologicalFreeMap f ≫ topologicalFreeEval T g =
+      topologicalFreeEval S (g.comap f.hom.hom) := by
+  ext μ
+  let L : (topologicalFree S) →ₗ[ℤ] ℤ :=
+    (topologicalFreeMap f ≫ topologicalFreeEval T g).hom.toLinearMap
+  let R : (topologicalFree S) →ₗ[ℤ] ℤ :=
+    (topologicalFreeEval S (g.comap f.hom.hom)).hom.toLinearMap
+  change L μ = R μ
+  suffices L = R by rw [this]
+  refine Finsupp.lhom_ext' fun s => LinearMap.ext_ring ?_
+  change (topologicalFreeEval T g).hom ((topologicalFreeMap f).hom (Finsupp.single s (1 : ℤ))) =
+    (topologicalFreeEval S (g.comap f.hom.hom)).hom (Finsupp.single s (1 : ℤ))
+  rw [topologicalFreeMap_single, topologicalFreeEval_single, topologicalFreeEval_single]
+  rfl
+
 /-- The induced morphism between represented light condensed abelian groups. -/
 noncomputable def topologicalFreeEvalCondensed (f : LocallyConstant S ℤ) :
     topologicalFreeCondensed S ⟶
@@ -985,6 +1063,19 @@ lemma freeForgetAdjunction_homEquiv_freeToTopologicalFree :
     (LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed (topologicalFreeCondensed S)
       (freeToTopologicalFree S) = topologicalFreeDiracSection S := by
   simp [freeToTopologicalFree]
+
+/-- The comparison from the free light condensed abelian group to the represented topological free
+abelian group is natural in the light profinite source. -/
+lemma freeToTopologicalFree_naturality {S T : LightProfinite.{0}} (f : S ⟶ T) :
+    ((free ℤ).map (lightProfiniteToLightCondSet.map f)) ≫ freeToTopologicalFree T =
+      freeToTopologicalFree S ≫ topologicalFreeCondensedMap f := by
+  apply ((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed
+    (topologicalFreeCondensed T)).injective
+  rw [Adjunction.homEquiv_naturality_left]
+  rw [Adjunction.homEquiv_naturality_right]
+  dsimp [freeToTopologicalFree]
+  simp
+  exact topologicalFreeDiracSection_naturality f
 
 abbrev freeLightProfiniteMap : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ⟶
     sequentialToLightCondSet.obj (lightCondSetToSequential.obj

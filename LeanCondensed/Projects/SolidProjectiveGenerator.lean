@@ -631,6 +631,13 @@ lemma zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval (T : LightProfinit
     exact LightCondAb.topologicalFreeEvalDiscrete_diracSection T f
   rw [hz]
 
+/-- Reconstruct a `Zdisc`-valued map from the locally constant function it induces. -/
+lemma zdiscMapOfLocallyConstant_of_freeHomEquivPoints (T : LightProfinite)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    zdiscMapOfLocallyConstant T (zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc φ)) = φ := by
+  apply (freeHomEquivPoints T Zdisc).injective
+  simp [zdiscMapOfLocallyConstant]
+
 /-- A `ℤ`-valued map out of `ℤ[T]` factors through a finite quotient of `T`. -/
 lemma zdisc_hom_factors_freeProj (T : LightProfinite)
     (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
@@ -1616,6 +1623,56 @@ lemma finiteFree_section_ext_of_zdisc_eval (F S : LightProfinite) [Finite F]
         (e.hom.hom.app ⟨S⟩ y)) at hloc
   rw [discreteModuleSectionsEquiv_map, discreteModuleSectionsEquiv_map] at hloc
   exact congrFun (congrArg LocallyConstant.toFun hloc) s
+
+/-- For finite light profinite sets, the comparison to the represented topological free abelian
+group is injective on sections. -/
+lemma freeToTopologicalFree_section_injective_finite (F S : LightProfinite) [Finite F] :
+    Function.Injective ((LightCondAb.freeToTopologicalFree F).hom.app ⟨S⟩) := by
+  intro x y hxy
+  apply finiteFree_section_ext_of_zdisc_eval F S x y
+  intro ψ
+  let f : LocallyConstant F ℤ := zdiscSectionsEquiv F (freeHomEquivPoints F Zdisc ψ)
+  have hψ : ψ = LightCondAb.freeToTopologicalFree F ≫ LightCondAb.topologicalFreeEvalDiscrete F f := by
+    rw [← zdiscMapOfLocallyConstant_of_freeHomEquivPoints F ψ]
+    exact zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval F f
+  rw [hψ]
+  change (LightCondAb.topologicalFreeEvalDiscrete F f).hom.app ⟨S⟩
+      ((LightCondAb.freeToTopologicalFree F).hom.app ⟨S⟩ x) =
+    (LightCondAb.topologicalFreeEvalDiscrete F f).hom.app ⟨S⟩
+      ((LightCondAb.freeToTopologicalFree F).hom.app ⟨S⟩ y)
+  rw [hxy]
+
+/-- Equality after mapping to the represented topological free abelian group implies equality after
+all finite free projections. -/
+lemma freeProj_section_eq_of_freeToTopologicalFree_eq (T S : LightProfinite)
+    {x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩}
+    (hxy : (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ x =
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y)
+    (k : ℕ) :
+    (freeProj T k).hom.app ⟨S⟩ x = (freeProj T k).hom.app ⟨S⟩ y := by
+  apply freeToTopologicalFree_section_injective_finite (T.component k) S
+  have hmap := congrArg
+    (fun z => (LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩ z) hxy
+  change ((LightCondAb.freeToTopologicalFree T ≫
+      LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩) x =
+    ((LightCondAb.freeToTopologicalFree T ≫
+      LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩) y at hmap
+  rw [← LightCondAb.freeToTopologicalFree_naturality (T.proj k)] at hmap
+  change (LightCondAb.freeToTopologicalFree (T.component k)).hom.app ⟨S⟩
+      ((freeProj T k).hom.app ⟨S⟩ x) =
+    (LightCondAb.freeToTopologicalFree (T.component k)).hom.app ⟨S⟩
+      ((freeProj T k).hom.app ⟨S⟩ y) at hmap
+  exact hmap
+
+/-- The `Zdisc`-separation hypothesis implies equality after every finite free projection. -/
+lemma freeProj_section_eq_of_zdisc_eval (T S : LightProfinite)
+    {x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩}
+    (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+      φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y)
+    (k : ℕ) :
+    (freeProj T k).hom.app ⟨S⟩ x = (freeProj T k).hom.app ⟨S⟩ y :=
+  freeProj_section_eq_of_freeToTopologicalFree_eq T S
+    (freeToTopologicalFree_section_eq_of_zdisc_eval T S h) k
 
 /-- Obligation: sections of the free object `ℤ[T]` are separated by all locally constant
 integer-valued functions on `T`.  This is the non-finite free-object separation input used to pass
