@@ -10,6 +10,7 @@ import Mathlib.Condensed.Light.TopCatAdjunction
 import Mathlib.Data.Finsupp.Basic
 import Mathlib.Topology.Category.LightProfinite.AsLimit
 import Mathlib.Topology.Category.Sequential
+import Mathlib.Topology.Category.TopCat.Limits.Basic
 import Mathlib.Topology.LocallyConstant.Basic
 import Mathlib.Tactic.FunProp
 import Mathlib.Tactic.Positivity
@@ -19,6 +20,102 @@ noncomputable section
 
 open CategoryTheory LightCondensed LightCondSet LightCondAb Limits
 open scoped BigOperators
+
+namespace Sequential
+
+/-- The topological colimit of a diagram of sequential spaces is again sequential. -/
+noncomputable def colimitCoconeOfTop {J : Type} [Category J]
+    (F : J ⥤ Sequential.{0}) [HasColimit (F ⋙ sequentialToTop)] : Cocone F := by
+  let topF := F ⋙ sequentialToTop
+  have hseq : SequentialSpace ((colimit topF : TopCat) : Type) := by
+    rw [TopCat.colimit_topology topF]
+    refine SequentialSpace.iSup fun j => ?_
+    haveI : SequentialSpace ((topF.obj j : TopCat) : Type) := by
+      change SequentialSpace ((F.obj j).toTop : Type)
+      infer_instance
+    exact SequentialSpace.coinduced (colimit.ι topF j)
+  refine { pt := { toTop := colimit topF, is_sequential := hseq }, ι := ?_ }
+  refine { app := fun j => InducedCategory.homMk (colimit.ι topF j), naturality := ?_ }
+  intro i j f
+  ext x
+  exact ConcreteCategory.congr_hom ((colimit.cocone topF).ι.naturality f) x
+
+/-- The cocone obtained from the topological colimit is colimiting in sequential spaces. -/
+noncomputable def colimitCoconeOfTop_isColimit {J : Type} [Category J]
+    (F : J ⥤ Sequential.{0}) [HasColimit (F ⋙ sequentialToTop)] :
+    IsColimit (colimitCoconeOfTop F) := by
+  refine IsColimit.ofFaithful sequentialToTop (colimit.isColimit (F ⋙ sequentialToTop)) ?_ ?_
+  · intro s
+    exact sequentialToTop.preimage (X := (colimitCoconeOfTop F).pt) (Y := s.pt)
+      (colimit.desc (F ⋙ sequentialToTop) (sequentialToTop.mapCocone s))
+  · intro s
+    change sequentialToTop.map
+        (sequentialToTop.preimage (X := (colimitCoconeOfTop F).pt) (Y := s.pt)
+          (colimit.desc (F ⋙ sequentialToTop) (sequentialToTop.mapCocone s))) =
+      colimit.desc (F ⋙ sequentialToTop) (sequentialToTop.mapCocone s)
+    rw [Functor.map_preimage]
+
+/-- The inclusion of sequential spaces into topological spaces preserves colimits. -/
+noncomputable instance preservesColimit_sequentialToTop {J : Type} [Category J]
+    (F : J ⥤ Sequential.{0}) [HasColimit (F ⋙ sequentialToTop)] :
+    PreservesColimit F sequentialToTop :=
+  preservesColimit_of_preserves_colimit_cocone (colimitCoconeOfTop_isColimit F) (by
+    exact IsColimit.ofIsoColimit (colimit.isColimit (F ⋙ sequentialToTop))
+      (Cocone.ext (Iso.refl _) (by intro j; rfl)))
+
+/-- The concrete forgetful functor from sequential spaces is the same as first forgetting to
+`TopCat` and then to types. -/
+noncomputable def forgetIso : (forget Sequential.{0}) ≅ (sequentialToTop ⋙ forget TopCat) :=
+  NatIso.ofComponents (fun _ => Iso.refl _) (by intro X Y f; rfl)
+
+noncomputable instance preservesColimit_forget {J : Type} [Category J]
+    (F : J ⥤ Sequential.{0}) [HasColimit (F ⋙ sequentialToTop)] :
+    PreservesColimit F (forget Sequential) :=
+  preservesColimit_of_natIso F forgetIso.symm
+
+end Sequential
+
+namespace LightCondSet
+
+/-- If a light condensed set is represented by its topological realization, then a morphism out of
+it is sectionwise injective as soon as it is injective on point-valued sections. -/
+lemma injective_app_of_topCatAdjunctionUnit_iso_and_injective_point {X Y : LightCondSet.{0}}
+    (f : X ⟶ Y)
+    [IsIso (topCatAdjunctionUnit X)]
+    (hpt : Function.Injective (f.hom.app ⟨LightProfinite.of PUnit⟩))
+    (S : LightProfinite) :
+    Function.Injective (f.hom.app ⟨S⟩) := by
+  intro x y hxy
+  let η := topCatAdjunctionUnit X
+  have hη : η.hom.app ⟨S⟩ x = η.hom.app ⟨S⟩ y := by
+    letI : TopologicalSpace ((X.toTopCat : TopCat) : Type) := X.toTopCat.str
+    change (show C(↑S.toTop, ((X.toTopCat : TopCat) : Type)) from η.hom.app ⟨S⟩ x) =
+      (show C(↑S.toTop, ((X.toTopCat : TopCat) : Type)) from η.hom.app ⟨S⟩ y)
+    apply ContinuousMap.ext
+    intro s
+    have hηx : ((show C(↑S.toTop, ((X.toTopCat : TopCat) : Type)) from
+        η.hom.app ⟨S⟩ x) s) =
+        X.obj.map ((LightProfinite.of PUnit).const s).op x := by
+      dsimp [η]
+      rw [topCatAdjunctionUnit_hom_app]
+      rfl
+    have hηy : ((show C(↑S.toTop, ((X.toTopCat : TopCat) : Type)) from
+        η.hom.app ⟨S⟩ y) s) =
+        X.obj.map ((LightProfinite.of PUnit).const s).op y := by
+      dsimp [η]
+      rw [topCatAdjunctionUnit_hom_app]
+      rfl
+    rw [hηx, hηy]
+    apply hpt
+    rw [NatTrans.naturality_apply f.hom ((LightProfinite.of PUnit).const s).op x]
+    rw [NatTrans.naturality_apply f.hom ((LightProfinite.of PUnit).const s).op y]
+    exact congrArg (fun z => Y.obj.map ((LightProfinite.of PUnit).const s).op z) hxy
+  have hη' := congrArg (fun z => (asIso η).inv.hom.app ⟨S⟩ z) hη
+  change (η ≫ (asIso η).inv).hom.app ⟨S⟩ x =
+    (η ≫ (asIso η).inv).hom.app ⟨S⟩ y at hη'
+  simpa using hη'
+
+end LightCondSet
 
 namespace LightProfinite
 
@@ -550,6 +647,57 @@ lemma diracSequential_eval_apply (S : LightProfinite.{0}) (k : ℕ)
   change (diracSequential S ≫ sequentialEvalOfFactor S k g) s =
     profiniteComponentEval S (1 : ℤ) k g (diracComponent S s) at hs
   exact hs.trans (profiniteComponentEval_diracComponent S k g s)
+
+/-- Points of the sequential finite-measure model are separated by finite-stage evaluations. -/
+lemma sequentialEvalOfFactor_ext (S : LightProfinite.{0})
+    {x y : sequential S}
+    (h : ∀ k : ℕ, ∀ g : S.fintypeDiagram.obj ⟨k⟩ → ℤ,
+      sequentialEvalOfFactor S k g x = sequentialEvalOfFactor S k g y) :
+    x = y := by
+  let F := seqFunctor S ⋙ lightProfiniteToSequential
+  obtain ⟨c, xc, rfl⟩ := Concrete.colimit_exists_rep F x
+  obtain ⟨d, yd, rfl⟩ := Concrete.colimit_exists_rep F y
+  apply Concrete.colimit_rep_eq_of_exists F xc yd
+  let e := IsFiltered.max c d
+  let fc : c ⟶ e := IsFiltered.leftToMax c d
+  let fd : d ⟶ e := IsFiltered.rightToMax c d
+  refine ⟨e, fc, fd, ?_⟩
+  apply profiniteComponentEval_ext S (e : ℤ)
+  intro k g
+  have hxy := h k g
+  change (colimit.ι F c ≫ sequentialEvalOfFactor S k g) xc =
+    (colimit.ι F d ≫ sequentialEvalOfFactor S k g) yd at hxy
+  rw [colimit_ι_sequentialEvalOfFactor, colimit_ι_sequentialEvalOfFactor] at hxy
+  have hc := congrArg
+    (fun m : lightProfiniteToSequential.obj (profiniteComponent S c) ⟶ discreteIntSeq => m xc)
+    (profiniteComponentEval_bound S (pnatHomLeInt fc) k g)
+  have hd := congrArg
+    (fun m : lightProfiniteToSequential.obj (profiniteComponent S d) ⟶ discreteIntSeq => m yd)
+    (profiniteComponentEval_bound S (pnatHomLeInt fd) k g)
+  change profiniteComponentEval S (e : ℤ) k g ((F.map fc) xc) =
+    profiniteComponentEval S (c : ℤ) k g xc at hc
+  change profiniteComponentEval S (e : ℤ) k g ((F.map fd) yd) =
+    profiniteComponentEval S (d : ℤ) k g yd at hd
+  rw [hc, hd]
+  exact hxy
+
+/-- Sections of the sequential finite-measure model are separated by finite-stage evaluations. -/
+lemma sequential_section_ext_of_eval (T U : LightProfinite.{0})
+    {x y : (sequentialToLightCondSet.obj (sequential T)).obj.obj ⟨U⟩}
+    (h : ∀ k : ℕ, ∀ g : T.fintypeDiagram.obj ⟨k⟩ → ℤ,
+      (sequentialToLightCondSet.map (sequentialEvalOfFactor T k g)).hom.app ⟨U⟩ x =
+        (sequentialToLightCondSet.map (sequentialEvalOfFactor T k g)).hom.app ⟨U⟩ y) :
+    x = y := by
+  apply ContinuousMap.ext
+  intro u
+  apply sequentialEvalOfFactor_ext T
+  intro k g
+  have hk := congrArg (fun f : C(↑U.toTop, ↑discreteIntSeq.toTop) => f u) (h k g)
+  change (sequentialEvalOfFactor T k g)
+      ((show C(↑U.toTop, ↑(sequential T).toTop) from x) u) =
+    (sequentialEvalOfFactor T k g)
+      ((show C(↑U.toTop, ↑(sequential T).toTop) from y) u) at hk
+  exact hk
 
 end FreeImage
 

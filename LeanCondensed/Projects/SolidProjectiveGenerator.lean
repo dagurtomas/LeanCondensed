@@ -1474,6 +1474,33 @@ lemma freeToTopologicalFree_section_eq_of_zdisc_eval (T S : LightProfinite)
       ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y)
   simpa using hf
 
+/-- Since the source of `freeToTopologicalFree` is sequential, injectivity on point-valued sections
+implies injectivity on all light profinite sections. -/
+lemma freeToTopologicalFree_section_injective_of_point_injective (T S : LightProfinite)
+    (hpt : Function.Injective
+      ((LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit⟩)) :
+    Function.Injective ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩) := by
+  let X : LightCondSet := (forget ℤ).obj ((free ℤ).obj T.toCondensed)
+  let Y : LightCondSet := (forget ℤ).obj (LightCondAb.topologicalFreeCondensed T)
+  let f : X ⟶ Y := (forget ℤ).map (LightCondAb.freeToTopologicalFree T)
+  haveI : IsIso (LightCondSet.topCatAdjunctionUnit X) := by
+    change IsIso (LightCondAb.freeLightProfiniteMap T)
+    infer_instance
+  exact LightCondSet.injective_app_of_topCatAdjunctionUnit_iso_and_injective_point f hpt S
+
+/-- The non-finite free-target separation theorem is reduced to point-injectivity of the comparison
+with the represented topological free abelian group. -/
+lemma freeTarget_section_ext_of_zdisc_eval_of_freeToTopologicalFree_point_injective
+    (T S : LightProfinite)
+    (hpt : Function.Injective
+      ((LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit⟩))
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+      φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
+    x = y := by
+  apply freeToTopologicalFree_section_injective_of_point_injective T S hpt
+  exact freeToTopologicalFree_section_eq_of_zdisc_eval T S h
+
 /-- A finite light profinite set, represented as a sheaf, is the locally constant sheaf on its
 underlying finite set. -/
 noncomputable def finiteToLocallyConstantIso (F : LightProfinite) [Finite F] :
