@@ -964,8 +964,7 @@ lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq
     ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from z) u)) h
 
 /-- A single effective epimorphism lying in an equalizer sieve gives a coherent covering of that
-sieve.  This is the site-theoretic target for the finite clopen-refinement part of local
-injectivity. -/
+sieve.  This is the site-theoretic target for the finite closed-cover part of local injectivity. -/
 lemma freePresheaf_equalizerSieve_mem_of_effectiveEpi
     {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U V : LightProfinite.{0}}
     (x y : F.obj ⟨U⟩) (π : V ⟶ U) [EffectiveEpi π]
@@ -976,6 +975,86 @@ lemma freePresheaf_equalizerSieve_mem_of_effectiveEpi
   · simpa [CategoryTheory.effectiveEpi_iff_effectiveEpiFamily] using (inferInstance : EffectiveEpi π)
   · intro _
     simpa [CategoryTheory.Presheaf.equalizerSieve] using hπ
+
+/-- A closed subset of a light profinite space, with the induced topology, is light profinite. -/
+noncomputable def closedSubLightProfinite {X : LightProfinite.{0}} (s : Set X) (hs : IsClosed s) :
+    LightProfinite.{0} :=
+  @LightProfinite.of s inferInstance (isCompact_iff_compactSpace.mp hs.isCompact)
+    inferInstance inferInstance inferInstance
+
+/-- The inclusion of a closed light-profinite subspace. -/
+noncomputable def closedSubLightProfiniteι {X : LightProfinite.{0}} (s : Set X) (hs : IsClosed s) :
+    closedSubLightProfinite s hs ⟶ X := by
+  let _ : CompactSpace s := isCompact_iff_compactSpace.mp hs.isCompact
+  exact CompHausLike.ofHom _ ⟨Subtype.val, continuous_subtype_val⟩
+
+@[simp]
+lemma closedSubLightProfiniteι_apply {X : LightProfinite.{0}} (s : Set X) (hs : IsClosed s)
+    (x : closedSubLightProfinite s hs) : closedSubLightProfiniteι s hs x = (x : s).1 := by
+  change (ConcreteCategory.hom (closedSubLightProfiniteι s hs)) x = (x : s).1
+  rw [show ConcreteCategory.hom (closedSubLightProfiniteι s hs) =
+      (⟨Subtype.val, continuous_subtype_val⟩ : C(s, X)) by
+    simp [closedSubLightProfiniteι, closedSubLightProfinite]]
+  rfl
+
+/-- A finite jointly-surjective family in `LightProfinite` is an effective-epi family. -/
+lemma effectiveEpiFamily_of_jointly_surjective {α : Type} [Finite α]
+    {B : LightProfinite.{0}} (X : α → LightProfinite.{0}) (π : (a : α) → X a ⟶ B)
+    (hπ : ∀ b : B, ∃ a, ∃ x : X a, π a x = b) : EffectiveEpiFamily X π := by
+  rw [← CategoryTheory.effectiveEpi_desc_iff_effectiveEpiFamily]
+  rw [LightProfinite.effectiveEpi_iff_surjective]
+  intro b
+  obtain ⟨a, x, hx⟩ := hπ b
+  refine ⟨Sigma.ι X a x, ?_⟩
+  exact (ConcreteCategory.congr_hom (Sigma.ι_desc π a) x).trans hx
+
+/-- A finite effective-epi family lying in an equalizer sieve gives a coherent covering of that
+sieve. -/
+lemma freePresheaf_equalizerSieve_mem_of_effectiveEpiFamily
+    {α : Type} [Finite α]
+    {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U : LightProfinite.{0}}
+    (x y : F.obj ⟨U⟩) (V : α → LightProfinite.{0}) (π : (a : α) → V a ⟶ U)
+    [EffectiveEpiFamily V π]
+    (hπ : ∀ a, F.map (π a).op x = F.map (π a).op y) :
+    CategoryTheory.Presheaf.equalizerSieve x y ∈ (coherentTopology LightProfinite) U := by
+  apply CategoryTheory.coherentTopology.mem_sieves_of_hasEffectiveEpiFamily
+  exact ⟨α, inferInstance, V, π, inferInstance, fun a => by
+    simpa [CategoryTheory.Presheaf.equalizerSieve] using hπ a⟩
+
+/-- A finite closed cover whose inclusions lie in an equalizer sieve gives a coherent covering of
+that sieve.  This packages the closed-cover replacement for the tempting but invalid clopen
+refinement. -/
+lemma freePresheaf_equalizerSieve_mem_of_finite_closed_cover
+    {α : Type} [Finite α]
+    {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U : LightProfinite.{0}}
+    (x y : F.obj ⟨U⟩) (C : α → Set U) (hC : ∀ a, IsClosed (C a))
+    (hcover : ∀ u : U, ∃ a, u ∈ C a)
+    (hπ : ∀ a, F.map (closedSubLightProfiniteι (C a) (hC a)).op x =
+      F.map (closedSubLightProfiniteι (C a) (hC a)).op y) :
+    CategoryTheory.Presheaf.equalizerSieve x y ∈ (coherentTopology LightProfinite) U := by
+  let V : α → LightProfinite := fun a => closedSubLightProfinite (C a) (hC a)
+  let π : (a : α) → V a ⟶ U := fun a => closedSubLightProfiniteι (C a) (hC a)
+  have hsurj : ∀ u : U, ∃ a, ∃ x : V a, π a x = u := by
+    intro u
+    obtain ⟨a, hu⟩ := hcover u
+    refine ⟨a, ⟨u, hu⟩, ?_⟩
+    exact closedSubLightProfiniteι_apply (C a) (hC a) ⟨u, hu⟩
+  haveI : EffectiveEpiFamily V π := effectiveEpiFamily_of_jointly_surjective V π hsurj
+  exact freePresheaf_equalizerSieve_mem_of_effectiveEpiFamily x y V π hπ
+
+/-- Equality-pattern loci cut out by finitely many equalities between maps to a light profinite
+space are closed.  The second TFC3 round uses these as closed members of a coherent cover; the
+remaining coefficient extraction happens after restricting the free presheaf to these loci. -/
+lemma finiteMapEqualityPattern_isClosed {α : Type} [Finite α] {U S : LightProfinite.{0}}
+    (f : α → (U ⟶ S)) (r : α → α → Prop) :
+    IsClosed {u : U | ∀ i j, r i j → (f i) u = (f j) u} := by
+  classical
+  rw [show {u : U | ∀ i j, r i j → (f i) u = (f j) u} =
+      ⋂ i, ⋂ j, ⋂ _h : r i j, {u : U | (f i) u = (f j) u} by
+    ext u
+    simp]
+  exact isClosed_iInter fun i => isClosed_iInter fun j => isClosed_iInter fun _ =>
+    isClosed_eq (f i).hom.hom.continuous (f j).hom.hom.continuous
 
 /-- Functoriality of the topological free abelian group on light profinite maps. -/
 noncomputable def topologicalFreeMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
