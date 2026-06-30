@@ -607,6 +607,18 @@ noncomputable def topModuleToLightCondAbForgetIso (M : TopModuleCat.{0} ℤ) :
       topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M) :=
   (fullyFaithfulSheafToPresheaf _ _).preimageIso (topModulePresheafForgetIso M)
 
+@[simp]
+lemma topModuleToLightCondAbForgetIso_hom_app (M : TopModuleCat.{0} ℤ)
+    (S : LightProfiniteᵒᵖ)
+    (x : ((forget ℤ).obj (topModuleToLightCondAbObj M)).obj.obj S) :
+    (topModuleToLightCondAbForgetIso M).hom.hom.app S x = x := rfl
+
+@[simp]
+lemma topModuleToLightCondAbForgetIso_inv_app (M : TopModuleCat.{0} ℤ)
+    (S : LightProfiniteᵒᵖ)
+    (x : (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj.obj S) :
+    (topModuleToLightCondAbForgetIso M).inv.hom.app S x = x := rfl
+
 /-- The functor from topological abelian groups to light condensed abelian groups. -/
 noncomputable def topModuleToLightCondAb : TopModuleCat.{0} ℤ ⥤ LightCondAb where
   obj M := topModuleToLightCondAbObj M
@@ -649,6 +661,21 @@ noncomputable def topologicalFreeDiracSection :
     topCatToLightCondSet.map (topologicalFreeDirac S) ≫
       (LightCondensed.topModuleToLightCondAbForgetIso (topologicalFree S)).inv
 
+@[simp]
+lemma topologicalFreeDiracSection_yoneda_apply (s : S) :
+    ((show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+      (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)) s) =
+      Finsupp.single s (1 : ℤ) := by
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  dsimp [topologicalFreeDiracSection, topologicalFreeDirac]
+  change (show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+    (LightCondensed.topModuleToLightCondAbForgetIso (topologicalFree S)).inv.hom.app ⟨S⟩
+      ((topCatToLightCondSet.map ((TopModuleCat.freeAdj ℤ).unit.app S.toTop)).hom.app ⟨S⟩
+        ((lightProfiniteToLightCondSetIsoTopCatToLightCondSet.hom.app S).hom.app ⟨S⟩ (𝟙 S)))) s =
+      Finsupp.single s (1 : ℤ)
+  rw [LightCondensed.topModuleToLightCondAbForgetIso_inv_app]
+  rfl
+
 /-- The topological abelian group `ℤ` with its usual discrete topology. -/
 abbrev discreteIntTopModule : TopModuleCat.{0} ℤ :=
   TopModuleCat.of ℤ ℤ
@@ -689,6 +716,39 @@ noncomputable def discreteIntTopModuleCondensedIso :
   discreteIntTopModuleLocallyConstantIso ≪≫
     (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
 
+/-- Sections of the represented topological `ℤ` as locally constant integer-valued functions. -/
+noncomputable def discreteIntTopModuleSectionsEquiv (T : LightProfinite.{0}) :
+    (LightCondensed.topModuleToLightCondAbObj discreteIntTopModule).obj.obj ⟨T⟩ ≃
+      LocallyConstant T ℤ where
+  toFun x := discreteIntTopModulePresheafIso.hom.app ⟨T⟩ x
+  invFun x := discreteIntTopModulePresheafIso.inv.app ⟨T⟩ x
+  left_inv x := by
+    change (discreteIntTopModulePresheafIso.hom.app ⟨T⟩ ≫
+      discreteIntTopModulePresheafIso.inv.app ⟨T⟩) x = x
+    rw [← NatTrans.comp_app]
+    simp
+  right_inv x := by
+    change (discreteIntTopModulePresheafIso.inv.app ⟨T⟩ ≫
+      discreteIntTopModulePresheafIso.hom.app ⟨T⟩) x = x
+    rw [← NatTrans.comp_app]
+    simp
+
+/-- The previous equivalence is compatible with the comparison to the discrete light condensed
+abelian group `ℤ`. -/
+lemma discreteIntTopModuleCondensedIso_sections (T : LightProfinite.{0})
+    (x : (LightCondensed.topModuleToLightCondAbObj discreteIntTopModule).obj.obj ⟨T⟩) :
+    ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)).hom.app ⟨T⟩
+      (discreteIntTopModuleCondensedIso.hom.hom.app ⟨T⟩ x) =
+    discreteIntTopModuleSectionsEquiv T x := by
+  dsimp [discreteIntTopModuleSectionsEquiv, discreteIntTopModuleCondensedIso,
+    discreteIntTopModuleLocallyConstantIso]
+  let e := (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
+  change (e.hom ≫ e.inv).hom.app ⟨T⟩
+      ((discreteIntTopModulePresheafIso.hom.app ⟨T⟩) x) =
+    (discreteIntTopModulePresheafIso.hom.app ⟨T⟩) x
+  rw [Iso.hom_inv_id]
+  rfl
+
 /-- The continuous linear map out of the topological free abelian group induced by a locally
 constant integer-valued function on `S`. -/
 noncomputable def topologicalFreeEval (f : LocallyConstant S ℤ) :
@@ -715,6 +775,30 @@ noncomputable def topologicalFreeEvalDiscrete (f : LocallyConstant S ℤ) :
     topologicalFreeCondensed S ⟶
       (LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ) :=
   topologicalFreeEvalCondensed S f ≫ discreteIntTopModuleCondensedIso.hom
+
+/-- The represented evaluation induced by `f` sends the Dirac section to `f`. -/
+lemma topologicalFreeEvalDiscrete_diracSection (f : LocallyConstant S ℤ) :
+    ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩
+      ((topologicalFreeEvalDiscrete S f).hom.app ⟨S⟩
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S))) = f := by
+  rw [show topologicalFreeEvalDiscrete S f =
+    topologicalFreeEvalCondensed S f ≫ discreteIntTopModuleCondensedIso.hom by rfl]
+  change ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩
+      (discreteIntTopModuleCondensedIso.hom.hom.app ⟨S⟩
+        ((topologicalFreeEvalCondensed S f).hom.app ⟨S⟩
+          ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)))) = f
+  rw [discreteIntTopModuleCondensedIso_sections]
+  change (show LocallyConstant S ℤ from discreteIntTopModuleSectionsEquiv S
+      ((topologicalFreeEvalCondensed S f).hom.app ⟨S⟩
+        ((coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)))) = f
+  ext s
+  dsimp [discreteIntTopModuleSectionsEquiv, discreteIntTopModulePresheafIso,
+    topologicalFreeEvalCondensed]
+  change (topologicalFreeEval S f).hom
+      ((show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+        (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)) s) = f s
+  rw [topologicalFreeDiracSection_yoneda_apply]
+  exact topologicalFreeEval_single S f s
 
 /-- The canonical comparison from the free light condensed abelian group to the light condensed
 abelian group represented by the free topological abelian group. -/
