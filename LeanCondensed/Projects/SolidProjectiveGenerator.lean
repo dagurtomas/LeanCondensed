@@ -488,6 +488,25 @@ lemma freePointMap_comp_freeProj (T : LightProfinite) (k : ℕ) (t : T) :
     freePointMap T t ≫ freeProj T k = freePointMap (T.component k) (T.proj k t) := by
   exact freePointMap_comp T (T.component k) (T.proj k) t
 
+/-- The unique map from `T` to the point. -/
+noncomputable def toPointMap (T : LightProfinite) : T ⟶ LightProfinite.of PUnit.{1} :=
+  ConcreteCategory.ofHom ⟨fun _ => PUnit.unit, continuous_const⟩
+
+@[simp]
+lemma pointMap_point_eq_id : pointMap (LightProfinite.of PUnit.{1}) PUnit.unit = 𝟙 _ := by
+  ext x
+
+/-- A chosen point of `T`, followed by the map to the point, gives the identity on the free point. -/
+lemma freePointMap_comp_toPointMap (T : LightProfinite) (t : T) :
+    freePointMap T t ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) =
+      𝟙 ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed) := by
+  rw [freePointMap_comp]
+  dsimp [toPointMap]
+  change freePointMap (LightProfinite.of PUnit.{1}) PUnit.unit = 𝟙 _
+  dsimp [freePointMap]
+  rw [pointMap_point_eq_id]
+  simp
+
 /-- Maps from a free object to the discrete integers are determined by their values on ordinary
 points. -/
 lemma zdisc_hom_ext_of_points (T : LightProfinite)
@@ -573,6 +592,21 @@ lemma finiteTensorPoint_apply (T : LightProfinite) (n : ℕ) (t : T) :
 @[simp]
 lemma inftyTensorPoint_apply (T : LightProfinite) (t : T) :
     inftyTensorPoint T t = ((∞ : ℕ∪{∞}), t) := rfl
+
+/-- The section `ℕ∪∞ → (ℕ∪∞) × T` choosing a fixed point of `T`. -/
+noncomputable def ninfPointSection (T : LightProfinite) (t : T) :
+    (ℕ∪{∞} : LightProfinite) ⟶ ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) :=
+  ConcreteCategory.ofHom ⟨fun a => (a, t), continuous_id.prodMk continuous_const⟩
+
+@[simp]
+lemma natPoint_comp_ninfPointSection (T : LightProfinite) (t : T) (n : ℕ) :
+    natPoint n ≫ ninfPointSection T t = pointMap T t ≫ finiteTensorPoint T n := by
+  ext u <;> rfl
+
+@[simp]
+lemma iota_comp_ninfPointSection (T : LightProfinite) (t : T) :
+    ι ≫ ninfPointSection T t = pointMap T t ≫ inftyTensorPoint T := by
+  ext u <;> rfl
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
@@ -1174,6 +1208,7 @@ structure NullFiniteDifferenceEnumeration (T : LightProfinite) where
   seq : ℕ → finiteDifferencePoint T
   stage_eventually_ge : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, k ≤ (seq n).1
   surjective : Function.Surjective seq
+  seq_injective : Function.Injective seq
 
 /-- The points in all stages below a fixed bound form a finite set. -/
 lemma finiteDifferencePoint_initial_finite (T : LightProfinite) (k : ℕ) :
@@ -1215,7 +1250,7 @@ lemma exists_nullFiniteDifferenceEnumeration (T : LightProfinite) [Infinite T] :
     Nonempty (NullFiniteDifferenceEnumeration T) := by
   classical
   let e : ℕ ≃ finiteDifferencePoint T := finiteDifferencePointEquivNat T
-  refine ⟨{ seq := e, stage_eventually_ge := ?_, surjective := e.surjective }⟩
+  refine ⟨⟨e, ?_, e.surjective, e.injective⟩⟩
   intro k
   have hbad : Set.Finite {n : ℕ | (e n).1 < k} := by
     have hinit := finiteDifferencePoint_initial_finite T k
@@ -1246,6 +1281,12 @@ lemma nullFiniteDifferenceEnumeration_seq_index (T : LightProfinite) [Infinite T
     (p : finiteDifferencePoint T) :
     (nullFiniteDifferenceEnumeration T).seq (finiteDifferenceIndex T p) = p :=
   ((nullFiniteDifferenceEnumeration T).surjective p).choose_spec
+
+/-- Looking up the index of an already enumerated finite-stage point gives the original index. -/
+lemma finiteDifferenceIndex_seq (T : LightProfinite) [Infinite T] (i : ℕ) :
+    finiteDifferenceIndex T ((nullFiniteDifferenceEnumeration T).seq i) = i :=
+  (nullFiniteDifferenceEnumeration T).seq_injective
+    (nullFiniteDifferenceEnumeration_seq_index T ((nullFiniteDifferenceEnumeration T).seq i))
 
 /-- The free point-map associated to a point in a finite stage.  Stage `0` contributes the
 initial finite approximation; stage `m+1` contributes the difference between adjacent chosen
@@ -1328,10 +1369,11 @@ lemma infinitePToFreeFiniteValue_eventually_freeProj_zero (T : LightProfinite) [
   exact finiteDifferenceValue_comp_freeProj_zero T (by omega)
     ((nullFiniteDifferenceEnumeration T).seq n).2
 
-/-- Obligation: a null sequence of point-valued sections of `ℤ[T]` gives a section over `ℕ∪∞`
-with value zero at `∞`. -/
+/-- A null sequence of point-valued sections of `ℤ[T]` gives a section over `ℕ∪∞` with value
+zero at `∞`.  This is reduced to the corresponding null-sequence bridge for endomorphisms by
+choosing one point of `T` and splitting the map `ℤ[T] → ℤ[*]`. -/
 lemma exists_freeElementOverNinf_of_eventually_freeProj_zero
-    (T : LightProfinite)
+    (T : LightProfinite) [Nonempty T]
     (u : ℕ → ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
       (free ℤ).obj T.toCondensed))
     (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
@@ -1343,7 +1385,62 @@ lemma exists_freeElementOverNinf_of_eventually_freeProj_zero
       (freeHomEquivPoints (LightProfinite.of PUnit.{1})
         ((free ℤ).obj T.toCondensed)).symm
         (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 := by
-  sorry
+  let t0 : T := Classical.choice inferInstance
+  let q : (free ℤ).obj T.toCondensed ⟶
+      (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed :=
+    (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T)
+  let v : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed) := fun n => q ≫ u n
+  have hv : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, v n ≫ freeProj T k = 0 := by
+    intro k
+    filter_upwards [hu k] with n hn
+    dsimp [v]
+    rw [Category.assoc, hn]
+    simp
+  let X := freeSectionOverNinfOfNullSequence T v hv
+  let x : ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩ :=
+    ((free ℤ).obj T.toCondensed).obj.map (ninfPointSection T t0).op X
+  refine ⟨x, ?_, ?_⟩
+  · intro n
+    dsimp [x]
+    rw [← Functor.map_comp_apply (((free ℤ).obj T.toCondensed).obj)
+      (ninfPointSection T t0).op (natPoint n).op X]
+    change (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+        ((free ℤ).obj T.toCondensed)).symm
+        (((free ℤ).obj T.toCondensed).obj.map ((natPoint n ≫ ninfPointSection T t0).op) X) =
+      u n
+    rw [natPoint_comp_ninfPointSection]
+    rw [← freeHomEquivPoints_symm_map]
+    rw [Functor.map_comp]
+    rw [Functor.map_comp]
+    change freePointMap T t0 ≫
+        (((free ℤ).map (lightProfiniteToLightCondSet.map (finiteTensorPoint T n))) ≫
+          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
+            ((free ℤ).obj T.toCondensed)).symm X) = u n
+    rw [freeHomEquivPoints_symm_map]
+    rw [freeSectionOverNinfOfNullSequence_finite]
+    dsimp [v, q]
+    change (freePointMap T t0 ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T)) ≫
+      u n = u n
+    rw [freePointMap_comp_toPointMap]
+    change (𝟙 ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed)) ≫ u n = u n
+    simp
+  · dsimp [x]
+    rw [← Functor.map_comp_apply (((free ℤ).obj T.toCondensed).obj)
+      (ninfPointSection T t0).op ι.op X]
+    change (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+        ((free ℤ).obj T.toCondensed)).symm
+        (((free ℤ).obj T.toCondensed).obj.map ((ι ≫ ninfPointSection T t0).op) X) = 0
+    rw [iota_comp_ninfPointSection]
+    rw [← freeHomEquivPoints_symm_map]
+    rw [Functor.map_comp]
+    rw [Functor.map_comp]
+    change freePointMap T t0 ≫
+        (((free ℤ).map (lightProfiniteToLightCondSet.map (inftyTensorPoint T))) ≫
+          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
+            ((free ℤ).obj T.toCondensed)).symm X) = 0
+    rw [freeHomEquivPoints_symm_map]
+    rw [freeSectionOverNinfOfNullSequence_infty]
+    simp
 
 /-- The finite values `infinitePToFreeFiniteValue` form a null sequence, hence give a section over
 `ℕ∪∞` with value zero at `∞`. -/
@@ -1570,12 +1667,165 @@ noncomputable def finiteDifferenceIndexOverNinfFun (T : LightProfinite) [Infinit
   | (∞, _) => ∞
   | (OnePoint.some n, t) => (finiteDifferenceIndex T ⟨n, T.proj n t⟩ : ℕ∪{∞})
 
-/-- Obligation: the finite-difference index function is continuous.  This is the topological
-uniform-null part of the AsLimit enumeration: for every finite set of output coordinates, only
-finitely many finite input slices can hit it. -/
+/-- The finite fiber of the finite-difference index function is one finite slice of
+`(ℕ∪∞) × T`, cut out by a finite quotient of `T`. -/
+lemma finiteDifferenceIndexOverNinfFun_fiber_eq (T : LightProfinite) [Infinite T] (i : ℕ) :
+    {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      finiteDifferenceIndexOverNinfFun T x = (i : ℕ∪{∞})} =
+    {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      x.1 = (((nullFiniteDifferenceEnumeration T).seq i).1 : ℕ∪{∞}) ∧
+        T.proj (((nullFiniteDifferenceEnumeration T).seq i).1) x.2 =
+          ((nullFiniteDifferenceEnumeration T).seq i).2} := by
+  obtain ⟨m0, b0, hseqi⟩ : ∃ m0 : ℕ, ∃ b0 : T.component m0,
+      (nullFiniteDifferenceEnumeration T).seq i = (⟨m0, b0⟩ : finiteDifferencePoint T) := by
+    rcases (nullFiniteDifferenceEnumeration T).seq i with ⟨m0, b0⟩
+    exact ⟨m0, b0, rfl⟩
+  ext x
+  rcases x with ⟨a, t⟩
+  cases a using OnePoint.rec with
+  | infty =>
+      simp [finiteDifferenceIndexOverNinfFun, hseqi]
+  | coe n0 =>
+      constructor
+      · intro h
+        have hidx : finiteDifferenceIndex T ⟨n0, T.proj n0 t⟩ = i := by
+          simpa [finiteDifferenceIndexOverNinfFun] using h
+        have hseq := nullFiniteDifferenceEnumeration_seq_index T ⟨n0, T.proj n0 t⟩
+        rw [hidx, hseqi] at hseq
+        cases hseq
+        exact ⟨by simp [hseqi], by rw [hseqi]⟩
+      · rintro ⟨hfst, hsnd⟩
+        have hn : n0 = m0 := by
+          simpa [hseqi] using hfst
+        cases hn
+        have hp : (⟨m0, T.proj m0 t⟩ : finiteDifferencePoint T) =
+            (nullFiniteDifferenceEnumeration T).seq i := by
+          have hsnd' : T.proj m0 t = b0 := by
+            rw [hseqi] at hsnd
+            exact hsnd
+          rw [hseqi]
+          simp [hsnd']
+        have hidx := congrArg (finiteDifferenceIndex T) hp
+        rw [finiteDifferenceIndex_seq] at hidx
+        simpa [finiteDifferenceIndexOverNinfFun] using hidx
+
+/-- Finite fibers of the finite-difference index function are open. -/
+lemma isOpen_finiteDifferenceIndexOverNinfFun_fiber (T : LightProfinite) [Infinite T] (i : ℕ) :
+    IsOpen {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      finiteDifferenceIndexOverNinfFun T x = (i : ℕ∪{∞})} := by
+  rw [finiteDifferenceIndexOverNinfFun_fiber_eq]
+  obtain ⟨m, b, hseq⟩ : ∃ m : ℕ, ∃ b : T.component m,
+      (nullFiniteDifferenceEnumeration T).seq i = (⟨m, b⟩ : finiteDifferencePoint T) := by
+    rcases (nullFiniteDifferenceEnumeration T).seq i with ⟨m, b⟩
+    exact ⟨m, b, rfl⟩
+  rw [hseq]
+  have hfirst : IsOpen {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      x.1 = (m : ℕ∪{∞})} := by
+    have hopen : IsOpen ({(m : ℕ∪{∞})} : Set ℕ∪{∞}) := by
+      simpa using (OnePoint.isOpen_image_coe (X := ℕ) (s := ({m} : Set ℕ))).2
+        (isOpen_discrete _)
+    simpa [IntProof.fstMap, Set.preimage, Set.setOf_eq_eq_singleton] using
+      hopen.preimage (IntProof.fstMap T).continuous
+  have hsecond : IsOpen {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      T.proj m x.2 = b} := by
+    letI : DiscreteTopology (T.component m) := Finite.instDiscreteTopology
+    have hopen : IsOpen ({b} : Set (T.component m)) := isOpen_discrete _
+    have hcont : Continuous
+        (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) => T.proj m x.2) :=
+      (T.proj m).hom.hom.continuous.comp (IntProof.sndMap T).continuous
+    simpa [Set.preimage, Set.setOf_eq_eq_singleton] using hopen.preimage hcont
+  simpa [Set.setOf_and] using hfirst.inter hsecond
+
+/-- Finite fibers of the finite-difference index function are closed. -/
+lemma isClosed_finiteDifferenceIndexOverNinfFun_fiber (T : LightProfinite) [Infinite T] (i : ℕ) :
+    IsClosed {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      finiteDifferenceIndexOverNinfFun T x = (i : ℕ∪{∞})} := by
+  rw [finiteDifferenceIndexOverNinfFun_fiber_eq]
+  obtain ⟨m, b, hseq⟩ : ∃ m : ℕ, ∃ b : T.component m,
+      (nullFiniteDifferenceEnumeration T).seq i = (⟨m, b⟩ : finiteDifferencePoint T) := by
+    rcases (nullFiniteDifferenceEnumeration T).seq i with ⟨m, b⟩
+    exact ⟨m, b, rfl⟩
+  rw [hseq]
+  have hfirst : IsClosed {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      x.1 = (m : ℕ∪{∞})} := by
+    have hclosed : IsClosed ({(m : ℕ∪{∞})} : Set ℕ∪{∞}) := isClosed_singleton
+    simpa [IntProof.fstMap, Set.preimage, Set.setOf_eq_eq_singleton] using
+      hclosed.preimage (IntProof.fstMap T).continuous
+  have hsecond : IsClosed {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+      T.proj m x.2 = b} := by
+    have hclosed : IsClosed ({b} : Set (T.component m)) := isClosed_singleton
+    have hcont : Continuous
+        (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) => T.proj m x.2) :=
+      (T.proj m).hom.hom.continuous.comp (IntProof.sndMap T).continuous
+    simpa [Set.preimage, Set.setOf_eq_eq_singleton] using hclosed.preimage hcont
+  simpa [Set.setOf_and] using hfirst.inter hsecond
+
+/-- The finite-difference index function is continuous.  This is the topological uniform-null part
+of the AsLimit enumeration: finite output sets are hit by only finitely many finite input slices. -/
 lemma continuous_finiteDifferenceIndexOverNinfFun (T : LightProfinite) [Infinite T] :
     Continuous (finiteDifferenceIndexOverNinfFun T) := by
-  sorry
+  rw [continuous_def]
+  intro s hs
+  by_cases hinfty : (∞ : ℕ∪{∞}) ∈ s
+  · let F : Set ℕ := (((↑) : ℕ → ℕ∪{∞}) ⁻¹' s)ᶜ
+    have hcompact : IsCompact F := by
+      dsimp [F]
+      exact ((OnePoint.isOpen_iff_of_mem' (X := ℕ) hinfty).mp hs).1
+    have hF : Set.Finite F := isCompact_iff_finite.mp hcompact
+    have hpre : finiteDifferenceIndexOverNinfFun T ⁻¹' s =
+        (⋃ i ∈ F, {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+          finiteDifferenceIndexOverNinfFun T x = (i : ℕ∪{∞})})ᶜ := by
+      ext x
+      constructor
+      · intro hx hmem
+        simp only [Set.mem_iUnion, Set.mem_setOf_eq] at hmem
+        rcases hmem with ⟨i, hiF, hxi⟩
+        have hi_not : (i : ℕ∪{∞}) ∉ s := hiF
+        exact hi_not (hxi ▸ hx)
+      · intro hx
+        by_cases hfx : finiteDifferenceIndexOverNinfFun T x = (∞ : ℕ∪{∞})
+        · change finiteDifferenceIndexOverNinfFun T x ∈ s
+          rw [hfx]
+          exact hinfty
+        · rcases (OnePoint.ne_infty_iff_exists.mp hfx) with ⟨i, hi⟩
+          have hnotF : i ∉ F := by
+            intro hiF
+            apply hx
+            simp only [Set.mem_iUnion, Set.mem_setOf_eq]
+            exact ⟨i, hiF, hi.symm⟩
+          have hiA : i ∈ ((↑) : ℕ → ℕ∪{∞}) ⁻¹' s := by
+            simpa [F] using hnotF
+          change finiteDifferenceIndexOverNinfFun T x ∈ s
+          rw [← hi]
+          exact hiA
+    rw [hpre]
+    exact (hF.isClosed_biUnion fun i _ =>
+      isClosed_finiteDifferenceIndexOverNinfFun_fiber T i).isOpen_compl
+  · let A : Set ℕ := ((↑) : ℕ → ℕ∪{∞}) ⁻¹' s
+    have hpre : finiteDifferenceIndexOverNinfFun T ⁻¹' s =
+        ⋃ i ∈ A, {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
+          finiteDifferenceIndexOverNinfFun T x = (i : ℕ∪{∞})} := by
+      ext x
+      constructor
+      · intro hx
+        by_cases hfx : finiteDifferenceIndexOverNinfFun T x = (∞ : ℕ∪{∞})
+        · change finiteDifferenceIndexOverNinfFun T x ∈ s at hx
+          rw [hfx] at hx
+          exact False.elim (hinfty hx)
+        · rcases (OnePoint.ne_infty_iff_exists.mp hfx) with ⟨i, hi⟩
+          simp only [Set.mem_iUnion, Set.mem_setOf_eq]
+          refine ⟨i, ?_, hi.symm⟩
+          change finiteDifferenceIndexOverNinfFun T x ∈ s at hx
+          rw [← hi] at hx
+          exact hx
+      · intro hx
+        simp only [Set.mem_iUnion, Set.mem_setOf_eq] at hx
+        rcases hx with ⟨i, hiA, hxi⟩
+        change finiteDifferenceIndexOverNinfFun T x ∈ s
+        rw [hxi]
+        exact hiA
+    rw [hpre]
+    exact isOpen_biUnion fun i _ => isOpen_finiteDifferenceIndexOverNinfFun_fiber T i
 
 /-- The finite-difference index map `(ℕ∪∞) × T → ℕ∪∞`. -/
 noncomputable def finiteDifferenceIndexOverNinf (T : LightProfinite) [Infinite T] :
@@ -1610,10 +1860,6 @@ lemma inftyTensorPoint_comp_finiteDifferenceIndexOverNinf (T : LightProfinite) [
     inftyTensorPoint T ≫ finiteDifferenceIndexOverNinf T = constInftyMap T := by
   ext t
   rfl
-
-/-- The unique map from `T` to the point. -/
-noncomputable def toPointMap (T : LightProfinite) : T ⟶ LightProfinite.of PUnit.{1} :=
-  ConcreteCategory.ofHom ⟨fun _ => PUnit.unit, continuous_const⟩
 
 lemma constInftyMap_eq (T : LightProfinite) : constInftyMap T = toPointMap T ≫ ι := by
   ext t
