@@ -1241,15 +1241,37 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
       rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
       exact congrFun (congrArg LocallyConstant.toFun h) t
 
-/-- Obligation: sections of the free object `ℤ[T]` are separated by integer-valued functions
-that factor through finite quotients of `T`.  This is the concrete finite-stage form of the
-free-object separation input. -/
+/-- Obligation: finite free objects are separated by their integer-valued linear functionals.
+This is the finite-rank algebraic core of `freeTarget_section_ext_of_finite_zdisc_eval`. -/
+lemma finiteFree_section_ext_of_zdisc_eval (F S : LightProfinite) [Finite F]
+    (x y : ((free ℤ).obj F.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ ψ : (free ℤ).obj F.toCondensed ⟶ Zdisc,
+      ψ.hom.app ⟨S⟩ x = ψ.hom.app ⟨S⟩ y) :
+    x = y := by
+  sorry
+
+/-- Obligation: the finite projections in the chosen AsLimit presentation jointly separate
+sections of the free object `ℤ[T]`. -/
+lemma freeTarget_section_ext_of_finite_proj (T S : LightProfinite)
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ k : ℕ,
+      (freeProj T k).hom.app ⟨S⟩ x = (freeProj T k).hom.app ⟨S⟩ y) :
+    x = y := by
+  sorry
+
+/-- Sections of the free object `ℤ[T]` are separated by integer-valued functions that factor through
+finite quotients of `T`, reduced to finite-rank separation and joint separation of finite
+projections. -/
 lemma freeTarget_section_ext_of_finite_zdisc_eval (T S : LightProfinite)
     (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
     (h : ∀ k : ℕ, ∀ ψ : (free ℤ).obj (T.component k).toCondensed ⟶ Zdisc,
       (freeProj T k ≫ ψ).hom.app ⟨S⟩ x = (freeProj T k ≫ ψ).hom.app ⟨S⟩ y) :
     x = y := by
-  sorry
+  apply freeTarget_section_ext_of_finite_proj T S
+  intro k
+  apply finiteFree_section_ext_of_zdisc_eval (T.component k) S
+  intro ψ
+  exact h k ψ
 
 /-- Sections of the free object `ℤ[T]` are separated by all locally constant integer-valued
 functions on `T`, reduced to finite-stage integer-valued evaluations. -/
@@ -1346,6 +1368,25 @@ lemma exists_freeSectionOverNinf_realizing_zdisc_evaluations
         φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ x =
           zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ := by
   sorry
+
+/-- The section realizing all `Zdisc` evaluations of a null endomorphism sequence is unique, once it
+exists. -/
+lemma freeSectionOverNinf_realizing_zdisc_evaluations_unique
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    {x y : ((free ℤ).obj T.toCondensed).obj.obj
+        ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩}
+    (hx : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ x =
+          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)
+    (hy : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ y =
+          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ) :
+    x = y := by
+  apply freeTarget_section_ext_of_zdisc_eval T (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite))
+  intro φ
+  rw [hx φ, hy φ]
 
 /-- The AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]` which is
 eventually zero after every finite quotient of `T` into a continuous section over `(ℕ∪∞) × T`,
