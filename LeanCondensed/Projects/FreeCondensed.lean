@@ -626,6 +626,66 @@ namespace LightCondAb
 
 variable (S : LightProfinite.{0})
 
+/-- The Markov/Graev free topological abelian group on the underlying topological space of `S`. -/
+abbrev topologicalFree : TopModuleCat.{0} ℤ :=
+  (TopModuleCat.free ℤ).obj S.toTop
+
+/-- The light condensed abelian group represented by the topological free abelian group on `S`. -/
+abbrev topologicalFreeCondensed : LightCondAb :=
+  LightCondensed.topModuleToLightCondAbObj (topologicalFree S)
+
+/-- The Dirac map from `S` into its free topological abelian group. -/
+abbrev topologicalFreeDirac : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).obj (topologicalFree S) :=
+  (TopModuleCat.freeAdj ℤ).unit.app S.toTop
+
+@[simp]
+lemma topologicalFreeDirac_apply (s : S) :
+    (topologicalFreeDirac S) s = Finsupp.single s (1 : ℤ) := rfl
+
+/-- The section of the underlying represented condensed set induced by the topological Dirac map. -/
+noncomputable def topologicalFreeDiracSection :
+    S.toCondensed ⟶ (forget ℤ).obj (topologicalFreeCondensed S) :=
+  (lightProfiniteToLightCondSetIsoTopCatToLightCondSet.app S).hom ≫
+    topCatToLightCondSet.map (topologicalFreeDirac S) ≫
+      (LightCondensed.topModuleToLightCondAbForgetIso (topologicalFree S)).inv
+
+/-- The topological abelian group `ℤ` with its usual discrete topology. -/
+abbrev discreteIntTopModule : TopModuleCat.{0} ℤ :=
+  TopModuleCat.of ℤ ℤ
+
+/-- The continuous linear map out of the topological free abelian group induced by a locally
+constant integer-valued function on `S`. -/
+noncomputable def topologicalFreeEval (f : LocallyConstant S ℤ) :
+    topologicalFree S ⟶ discreteIntTopModule :=
+  ((TopModuleCat.freeAdj ℤ).homEquiv S.toTop discreteIntTopModule).symm
+    (TopCat.ofHom f.toContinuousMap)
+
+@[simp]
+lemma topologicalFreeEval_single (f : LocallyConstant S ℤ) (s : S) :
+    (topologicalFreeEval S f).hom (Finsupp.single s (1 : ℤ)) = f s := by
+  change (((TopModuleCat.freeAdj ℤ).homEquiv S.toTop discreteIntTopModule
+    (topologicalFreeEval S f)) s) = f s
+  simp [topologicalFreeEval]
+
+/-- The induced morphism between represented light condensed abelian groups. -/
+noncomputable def topologicalFreeEvalCondensed (f : LocallyConstant S ℤ) :
+    topologicalFreeCondensed S ⟶
+      LightCondensed.topModuleToLightCondAbObj discreteIntTopModule :=
+  LightCondensed.topModuleToLightCondAbMap (topologicalFreeEval S f)
+
+/-- The canonical comparison from the free light condensed abelian group to the light condensed
+abelian group represented by the free topological abelian group. -/
+noncomputable def freeToTopologicalFree :
+    (free ℤ).obj S.toCondensed ⟶ topologicalFreeCondensed S :=
+  ((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed (topologicalFreeCondensed S)).symm
+    (topologicalFreeDiracSection S)
+
+@[simp]
+lemma freeForgetAdjunction_homEquiv_freeToTopologicalFree :
+    (LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed (topologicalFreeCondensed S)
+      (freeToTopologicalFree S) = topologicalFreeDiracSection S := by
+  simp [freeToTopologicalFree]
+
 abbrev freeLightProfiniteMap : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ⟶
     sequentialToLightCondSet.obj (lightCondSetToSequential.obj
       ((forget ℤ).obj ((free ℤ).obj S.toCondensed))) :=
