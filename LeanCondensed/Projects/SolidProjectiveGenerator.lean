@@ -193,6 +193,18 @@ lemma finiteApproxRetraction_proj_le (T : LightProfinite) {k n : ℕ} (h : k ≤
           rw [projSection_proj_le]
     _ = T.proj k := T.proj_comp_transitionMapLE h
 
+/-- A locally constant function on a light profinite space factors through one of the finite stages
+in the chosen sequential presentation. -/
+lemma exists_locallyConstant_factor_proj (T : LightProfinite) {α : Type*}
+    (f : LocallyConstant T α) :
+    ∃ k : ℕ, ∃ g : LocallyConstant (T.component k) α,
+      f = g.comap (T.proj k).hom.hom := by
+  have hlim : IsLimit (lightToProfinite.mapCone T.asLimitCone) :=
+    isLimitOfPreserves lightToProfinite T.asLimit
+  obtain ⟨j, g, hg⟩ := Profinite.exists_locallyConstant
+    (C := lightToProfinite.mapCone T.asLimitCone) hlim f
+  exact ⟨j.unop, g, hg⟩
+
 end LightProfinite
 
 namespace LightCondensed
@@ -247,6 +259,13 @@ lemma zdiscSectionsEquiv_map {S S' : LightProfinite} (φ : S' ⟶ S)
   exact LightCondMod.hom_naturality_apply ℤ
     ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)) φ.op x
 
+@[simp]
+lemma zdiscSectionsEquiv_zero (S : LightProfinite) :
+    zdiscSectionsEquiv S (0 : Zdisc.obj.obj ⟨S⟩) = 0 := by
+  dsimp [zdiscSectionsEquiv]
+  simp
+  rfl
+
 /-- The solidification of the sequence object `P ℤ`. -/
 noncomputable abbrev solidP : Solid :=
   solidification.obj (P ℤ)
@@ -287,6 +306,13 @@ lemma freeHomEquivPoints_comp (T : LightProfinite) {A B : LightCondAb}
   dsimp [freeHomEquivPoints]
   erw [Adjunction.homEquiv_naturality_right]
   erw [GrothendieckTopology.yonedaEquiv_comp]
+
+@[simp]
+lemma freeHomEquivPoints_zero (T : LightProfinite) (A : LightCondAb) :
+    freeHomEquivPoints T A (0 : (free ℤ).obj T.toCondensed ⟶ A) = 0 := by
+  have h := freeHomEquivPoints_comp T (𝟙 ((free ℤ).obj T.toCondensed))
+    (0 : (free ℤ).obj T.toCondensed ⟶ A)
+  simpa using h
 
 /-- The free light condensed abelian group on the point is the tensor unit. -/
 noncomputable def freePointIsoUnit :
@@ -507,6 +533,42 @@ lemma freePointMap_comp_toPointMap (T : LightProfinite) (t : T) :
   rw [pointMap_point_eq_id]
   simp
 
+/-- A `ℤ`-valued map out of `ℤ[T]` factors through a finite quotient of `T`. -/
+lemma zdisc_hom_factors_freeProj (T : LightProfinite)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    ∃ k : ℕ, ∃ ψ : (free ℤ).obj (T.component k).toCondensed ⟶ Zdisc,
+      freeProj T k ≫ ψ = φ := by
+  let f : LocallyConstant T ℤ := zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc φ)
+  obtain ⟨k, g, hg⟩ := LightProfinite.exists_locallyConstant_factor_proj T f
+  let ψ : (free ℤ).obj (T.component k).toCondensed ⟶ Zdisc :=
+    (freeHomEquivPoints (T.component k) Zdisc).symm
+      ((zdiscSectionsEquiv (T.component k)).symm g)
+  refine ⟨k, ψ, ?_⟩
+  apply (freeHomEquivPoints T Zdisc).injective
+  change freeHomEquivPoints T Zdisc
+      (((free ℤ).map (lightProfiniteToLightCondSet.map (T.proj k))) ≫ ψ) =
+    freeHomEquivPoints T Zdisc φ
+  rw [freeHomEquivPoints_map]
+  apply (zdiscSectionsEquiv T).injective
+  rw [zdiscSectionsEquiv_map]
+  dsimp [ψ, f] at hg ⊢
+  rw [hg]
+  simp
+
+/-- If a sequence of endomorphisms is eventually killed by every finite quotient, then every
+integer-valued evaluation is eventually zero. -/
+lemma eventually_comp_zdisc_zero_of_eventually_freeProj_zero
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    ∀ᶠ n : ℕ in Filter.atTop, u n ≫ φ = 0 := by
+  obtain ⟨k, ψ, hφ⟩ := zdisc_hom_factors_freeProj T φ
+  filter_upwards [hu k] with n hn
+  rw [← hφ]
+  rw [← Category.assoc, hn]
+  simp
+
 /-- Maps from a free object to the discrete integers are determined by their values on ordinary
 points. -/
 lemma zdisc_hom_ext_of_points (T : LightProfinite)
@@ -607,6 +669,184 @@ lemma natPoint_comp_ninfPointSection (T : LightProfinite) (t : T) (n : ℕ) :
 lemma iota_comp_ninfPointSection (T : LightProfinite) (t : T) :
     ι ≫ ninfPointSection T t = pointMap T t ≫ inftyTensorPoint T := by
   ext u <;> rfl
+
+/-- A finite natural-number point is open in `ℕ∪∞`. -/
+lemma finite_nat_singleton_open (n : ℕ) : IsOpen ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) := by
+  simpa using (OnePoint.isOpen_image_coe (X := ℕ) (s := ({n} : Set ℕ))).2
+    (isOpen_discrete _)
+
+/-- The standard tail neighborhood `{∞} ∪ {n | N ≤ n}` is open in `ℕ∪∞`. -/
+lemma ninf_tail_open (N : ℕ) :
+    IsOpen ({a : ℕ∪{∞} | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n} :
+      Set ℕ∪{∞}) := by
+  let A : Set (ℕ∪{∞}) := {a | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n}
+  have hinfty : (∞ : ℕ∪{∞}) ∈ A := by simp [A]
+  have hpre : ((↑) : ℕ → ℕ∪{∞}) ⁻¹' A = {n : ℕ | N ≤ n} := by
+    ext n
+    simp [A]
+  have hcompact : IsCompact (((↑) : ℕ → ℕ∪{∞}) ⁻¹' A)ᶜ := by
+    rw [hpre]
+    have hfin : Set.Finite ({n : ℕ | n < N}) := Set.finite_lt_nat N
+    have hset : ({n : ℕ | N ≤ n} : Set ℕ)ᶜ = {n : ℕ | n < N} := by
+      ext n
+      simp [not_le]
+    rw [hset]
+    exact isCompact_iff_finite.mpr hfin
+  have hopenpre : IsOpen (((↑) : ℕ → ℕ∪{∞}) ⁻¹' A) := by
+    rw [hpre]
+    exact isOpen_discrete _
+  have hA : IsOpen A := (OnePoint.isOpen_iff_of_mem' hinfty).2 ⟨hcompact, hopenpre⟩
+  simpa [A] using hA
+
+/-- A sequence of locally constant integer-valued functions that is eventually zero extends by zero
+across `∞`. -/
+lemma ninfLocallyConstant_fun_isLocallyConstant
+    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
+    (N : ℕ) (hN : ∀ n : ℕ, N ≤ n → f n = 0) :
+    IsLocallyConstant (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
+      match x.1 with
+      | ∞ => (0 : ℤ)
+      | OnePoint.some n => f n x.2) := by
+  rw [IsLocallyConstant.iff_exists_open]
+  rintro ⟨a, t⟩
+  cases a using OnePoint.rec with
+  | infty =>
+      let A : Set (ℕ∪{∞}) := {a | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n}
+      refine ⟨Set.prod A Set.univ, ?_, ?_, ?_⟩
+      · exact (ninf_tail_open N).prod isOpen_univ
+      · exact ⟨by simp [A], trivial⟩
+      · rintro ⟨a', t'⟩ h
+        rcases h with ⟨ha', _⟩
+        rcases ha' with rfl | ⟨n, hn_eq, hn_le⟩
+        · rfl
+        · cases hn_eq
+          change f n t' = 0
+          rw [hN n hn_le]
+          rfl
+  | coe n =>
+      obtain ⟨U, hUopen, htU, hUconst⟩ := (f n).isLocallyConstant.exists_open t
+      refine ⟨Set.prod ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) U, ?_, ?_, ?_⟩
+      · exact (finite_nat_singleton_open n).prod hUopen
+      · exact ⟨rfl, htU⟩
+      · rintro ⟨a', t'⟩ h
+        rcases h with ⟨ha', ht'⟩
+        have haeq : a' = (n : ℕ∪{∞}) := by simpa using ha'
+        cases haeq
+        change f n t' = f n t
+        exact hUconst t' ht'
+
+/-- Extend an eventually-zero sequence of locally constant integer-valued functions on `T` to a
+locally constant function on `(ℕ∪∞) × T`, with value zero on the `∞` slice. -/
+noncomputable def ninfLocallyConstantOfEventuallyZero
+    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
+    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
+    LocallyConstant (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)) ℤ :=
+  let N := Classical.choose (Filter.eventually_atTop.1 hf)
+  have hN : ∀ n : ℕ, N ≤ n → f n = 0 := Classical.choose_spec (Filter.eventually_atTop.1 hf)
+  ⟨fun x => match x.1 with
+    | ∞ => (0 : ℤ)
+    | OnePoint.some n => f n x.2,
+    ninfLocallyConstant_fun_isLocallyConstant T f N hN⟩
+
+@[simp]
+lemma ninfLocallyConstantOfEventuallyZero_finite
+    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
+    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) (n : ℕ) :
+    (ninfLocallyConstantOfEventuallyZero T f hf).comap (finiteTensorPoint T n).hom.hom = f n := by
+  dsimp [ninfLocallyConstantOfEventuallyZero]
+  ext t
+  rfl
+
+@[simp]
+lemma ninfLocallyConstantOfEventuallyZero_infty
+    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
+    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
+    (ninfLocallyConstantOfEventuallyZero T f hf).comap (inftyTensorPoint T).hom.hom = 0 := by
+  dsimp [ninfLocallyConstantOfEventuallyZero]
+  ext t
+  rfl
+
+/-- A sequence of `ℤ`-valued maps out of `ℤ[T]` that is eventually zero gives a `Zdisc`-section
+over `(ℕ∪∞) × T`, extended by zero at `∞`. -/
+noncomputable def zdiscSectionOverNinfOfEventuallyZero
+    (T : LightProfinite)
+    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
+    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) :
+    Zdisc.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
+  let f : ℕ → LocallyConstant T ℤ := fun n =>
+    zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc (v n))
+  have hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0 := by
+    filter_upwards [hv] with n hn
+    dsimp [f]
+    rw [hn]
+    simp
+  (zdiscSectionsEquiv (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite))).symm
+    (ninfLocallyConstantOfEventuallyZero T f hf)
+
+/-- Finite slices of the zero-extended `Zdisc`-section recover the original sequence. -/
+lemma zdiscSectionOverNinfOfEventuallyZero_finite
+    (T : LightProfinite)
+    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
+    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) (n : ℕ) :
+    (freeHomEquivPoints T Zdisc).symm
+      (Zdisc.obj.map (finiteTensorPoint T n).op
+        (zdiscSectionOverNinfOfEventuallyZero T v hv)) = v n := by
+  apply (freeHomEquivPoints T Zdisc).injective
+  rw [Equiv.apply_symm_apply]
+  apply (zdiscSectionsEquiv T).injective
+  rw [zdiscSectionsEquiv_map]
+  dsimp [zdiscSectionOverNinfOfEventuallyZero]
+  rw [Equiv.apply_symm_apply]
+  simp
+
+/-- The `∞` slice of the zero-extended `Zdisc`-section is zero. -/
+lemma zdiscSectionOverNinfOfEventuallyZero_infty
+    (T : LightProfinite)
+    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
+    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) :
+    (freeHomEquivPoints T Zdisc).symm
+      (Zdisc.obj.map (inftyTensorPoint T).op
+        (zdiscSectionOverNinfOfEventuallyZero T v hv)) = 0 := by
+  apply (freeHomEquivPoints T Zdisc).injective
+  rw [Equiv.apply_symm_apply]
+  apply (zdiscSectionsEquiv T).injective
+  rw [zdiscSectionsEquiv_map]
+  dsimp [zdiscSectionOverNinfOfEventuallyZero]
+  rw [Equiv.apply_symm_apply]
+  simp
+
+/-- Applying an integer-valued functional to a null sequence of endomorphisms gives the corresponding
+zero-extended `Zdisc`-section over `(ℕ∪∞) × T`. -/
+noncomputable def zdiscSectionOverNinfOfEventuallyFreeProjZero
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    Zdisc.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
+  zdiscSectionOverNinfOfEventuallyZero T (fun n => u n ≫ φ)
+    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ)
+
+lemma zdiscSectionOverNinfOfEventuallyFreeProjZero_finite
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) (n : ℕ) :
+    (freeHomEquivPoints T Zdisc).symm
+      (Zdisc.obj.map (finiteTensorPoint T n).op
+        (zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)) = u n ≫ φ :=
+  zdiscSectionOverNinfOfEventuallyZero_finite T (fun n => u n ≫ φ)
+    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ) n
+
+lemma zdiscSectionOverNinfOfEventuallyFreeProjZero_infty
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    (freeHomEquivPoints T Zdisc).symm
+      (Zdisc.obj.map (inftyTensorPoint T).op
+        (zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)) = 0 :=
+  zdiscSectionOverNinfOfEventuallyZero_infty T (fun n => u n ≫ φ)
+    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ)
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
@@ -1124,6 +1364,40 @@ lemma freeSectionOverNinfOfNullSequence_infty
       (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
         (freeSectionOverNinfOfNullSequence T u hu)) = 0 :=
   ((exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose_spec).2
+
+/-- After applying any integer-valued functional, the chosen free null-section is the explicit
+zero-extended `Zdisc`-section. -/
+lemma freeSectionOverNinfOfNullSequence_zdisc_eval
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
+    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
+    φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩
+      (freeSectionOverNinfOfNullSequence T u hu) =
+        zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ := by
+  apply zdisc_section_ext_of_slices T
+  · intro n
+    rw [← LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op
+      (freeSectionOverNinfOfNullSequence T u hu)]
+    have hX := congrArg (freeHomEquivPoints T ((free ℤ).obj T.toCondensed))
+      (freeSectionOverNinfOfNullSequence_finite T u hu n)
+    rw [Equiv.apply_symm_apply] at hX
+    have hY := congrArg (freeHomEquivPoints T Zdisc)
+      (zdiscSectionOverNinfOfEventuallyFreeProjZero_finite T u hu φ n)
+    rw [Equiv.apply_symm_apply] at hY
+    rw [freeHomEquivPoints_comp] at hY
+    rw [hX]
+    exact hY.symm
+  · rw [← LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op
+      (freeSectionOverNinfOfNullSequence T u hu)]
+    have hX := congrArg (freeHomEquivPoints T ((free ℤ).obj T.toCondensed))
+      (freeSectionOverNinfOfNullSequence_infty T u hu)
+    rw [Equiv.apply_symm_apply] at hX
+    have hY := congrArg (freeHomEquivPoints T Zdisc)
+      (zdiscSectionOverNinfOfEventuallyFreeProjZero_infty T u hu φ)
+    rw [Equiv.apply_symm_apply] at hY
+    rw [hX]
+    simpa using hY.symm
 
 /-- The section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail endomorphisms and
 whose `∞` slice is zero. -/
