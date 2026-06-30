@@ -266,6 +266,40 @@ lemma zdiscSectionsEquiv_zero (S : LightProfinite) :
   simp
   rfl
 
+/-- Sections of a discrete light condensed module are locally constant module-valued functions. -/
+noncomputable def discreteModuleSectionsEquiv (S : LightProfinite) (M : ModuleCat ℤ) :
+    ((LightCondensed.discrete (ModuleCat ℤ)).obj M).obj.obj ⟨S⟩ ≃ LocallyConstant S M where
+  toFun x := by
+    let y := ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app M).hom.app ⟨S⟩ x
+    change LocallyConstant S M at y
+    exact y
+  invFun y := by
+    let x : ((LightCondMod.LocallyConstant.functor ℤ).obj M).obj.obj ⟨S⟩ := y
+    exact ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).hom.app M).hom.app ⟨S⟩ x
+  left_inv x := by
+    let e := (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app M
+    change (e.inv ≫ e.hom).hom.app ⟨S⟩ x = x
+    rw [Iso.inv_hom_id]
+    rfl
+  right_inv y := by
+    let e := (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app M
+    change (e.hom ≫ e.inv).hom.app ⟨S⟩ y = y
+    rw [Iso.hom_inv_id]
+    rfl
+
+/-- The locally constant-function description of discrete module sections is natural in the module. -/
+lemma discreteModuleSectionsEquiv_map (S : LightProfinite) {M N : ModuleCat ℤ} (f : M ⟶ N)
+    (x : ((LightCondensed.discrete (ModuleCat ℤ)).obj M).obj.obj ⟨S⟩) :
+    discreteModuleSectionsEquiv S N (((LightCondensed.discrete (ModuleCat ℤ)).map f).hom.app ⟨S⟩ x) =
+      (discreteModuleSectionsEquiv S M x).map f := by
+  dsimp [discreteModuleSectionsEquiv]
+  have hnatur := ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv).naturality f
+  change (((LightCondensed.discrete (ModuleCat ℤ)).map f ≫
+        (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app N).hom.app ⟨S⟩) x =
+    (((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app M ≫
+        (LightCondMod.LocallyConstant.functor ℤ).map f).hom.app ⟨S⟩) x
+  simpa using congr_fun (congrArg (fun η => η.hom.app ⟨S⟩) hnatur) x
+
 /-- The solidification of the sequence object `P ℤ`. -/
 noncomputable abbrev solidP : Solid :=
   solidification.obj (P ℤ)
@@ -1241,23 +1275,82 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
       rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
       exact congrFun (congrArg LocallyConstant.toFun h) t
 
-/-- Obligation: finite free objects are separated by their integer-valued linear functionals.
-This is the finite-rank algebraic core of `freeTarget_section_ext_of_finite_zdisc_eval`. -/
+/-- The finite-rank free abelian group with basis the points of a finite light profinite set. -/
+noncomputable abbrev finiteFreeDiscreteModule (F : LightProfinite) : ModuleCat ℤ :=
+  ModuleCat.of ℤ (F → ℤ)
+
+/-- Obligation: for finite `F`, the sheafified free light condensed group `ℤ[F]` is the discrete
+finite-rank free abelian group with basis `F`. -/
+noncomputable def finiteFreeIsoDiscrete (F : LightProfinite) [Finite F] :
+    (free ℤ).obj F.toCondensed ≅
+      (LightCondensed.discrete (ModuleCat ℤ)).obj (finiteFreeDiscreteModule F) := by
+  sorry
+
+/-- The coordinate functional on the finite-rank free abelian group with basis `F`. -/
+noncomputable def finiteFreeCoordHom (F : LightProfinite) (a : F) :
+    finiteFreeDiscreteModule F ⟶ ModuleCat.of ℤ ℤ :=
+  ModuleCat.ofHom {
+    toFun := fun v => v a
+    map_add' := by intro x y; rfl
+    map_smul' := by intro c x; rfl }
+
+/-- Applying an isomorphism of light condensed modules is injective on sections. -/
+lemma lightCondAb_iso_app_injective {A B : LightCondAb} (e : A ≅ B) (S : LightProfinite) :
+    Function.Injective (e.hom.hom.app ⟨S⟩) := by
+  intro x y h
+  have h' := congrArg (fun z => e.inv.hom.app ⟨S⟩ z) h
+  change (e.hom ≫ e.inv).hom.app ⟨S⟩ x = (e.hom ≫ e.inv).hom.app ⟨S⟩ y at h'
+  simpa using h'
+
+/-- Finite free objects are separated by their integer-valued linear functionals. -/
 lemma finiteFree_section_ext_of_zdisc_eval (F S : LightProfinite) [Finite F]
     (x y : ((free ℤ).obj F.toCondensed).obj.obj ⟨S⟩)
     (h : ∀ ψ : (free ℤ).obj F.toCondensed ⟶ Zdisc,
       ψ.hom.app ⟨S⟩ x = ψ.hom.app ⟨S⟩ y) :
     x = y := by
+  let M := finiteFreeDiscreteModule F
+  let e := finiteFreeIsoDiscrete F
+  apply lightCondAb_iso_app_injective e S
+  apply (discreteModuleSectionsEquiv S M).injective
+  ext s a
+  let ℓ : M ⟶ ModuleCat.of ℤ ℤ := finiteFreeCoordHom F a
+  let ψ : (free ℤ).obj F.toCondensed ⟶ Zdisc :=
+    e.hom ≫ (LightCondensed.discrete (ModuleCat ℤ)).map ℓ
+  have hh := h ψ
+  have hloc := congrArg (discreteModuleSectionsEquiv S (ModuleCat.of ℤ ℤ)) hh
+  change discreteModuleSectionsEquiv S (ModuleCat.of ℤ ℤ)
+      (((LightCondensed.discrete (ModuleCat ℤ)).map ℓ).hom.app ⟨S⟩
+        (e.hom.hom.app ⟨S⟩ x)) =
+    discreteModuleSectionsEquiv S (ModuleCat.of ℤ ℤ)
+      (((LightCondensed.discrete (ModuleCat ℤ)).map ℓ).hom.app ⟨S⟩
+        (e.hom.hom.app ⟨S⟩ y)) at hloc
+  rw [discreteModuleSectionsEquiv_map, discreteModuleSectionsEquiv_map] at hloc
+  exact congrFun (congrArg LocallyConstant.toFun hloc) s
+
+/-- Obligation: sections of the free object `ℤ[T]` are separated by all locally constant
+integer-valued functions on `T`.  This is the non-finite free-object separation input used to pass
+from all finite projections to equality. -/
+lemma freeTarget_section_ext_of_zdisc_eval_obligation (T S : LightProfinite)
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+      φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
+    x = y := by
   sorry
 
-/-- Obligation: the finite projections in the chosen AsLimit presentation jointly separate
-sections of the free object `ℤ[T]`. -/
+/-- The finite projections in the chosen AsLimit presentation jointly separate sections of the free
+object `ℤ[T]`, assuming separation by all integer-valued functionals. -/
 lemma freeTarget_section_ext_of_finite_proj (T S : LightProfinite)
     (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
     (h : ∀ k : ℕ,
       (freeProj T k).hom.app ⟨S⟩ x = (freeProj T k).hom.app ⟨S⟩ y) :
     x = y := by
-  sorry
+  apply freeTarget_section_ext_of_zdisc_eval_obligation T S
+  intro φ
+  obtain ⟨k, ψ, hφ⟩ := zdisc_hom_factors_freeProj T φ
+  rw [← hφ]
+  change ψ.hom.app ⟨S⟩ ((freeProj T k).hom.app ⟨S⟩ x) =
+    ψ.hom.app ⟨S⟩ ((freeProj T k).hom.app ⟨S⟩ y)
+  rw [h k]
 
 /-- Sections of the free object `ℤ[T]` are separated by integer-valued functions that factor through
 finite quotients of `T`, reduced to finite-rank separation and joint separation of finite
