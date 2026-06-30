@@ -240,7 +240,23 @@ def seqFunctor (S : LightProfinite.{0}) : ℕ+ ⥤ LightProfinite where
     · apply profiniteComponentMap_congr
     · exact profiniteComponentMap_comp S (pnatHomLeInt f) (pnatHomLeInt g)
 
-instance : HasCountableColimits Sequential := sorry
+/-- The restricted topological-realization adjunction makes sequential spaces a reflective
+subcategory of light condensed sets. -/
+noncomputable instance : sequentialToLightCondSet.{0}.Faithful :=
+  fullyFaithfulSequentialToLightCondSet.faithful
+
+noncomputable instance : sequentialToLightCondSet.{0}.Full :=
+  fullyFaithfulSequentialToLightCondSet.full
+
+noncomputable instance : Reflective sequentialToLightCondSet.{0} where
+  L := lightCondSetToSequential
+  adj := sequentialAdjunction
+
+instance : HasCountableColimits Sequential.{0} where
+  out J _ _ := by
+    haveI : HasColimitsOfShape J LightCondSet.{0} := inferInstance
+    exact hasColimitsOfShape_of_reflective (J := J) (C := LightCondSet.{0})
+      (D := Sequential.{0}) sequentialToLightCondSet.{0}
 
 instance : CountableCategory ℕ+ where
 
@@ -259,12 +275,6 @@ abbrev freeLightProfiniteMap : (forget ℤ).obj ((free ℤ).obj S.toCondensed) �
     sequentialToLightCondSet.obj (lightCondSetToSequential.obj
       ((forget ℤ).obj ((free ℤ).obj S.toCondensed))) :=
   LightCondSet.sequentialAdjunction.unit.app <| (forget ℤ).obj <| (free ℤ).obj S.toCondensed
-
-instance : sequentialToLightCondSet.{0}.Faithful :=
-  fullyFaithfulSequentialToLightCondSet.faithful
-
-instance : sequentialToLightCondSet.{0}.Full :=
-  fullyFaithfulSequentialToLightCondSet.full
 
 namespace FreeImage
 
