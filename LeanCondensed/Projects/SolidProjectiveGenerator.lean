@@ -1427,6 +1427,53 @@ lemma freeMeasure_ext_of_eval
     exact ht_ne heval
   simpa [δ, sub_eq_zero] using hδ
 
+/-- Sections of the represented topological free abelian group are separated by the evaluations
+coming from locally constant integer-valued functions on the source. -/
+lemma topologicalFreeCondensed_section_ext_of_eval (T S : LightProfinite)
+    {x y : (LightCondAb.topologicalFreeCondensed T).obj.obj ⟨S⟩}
+    (h : ∀ f : LocallyConstant T ℤ,
+      (LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨S⟩ x =
+        (LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨S⟩ y) :
+    x = y := by
+  apply ContinuousMap.ext
+  intro s
+  apply freeMeasure_ext_of_eval
+  intro f
+  have hf := h f
+  have hz := congrArg (zdiscSectionsEquiv S) hf
+  dsimp [LightCondAb.topologicalFreeEvalDiscrete, zdiscSectionsEquiv] at hz
+  rw [LightCondAb.discreteIntTopModuleCondensedIso_sections,
+    LightCondAb.discreteIntTopModuleCondensedIso_sections] at hz
+  have hs := congrArg (fun g : LocallyConstant S ℤ => g s) hz
+  dsimp [LightCondAb.discreteIntTopModuleSectionsEquiv,
+    LightCondAb.discreteIntTopModulePresheafIso,
+    LightCondAb.topologicalFreeEvalCondensed] at hs
+  change (LightCondAb.topologicalFreeEval T f).hom
+      ((show C(↑S.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from x) s) =
+    (LightCondAb.topologicalFreeEval T f).hom
+      ((show C(↑S.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from y) s) at hs
+  rw [LightCondAb.topologicalFreeEval_apply, LightCondAb.topologicalFreeEval_apply] at hs
+  simpa [freeMeasureEval] using hs
+
+/-- The current `Zdisc`-separation hypothesis identifies the images in the represented topological
+free abelian group.  The remaining missing input for the free-target separation theorem is
+injectivity of `freeToTopologicalFree` on sections. -/
+lemma freeToTopologicalFree_section_eq_of_zdisc_eval (T S : LightProfinite)
+    {x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩}
+    (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+      φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
+    (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ x =
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y := by
+  apply topologicalFreeCondensed_section_ext_of_eval T S
+  intro f
+  have hf := h (zdiscMapOfLocallyConstant T f)
+  rw [zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval] at hf
+  change (LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨S⟩
+      ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ x) =
+    (LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨S⟩
+      ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y)
+  simpa using hf
+
 /-- A finite light profinite set, represented as a sheaf, is the locally constant sheaf on its
 underlying finite set. -/
 noncomputable def finiteToLocallyConstantIso (F : LightProfinite) [Finite F] :

@@ -775,6 +775,19 @@ lemma topologicalFreeEval_single (f : LocallyConstant S ℤ) (s : S) :
     (topologicalFreeEval S f)) s) = f s
   simp [topologicalFreeEval]
 
+/-- The continuous linear evaluation map on the topological free abelian group is the usual finite
+sum against the locally constant function. -/
+lemma topologicalFreeEval_apply (f : LocallyConstant S ℤ) (μ : topologicalFree S) :
+    (topologicalFreeEval S f).hom μ = (Finsupp.linearCombination ℤ fun s : S => f s) μ := by
+  let L : (topologicalFree S) →ₗ[ℤ] ℤ := (topologicalFreeEval S f).hom.toLinearMap
+  let R : (topologicalFree S) →ₗ[ℤ] ℤ := Finsupp.linearCombination ℤ fun s : S => f s
+  change L μ = R μ
+  suffices L = R by rw [this]
+  refine Finsupp.lhom_ext' fun s => LinearMap.ext_ring ?_
+  simp [L, R]
+  convert topologicalFreeEval_single S f s
+  rfl
+
 /-- The induced morphism between represented light condensed abelian groups. -/
 noncomputable def topologicalFreeEvalCondensed (f : LocallyConstant S ℤ) :
     topologicalFreeCondensed S ⟶
