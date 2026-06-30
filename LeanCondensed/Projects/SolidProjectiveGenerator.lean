@@ -1241,14 +1241,26 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
       rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
       exact congrFun (congrArg LocallyConstant.toFun h) t
 
-/-- Obligation: sections of the free object `ℤ[T]` are separated by all locally constant
-integer-valued functions on `T`. -/
+/-- Obligation: sections of the free object `ℤ[T]` are separated by integer-valued functions
+that factor through finite quotients of `T`.  This is the concrete finite-stage form of the
+free-object separation input. -/
+lemma freeTarget_section_ext_of_finite_zdisc_eval (T S : LightProfinite)
+    (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
+    (h : ∀ k : ℕ, ∀ ψ : (free ℤ).obj (T.component k).toCondensed ⟶ Zdisc,
+      (freeProj T k ≫ ψ).hom.app ⟨S⟩ x = (freeProj T k ≫ ψ).hom.app ⟨S⟩ y) :
+    x = y := by
+  sorry
+
+/-- Sections of the free object `ℤ[T]` are separated by all locally constant integer-valued
+functions on `T`, reduced to finite-stage integer-valued evaluations. -/
 lemma freeTarget_section_ext_of_zdisc_eval (T S : LightProfinite)
     (x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩)
     (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
       φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
     x = y := by
-  sorry
+  apply freeTarget_section_ext_of_finite_zdisc_eval T S
+  intro k ψ
+  exact h (freeProj T k ≫ ψ)
 
 /-- Endomorphisms of the free object `ℤ[T]` are determined by their composites with the free point
 maps.  The proof reduces to the existing `Zdisc`-valued separation obligation. -/
@@ -1320,9 +1332,25 @@ lemma freeTarget_numerator_ext_of_slices (T : LightProfinite)
   apply (cancel_epi (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv).1
   exact hmaps
 
-/-- Obligation: the AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]`
-which is eventually zero after every finite quotient of `T` into a continuous section over
-`(ℕ∪∞) × T`, with prescribed finite slices and zero `∞` slice. -/
+/-- Obligation: the remaining realization part of the AsLimit/compactness bridge.  The
+`Zdisc`-valued evaluations of a null sequence of endomorphisms have already been constructed
+explicitly; this obligation asks that those compatible evaluations come from an actual section of
+`ℤ[T]` over `(ℕ∪∞) × T`. -/
+lemma exists_freeSectionOverNinf_realizing_zdisc_evaluations
+    (T : LightProfinite)
+    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
+    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+    ∃ x : ((free ℤ).obj T.toCondensed).obj.obj
+        ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩,
+      ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
+        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ x =
+          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ := by
+  sorry
+
+/-- The AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]` which is
+eventually zero after every finite quotient of `T` into a continuous section over `(ℕ∪∞) × T`,
+with prescribed finite slices and zero `∞` slice.  The finite/∞ slice verification is formal from
+the `Zdisc`-evaluation realization and the free-target separation obligation. -/
 lemma exists_freeSectionOverNinf_of_eventually_freeProj_zero
     (T : LightProfinite)
     (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
@@ -1334,7 +1362,32 @@ lemma exists_freeSectionOverNinf_of_eventually_freeProj_zero
           (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op x) = u n) ∧
       (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
         (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x) = 0 := by
-  sorry
+  let A := (free ℤ).obj T.toCondensed
+  obtain ⟨x, hx⟩ := exists_freeSectionOverNinf_realizing_zdisc_evaluations T u hu
+  refine ⟨x, ?_, ?_⟩
+  · intro n
+    apply (freeHomEquivPoints T A).injective
+    rw [Equiv.apply_symm_apply]
+    apply freeTarget_section_ext_of_zdisc_eval T T
+    intro φ
+    rw [LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op x]
+    rw [hx φ]
+    have hY := congrArg (freeHomEquivPoints T Zdisc)
+      (zdiscSectionOverNinfOfEventuallyFreeProjZero_finite T u hu φ n)
+    rw [Equiv.apply_symm_apply] at hY
+    rw [freeHomEquivPoints_comp] at hY
+    exact hY
+  · apply (freeHomEquivPoints T A).injective
+    rw [Equiv.apply_symm_apply]
+    change A.obj.map (inftyTensorPoint T).op x = (0 : A.obj.obj ⟨T⟩)
+    apply freeTarget_section_ext_of_zdisc_eval T T
+    intro φ
+    rw [LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op x]
+    rw [hx φ]
+    have hY := congrArg (freeHomEquivPoints T Zdisc)
+      (zdiscSectionOverNinfOfEventuallyFreeProjZero_infty T u hu φ)
+    rw [Equiv.apply_symm_apply] at hY
+    simpa using hY
 
 /-- The section over `(ℕ∪∞) × T` associated to a null sequence of endomorphisms of `ℤ[T]`. -/
 noncomputable def freeSectionOverNinfOfNullSequence
