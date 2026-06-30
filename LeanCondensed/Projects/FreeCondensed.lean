@@ -1168,6 +1168,67 @@ lemma topologicalFreeEvalDiscrete_diracSection (f : LocallyConstant S ℤ) :
   rw [topologicalFreeDiracSection_yoneda_apply]
   exact topologicalFreeEval_single S f s
 
+/-- The sheaf-level morphism induced by the presheaf comparison from formal free sections to
+represented topological-free sections. -/
+noncomputable def freePresheafComparisonSheafification :
+    (free ℤ).obj S.toCondensed ⟶ topologicalFreeCondensed S where
+  hom := CategoryTheory.sheafifyLift (coherentTopology LightProfinite)
+    (freePresheafToTopologicalFreePresheaf S) (topologicalFreeCondensed S).property
+
+@[reassoc (attr := simp)]
+lemma toSheafify_freePresheafComparisonSheafification :
+    CategoryTheory.toSheafify (coherentTopology LightProfinite) (freePresheaf S) ≫
+      (freePresheafComparisonSheafification S).hom =
+    freePresheafToTopologicalFreePresheaf S := by
+  exact CategoryTheory.toSheafify_sheafifyLift (coherentTopology LightProfinite)
+    (freePresheafToTopologicalFreePresheaf S) (topologicalFreeCondensed S).property
+
+/-- At the represented identity section, the free/sheaf adjunction unit is the sheafification of
+the presheaf free generator. -/
+lemma freeForgetAdjunction_unit_app_id :
+    ((LightCondensed.freeForgetAdjunction ℤ).unit.app S.toCondensed).hom.app ⟨S⟩ (𝟙 S) =
+      (CategoryTheory.toSheafify (coherentTopology LightProfinite) (freePresheaf S)).app ⟨S⟩
+        (ModuleCat.freeMk (𝟙 S)) := by
+  rw [LightCondensed.freeForgetAdjunction, CategoryTheory.Sheaf.adjunction_unit_app_hom]
+  rfl
+
+/-- The sheafified presheaf comparison sends the represented Dirac generator to the represented
+topological Dirac section. -/
+lemma freePresheafComparison_diracSection :
+    (freePresheafComparisonSheafification S).hom.app ⟨S⟩
+      ((CategoryTheory.toSheafify (coherentTopology LightProfinite) (freePresheaf S)).app ⟨S⟩
+        (ModuleCat.freeMk (𝟙 S))) =
+    (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S) := by
+  have h := congrArg (fun η : freePresheaf S ⟶ topologicalFreePresheaf S =>
+      η.app ⟨S⟩ (ModuleCat.freeMk (𝟙 S)))
+    (toSheafify_freePresheafComparisonSheafification S)
+  change ((CategoryTheory.toSheafify (coherentTopology LightProfinite) (freePresheaf S) ≫
+      (freePresheafComparisonSheafification S).hom).app ⟨S⟩ (ModuleCat.freeMk (𝟙 S))) =
+    (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)
+  exact h.trans (by
+    change (show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+        (freePresheafToTopologicalFreePresheaf S).app ⟨S⟩ (ModuleCat.freeMk (𝟙 S))) =
+      (show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
+        (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S))
+    rw [freePresheafToTopologicalFreePresheaf_app_freeMk]
+    ext s
+    rw [topologicalFreeDiracSection_yoneda_apply]
+    rfl)
+
+/-- Under the free/forget adjunction, the sheafified presheaf comparison is characterized by the
+represented topological Dirac section. -/
+lemma freeForgetAdjunction_homEquiv_freePresheafComparisonSheafification :
+    (LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed (topologicalFreeCondensed S)
+      (freePresheafComparisonSheafification S) = topologicalFreeDiracSection S := by
+  apply (coherentTopology LightProfinite).yonedaEquiv.injective
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  change (freePresheafComparisonSheafification S).hom.app ⟨S⟩
+      (((LightCondensed.freeForgetAdjunction ℤ).unit.app S.toCondensed).hom.app ⟨S⟩ (𝟙 S)) =
+    (coherentTopology LightProfinite).yonedaEquiv (topologicalFreeDiracSection S)
+  rw [freeForgetAdjunction_unit_app_id]
+  exact freePresheafComparison_diracSection S
+
 /-- The canonical comparison from the free light condensed abelian group to the light condensed
 abelian group represented by the free topological abelian group. -/
 noncomputable def freeToTopologicalFree :
@@ -1180,6 +1241,15 @@ lemma freeForgetAdjunction_homEquiv_freeToTopologicalFree :
     (LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed (topologicalFreeCondensed S)
       (freeToTopologicalFree S) = topologicalFreeDiracSection S := by
   simp [freeToTopologicalFree]
+
+/-- The existing `freeToTopologicalFree` morphism is the sheaf-level morphism induced by the
+presheaf comparison. -/
+lemma freeToTopologicalFree_eq_sheafified_presheaf_comparison :
+    freeToTopologicalFree S = freePresheafComparisonSheafification S := by
+  apply ((LightCondensed.freeForgetAdjunction ℤ).homEquiv S.toCondensed
+    (topologicalFreeCondensed S)).injective
+  rw [freeForgetAdjunction_homEquiv_freeToTopologicalFree,
+    freeForgetAdjunction_homEquiv_freePresheafComparisonSheafification]
 
 /-- The comparison from the free light condensed abelian group to the represented topological free
 abelian group is natural in the light profinite source. -/
