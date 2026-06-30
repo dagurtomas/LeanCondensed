@@ -278,6 +278,73 @@ lemma finiteStageEval_boundInclusion (Si : FintypeCat.{0}) {c d : ℤ} (hcd : c 
     finiteStageEval Si d g (boundInclusion Si hcd a) = finiteStageEval Si c g a := by
   rfl
 
+@[simp]
+lemma finiteStageEval_fintypeMap (c : ℤ) {Si Sj : FintypeCat.{0}} (f : Si ⟶ Sj)
+    (g : Sj → ℤ) (a : set Si c) :
+    finiteStageEval Sj c g (fintypeMap c f a) = finiteStageEval Si c (fun i => g (f i)) a := by
+  classical
+  change (Finsupp.mapDomain (fun i => f i) (a.1 : Si →₀ ℤ)).sum (fun i n => n * g i) =
+    (a.1 : Si →₀ ℤ).sum (fun i n => n * g (f i))
+  rw [Finsupp.sum_mapDomain_index]
+  · intro x
+    simp
+  · intro b m₁ m₂
+    ring
+
+/-- The Dirac measure at a point of a finite stage, with total variation bounded by `1`. -/
+noncomputable def diracFintype (Si : FintypeCat.{0}) (i : Si) : set Si (1 : ℤ) := by
+  classical
+  refine ⟨Finsupp.single i (1 : ℤ), ?_⟩
+  change (Finsupp.single i (1 : ℤ)).sum (fun _ n => |n|) ≤ 1
+  simp
+
+@[simp]
+lemma finiteStageEval_diracFintype (Si : FintypeCat.{0}) (g : Si → ℤ) (i : Si) :
+    finiteStageEval Si (1 : ℤ) g (diracFintype Si i) = g i := by
+  classical
+  dsimp [finiteStageEval, diracFintype]
+  simp
+
+@[simp]
+lemma fintypeMap_diracFintype {Si Sj : FintypeCat.{0}} (f : Si ⟶ Sj) (i : Si) :
+    fintypeMap (1 : ℤ) f (diracFintype Si i) = diracFintype Sj (f i) := by
+  classical
+  ext j
+  dsimp [fintypeMap, diracFintype]
+  simp [Finsupp.mapDomain_single]
+
+/-- Bounded finite-stage signed measures are separated by their evaluations against all
+integer-valued functions on the finite stage. -/
+lemma finiteStageEval_ext (Si : FintypeCat.{0}) (c : ℤ) {a b : set Si c}
+    (h : ∀ g : Si → ℤ, finiteStageEval Si c g a = finiteStageEval Si c g b) : a = b := by
+  classical
+  ext i
+  let g : Si → ℤ := fun j => if j = i then 1 else 0
+  have hg := h g
+  have ha : finiteStageEval Si c g a = a.1 i := by
+    dsimp [finiteStageEval, g]
+    rw [Finsupp.sum]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro j _ hji
+      simp [hji]
+    · intro hi
+      have hzero : a.1 i = 0 := by
+        simpa [Finsupp.mem_support_iff] using hi
+      simp [hzero]
+  have hb : finiteStageEval Si c g b = b.1 i := by
+    dsimp [finiteStageEval, g]
+    rw [Finsupp.sum]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro j _ hji
+      simp [hji]
+    · intro hi
+      have hzero : b.1 i = 0 := by
+        simpa [Finsupp.mem_support_iff] using hi
+      simp [hzero]
+  simpa [ha, hb] using hg
+
 /-- Evaluation of a bounded profinite component against a function that factors through a finite
 stage `k`. -/
 noncomputable def profiniteComponentEval (S : LightProfinite.{0}) (c : ℤ) (k : ℕ)
@@ -322,6 +389,114 @@ lemma profiniteComponentEval_bound (S : LightProfinite.{0}) {c d : ℤ} (hcd : c
   rw [hx]
   rfl
 
+/-- Points in a fixed bounded profinite component are separated by all finite-stage evaluations. -/
+lemma profiniteComponentEval_ext (S : LightProfinite.{0}) (c : ℤ)
+    {x y : profiniteComponent S c}
+    (h : ∀ k : ℕ, ∀ g : S.fintypeDiagram.obj ⟨k⟩ → ℤ,
+      profiniteComponentEval S c k g x = profiniteComponentEval S c k g y) :
+    x = y := by
+  apply Concrete.limit_ext (S.fintypeDiagram ⋙ functor c) x y
+  intro k
+  apply finiteStageEval_ext (S.fintypeDiagram.obj k) c
+  intro g
+  have hg := h k.unop g
+  dsimp [profiniteComponentEval] at hg
+  exact hg
+
+/-- Maps into a fixed bounded profinite component are separated by finite-stage evaluations. -/
+lemma profiniteComponentEval_hom_ext (S : LightProfinite.{0}) (c : ℤ) {X : Sequential}
+    {f g : X ⟶ lightProfiniteToSequential.obj (profiniteComponent S c)}
+    (h : ∀ k : ℕ, ∀ e : S.fintypeDiagram.obj ⟨k⟩ → ℤ,
+      f ≫ profiniteComponentEval S c k e = g ≫ profiniteComponentEval S c k e) :
+    f = g := by
+  ext x
+  apply profiniteComponentEval_ext S c
+  intro k e
+  exact congrArg (fun m : X ⟶ discreteIntSeq => m x) (h k e)
+
+/-- Sections of a fixed bounded profinite component are separated by finite-stage evaluations. -/
+lemma profiniteComponent_section_ext_of_eval (T U : LightProfinite.{0}) (c : ℤ)
+    {x y : (sequentialToLightCondSet.obj
+      (lightProfiniteToSequential.obj (profiniteComponent T c))).obj.obj ⟨U⟩}
+    (h : ∀ k : ℕ, ∀ e : T.fintypeDiagram.obj ⟨k⟩ → ℤ,
+      (sequentialToLightCondSet.map (profiniteComponentEval T c k e)).hom.app ⟨U⟩ x =
+        (sequentialToLightCondSet.map (profiniteComponentEval T c k e)).hom.app ⟨U⟩ y) :
+    x = y := by
+  apply ContinuousMap.ext
+  intro u
+  apply profiniteComponentEval_ext T c
+  intro k e
+  have hk := congrArg (fun f : C(↑U.toTop, ↑discreteIntSeq.toTop) => f u) (h k e)
+  change ((profiniteComponentEval T c k e)
+      ((show C(↑U.toTop, ↑(lightProfiniteToSequential.obj (profiniteComponent T c)).toTop) from x).toFun u)) =
+    ((profiniteComponentEval T c k e)
+      ((show C(↑U.toTop, ↑(lightProfiniteToSequential.obj (profiniteComponent T c)).toTop) from y).toFun u)) at hk
+  exact hk
+
+/-- The compatible cone of finite-stage Dirac measures over all finite quotients of `S`. -/
+noncomputable def diracCone (S : LightProfinite.{0}) :
+    Cone (S.fintypeDiagram ⋙ functor (1 : ℤ)) where
+  pt := S
+  π := {
+    app k := by
+      refine ConcreteCategory.ofHom ?_
+      refine (⟨fun s => diracFintype (S.fintypeDiagram.obj k) (S.proj k.unop s), ?_⟩ :
+        C(↑S.toTop, ↑(component (S.fintypeDiagram.obj k) (1 : ℤ)).toTop))
+      dsimp [component, FintypeCat.toLightProfinite]
+      fun_prop
+    naturality := by
+      intro i j h
+      ext s
+      simp only [Functor.const_obj_map]
+      change diracFintype (S.fintypeDiagram.obj j) (S.proj j.unop s) =
+        (fintypeMap (1 : ℤ) (S.fintypeDiagram.map h)
+          (diracFintype (S.fintypeDiagram.obj i) (S.proj i.unop s)))
+      rw [fintypeMap_diracFintype]
+      have hw := congrArg (fun f : S ⟶ S.diagram.obj j => f s) (S.asLimitCone.w h)
+      exact (congrArg (fun x => diracFintype (S.fintypeDiagram.obj j) x) hw).symm }
+
+/-- The continuous map sending a point of `S` to its Dirac measure in the bound-`1` profinite
+component. -/
+noncomputable def diracComponent (S : LightProfinite.{0}) : S ⟶ profiniteComponent S (1 : ℤ) :=
+  limit.lift (S.fintypeDiagram ⋙ functor (1 : ℤ)) (diracCone S)
+
+/-- The same Dirac component, typed as the `1`st object of the bounded-measure sequence. -/
+noncomputable def diracComponentOne (S : LightProfinite.{0}) : S ⟶ (seqFunctor S).obj (1 : ℕ+) :=
+  diracComponent S
+
+@[simp]
+lemma diracComponent_π (S : LightProfinite.{0}) (k : ℕ) :
+    diracComponent S ≫ limit.π (S.fintypeDiagram ⋙ functor (1 : ℤ)) ⟨k⟩ =
+      (diracCone S).π.app ⟨k⟩ := by
+  exact limit.lift_π _ _
+
+@[simp]
+lemma diracComponent_apply_π (S : LightProfinite.{0}) (k : ℕ) (s : S) :
+    (limit.π (S.fintypeDiagram ⋙ functor (1 : ℤ)) ⟨k⟩) (diracComponent S s) =
+      diracFintype (S.fintypeDiagram.obj ⟨k⟩) (S.proj k s) := by
+  change ((diracComponent S ≫ limit.π (S.fintypeDiagram ⋙ functor (1 : ℤ)) ⟨k⟩) s) =
+    diracFintype (S.fintypeDiagram.obj ⟨k⟩) (S.proj k s)
+  rw [diracComponent_π]
+  rfl
+
+@[simp]
+lemma profiniteComponentEval_diracComponent (S : LightProfinite.{0}) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) (s : S) :
+    profiniteComponentEval S (1 : ℤ) k g (diracComponent S s) = g (S.proj k s) := by
+  dsimp [profiniteComponentEval]
+  change finiteStageEval (S.fintypeDiagram.obj ⟨k⟩) (1 : ℤ) g
+      ((limit.π (S.fintypeDiagram ⋙ functor (1 : ℤ)) ⟨k⟩) (diracComponent S s)) =
+    g (S.proj k s)
+  rw [diracComponent_apply_π]
+  simp
+
+/-- The map from `S` into the full sequential finite-measure model sending a point to its Dirac
+measure. -/
+noncomputable def diracSequential (S : LightProfinite.{0}) :
+    lightProfiniteToSequential.obj S ⟶ sequential S :=
+  lightProfiniteToSequential.map (diracComponentOne S) ≫
+    colimit.ι (seqFunctor S ⋙ lightProfiniteToSequential) (1 : ℕ+)
+
 /-- The cocone induced by evaluating the bounded pieces against a finite-stage integer-valued
 function. -/
 noncomputable def sequentialEvalCoconeOfFactor (S : LightProfinite.{0}) (k : ℕ)
@@ -347,6 +522,22 @@ lemma colimit_ι_sequentialEvalOfFactor (S : LightProfinite.{0}) (k : ℕ)
     colimit.ι (seqFunctor S ⋙ lightProfiniteToSequential) c ≫ sequentialEvalOfFactor S k g =
       profiniteComponentEval S c k g := by
   exact colimit.ι_desc _ c
+
+@[simp]
+lemma diracSequential_eval_apply (S : LightProfinite.{0}) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) (s : S) :
+    (diracSequential S ≫ sequentialEvalOfFactor S k g) s = g (S.proj k s) := by
+  have hm : diracSequential S ≫ sequentialEvalOfFactor S k g =
+      lightProfiniteToSequential.map (diracComponentOne S) ≫
+        profiniteComponentEval S ((1 : ℕ+) : ℤ) k g := by
+    dsimp [diracSequential]
+    erw [Category.assoc, colimit_ι_sequentialEvalOfFactor]
+    rfl
+  have hs := congrArg (fun m : lightProfiniteToSequential.obj S ⟶ discreteIntSeq => m s) hm
+  dsimp [diracComponentOne] at hs
+  change (diracSequential S ≫ sequentialEvalOfFactor S k g) s =
+    profiniteComponentEval S (1 : ℤ) k g (diracComponent S s) at hs
+  exact hs.trans (profiniteComponentEval_diracComponent S k g s)
 
 end FreeImage
 
