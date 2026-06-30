@@ -1462,6 +1462,27 @@ lemma topologicalFreeCondensed_section_ext_of_eval (T S : LightProfinite)
   rw [LightCondAb.topologicalFreeEval_apply, LightCondAb.topologicalFreeEval_apply] at hs
   simpa [freeMeasureEval] using hs
 
+/-- Sections of the represented topological free abelian group are separated by the maps induced
+from finite quotients of the source. -/
+lemma topologicalFreeCondensed_section_ext_of_finite_proj (T S : LightProfinite)
+    {x y : (LightCondAb.topologicalFreeCondensed T).obj.obj ⟨S⟩}
+    (h : ∀ k : ℕ,
+      (LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩ x =
+        (LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩ y) :
+    x = y := by
+  apply topologicalFreeCondensed_section_ext_of_eval T S
+  intro f
+  obtain ⟨k, g, hg⟩ := LightProfinite.exists_locallyConstant_factor_proj T f
+  have hk := congrArg
+    (fun z => (LightCondAb.topologicalFreeEvalDiscrete (T.component k) g).hom.app ⟨S⟩ z)
+    (h k)
+  change ((LightCondAb.topologicalFreeCondensedMap (T.proj k) ≫
+      LightCondAb.topologicalFreeEvalDiscrete (T.component k) g).hom.app ⟨S⟩) x =
+    ((LightCondAb.topologicalFreeCondensedMap (T.proj k) ≫
+      LightCondAb.topologicalFreeEvalDiscrete (T.component k) g).hom.app ⟨S⟩) y at hk
+  rw [LightCondAb.topologicalFreeEvalDiscrete_naturality] at hk
+  simpa [← hg] using hk
+
 /-- The current `Zdisc`-separation hypothesis identifies the images in the represented topological
 free abelian group.  The remaining missing input for the free-target separation theorem is
 injectivity of `freeToTopologicalFree` on sections. -/
@@ -1663,6 +1684,27 @@ lemma freeProj_section_eq_of_freeToTopologicalFree_eq (T S : LightProfinite)
     (LightCondAb.freeToTopologicalFree (T.component k)).hom.app ⟨S⟩
       ((freeProj T k).hom.app ⟨S⟩ y) at hmap
   exact hmap
+
+/-- Equality after every finite free projection implies equality after mapping to the represented
+topological free abelian group. -/
+lemma freeToTopologicalFree_section_eq_of_freeProj_eq (T S : LightProfinite)
+    {x y : ((free ℤ).obj T.toCondensed).obj.obj ⟨S⟩}
+    (h : ∀ k : ℕ,
+      (freeProj T k).hom.app ⟨S⟩ x = (freeProj T k).hom.app ⟨S⟩ y) :
+    (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ x =
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y := by
+  apply topologicalFreeCondensed_section_ext_of_finite_proj T S
+  intro k
+  change ((LightCondAb.freeToTopologicalFree T ≫
+      LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩) x =
+    ((LightCondAb.freeToTopologicalFree T ≫
+      LightCondAb.topologicalFreeCondensedMap (T.proj k)).hom.app ⟨S⟩) y
+  rw [← LightCondAb.freeToTopologicalFree_naturality (T.proj k)]
+  change (LightCondAb.freeToTopologicalFree (T.component k)).hom.app ⟨S⟩
+      ((freeProj T k).hom.app ⟨S⟩ x) =
+    (LightCondAb.freeToTopologicalFree (T.component k)).hom.app ⟨S⟩
+      ((freeProj T k).hom.app ⟨S⟩ y)
+  rw [h k]
 
 /-- The `Zdisc`-separation hypothesis implies equality after every finite free projection. -/
 lemma freeProj_section_eq_of_zdisc_eval (T S : LightProfinite)

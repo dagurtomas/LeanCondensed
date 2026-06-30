@@ -1027,6 +1027,36 @@ noncomputable def topologicalFreeEvalDiscrete (f : LocallyConstant S ℤ) :
       (LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ) :=
   topologicalFreeEvalCondensed S f ≫ discreteIntTopModuleCondensedIso.hom
 
+/-- Represented topological-free evaluation is natural in the light profinite source. -/
+lemma topologicalFreeEvalCondensed_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
+    (g : LocallyConstant T ℤ) :
+    topologicalFreeCondensedMap f ≫ topologicalFreeEvalCondensed T g =
+      topologicalFreeEvalCondensed S (g.comap f.hom.hom) := by
+  ext U h
+  change (show C(↑U.unop.toTop, ↑(discreteIntTopModule).toModuleCat) from
+      (topologicalFreeCondensedMap f ≫ topologicalFreeEvalCondensed T g).hom.app U h) =
+    (show C(↑U.unop.toTop, ↑(discreteIntTopModule).toModuleCat) from
+      (topologicalFreeEvalCondensed S (g.comap f.hom.hom)).hom.app U h)
+  ext u
+  change (topologicalFreeEval T g).hom
+      ((topologicalFreeMap f).hom
+        ((show C(↑U.unop.toTop, ↑(topologicalFree S).toModuleCat) from h) u)) =
+    (topologicalFreeEval S (g.comap f.hom.hom)).hom
+      ((show C(↑U.unop.toTop, ↑(topologicalFree S).toModuleCat) from h) u)
+  have hn := congrArg (fun m : topologicalFree S ⟶ discreteIntTopModule => m.hom
+      ((show C(↑U.unop.toTop, ↑(topologicalFree S).toModuleCat) from h) u))
+    (topologicalFreeEval_naturality f g)
+  simpa using hn
+
+/-- `Z`-valued represented topological-free evaluation is natural in the light profinite source. -/
+lemma topologicalFreeEvalDiscrete_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
+    (g : LocallyConstant T ℤ) :
+    topologicalFreeCondensedMap f ≫ topologicalFreeEvalDiscrete T g =
+      topologicalFreeEvalDiscrete S (g.comap f.hom.hom) := by
+  simpa [topologicalFreeEvalDiscrete, Category.assoc] using
+    congrArg (fun m => m ≫ discreteIntTopModuleCondensedIso.hom)
+      (topologicalFreeEvalCondensed_naturality f g)
+
 /-- The represented evaluation induced by `f` sends the Dirac section to `f`. -/
 lemma topologicalFreeEvalDiscrete_diracSection (f : LocallyConstant S ℤ) :
     ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩
