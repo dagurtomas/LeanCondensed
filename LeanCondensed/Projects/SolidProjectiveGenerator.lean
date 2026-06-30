@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
 import LeanCondensed.Projects.LightSolid
+import LeanCondensed.Projects.FreeCondensed
 import Mathlib.CategoryTheory.Preadditive.Projective.Preserves
 import Mathlib.CategoryTheory.Generator.Basic
 import Mathlib.Condensed.Discrete.Colimit
@@ -602,6 +603,33 @@ lemma zdiscSectionsEquiv_zdiscMapOfLocallyConstant (T : LightProfinite)
     (f : LocallyConstant T ℤ) :
     zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc (zdiscMapOfLocallyConstant T f)) = f := by
   simp
+
+/-- The `Zdisc` map induced by a locally constant function agrees with the represented-topological
+free evaluation after the canonical comparison to the topological free abelian group. -/
+lemma zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval (T : LightProfinite)
+    (f : LocallyConstant T ℤ) :
+    zdiscMapOfLocallyConstant T f =
+      LightCondAb.freeToTopologicalFree T ≫ LightCondAb.topologicalFreeEvalDiscrete T f := by
+  apply (freeHomEquivPoints T Zdisc).injective
+  apply (zdiscSectionsEquiv T).injective
+  rw [freeHomEquivPoints_zdiscMapOfLocallyConstant]
+  rw [freeHomEquivPoints_comp]
+  have hfree : freeHomEquivPoints T (LightCondAb.topologicalFreeCondensed T)
+      (LightCondAb.freeToTopologicalFree T) =
+      (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection T) := by
+    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints]
+    rfl
+  rw [hfree]
+  simp only [Equiv.apply_symm_apply]
+  change f = zdiscSectionsEquiv T
+    ((LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨T⟩
+      ((coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection T)))
+  have hz : zdiscSectionsEquiv T
+      ((LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨T⟩
+        ((coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection T))) = f := by
+    dsimp [zdiscSectionsEquiv]
+    exact LightCondAb.topologicalFreeEvalDiscrete_diracSection T f
+  rw [hz]
 
 /-- A `ℤ`-valued map out of `ℤ[T]` factors through a finite quotient of `T`. -/
 lemma zdisc_hom_factors_freeProj (T : LightProfinite)

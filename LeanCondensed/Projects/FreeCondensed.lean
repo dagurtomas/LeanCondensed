@@ -1,4 +1,19 @@
-import Mathlib
+import Mathlib.Algebra.Category.ModuleCat.Topology.Basic
+import Mathlib.CategoryTheory.Adjunction.Reflective
+import Mathlib.CategoryTheory.FintypeCat
+import Mathlib.CategoryTheory.Limits.ConcreteCategory.Basic
+import Mathlib.CategoryTheory.Limits.Shapes.Countable
+import Mathlib.Condensed.Discrete.Module
+import Mathlib.Condensed.Light.Explicit
+import Mathlib.Condensed.Light.Functors
+import Mathlib.Condensed.Light.TopCatAdjunction
+import Mathlib.Data.Finsupp.Basic
+import Mathlib.Topology.Category.LightProfinite.AsLimit
+import Mathlib.Topology.Category.Sequential
+import Mathlib.Topology.LocallyConstant.Basic
+import Mathlib.Tactic.FunProp
+import Mathlib.Tactic.Positivity
+import Mathlib.Tactic.Ring
 
 noncomputable section
 
@@ -228,14 +243,11 @@ def seqFunctor (S : LightProfinite.{0}) : ℕ+ ⥤ LightProfinite where
   map {c d} h := profiniteComponentMap S (pnatHomLeInt h)
   map_id := by
     intro c
-    change profiniteComponentMap S (pnatHomLeInt (𝟙 c)) = 𝟙 (profiniteComponent S c)
     trans profiniteComponentMap S (le_refl (c : ℤ))
     · apply profiniteComponentMap_congr
     · exact profiniteComponentMap_id S c
   map_comp := by
     intro c d e f g
-    change profiniteComponentMap S (pnatHomLeInt (f ≫ g)) =
-      profiniteComponentMap S (pnatHomLeInt f) ≫ profiniteComponentMap S (pnatHomLeInt g)
     trans profiniteComponentMap S (le_trans (pnatHomLeInt f) (pnatHomLeInt g))
     · apply profiniteComponentMap_congr
     · exact profiniteComponentMap_comp S (pnatHomLeInt f) (pnatHomLeInt g)
