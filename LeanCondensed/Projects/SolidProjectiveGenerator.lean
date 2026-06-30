@@ -6,6 +6,7 @@ Authors: Dagur Asgeirsson
 import LeanCondensed.Projects.LightSolid
 import Mathlib.CategoryTheory.Preadditive.Projective.Preserves
 import Mathlib.CategoryTheory.Generator.Basic
+import Mathlib.Condensed.Discrete.Colimit
 
 /-!
 # The projective generator of solid abelian groups
@@ -1275,16 +1276,80 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
       rw [zdiscSectionsEquiv_map, zdiscSectionsEquiv_map] at h
       exact congrFun (congrArg LocallyConstant.toFun h) t
 
+/-- A finite light profinite set, represented as a sheaf, is the locally constant sheaf on its
+underlying finite set. -/
+noncomputable def finiteToLocallyConstantIso (F : LightProfinite) [Finite F] :
+    F.toCondensed ≅ LightCondSet.LocallyConstant.functor.obj F := by
+  refine { hom := ?_, inv := ?_, hom_inv_id := ?_, inv_hom_id := ?_ }
+  · refine { hom := ?_ }
+    refine { app := ?_, naturality := ?_ }
+    · intro S
+      refine ↾fun g => ?_
+      letI : DiscreteTopology F := Finite.instDiscreteTopology
+      exact (⟨g.hom, (IsLocallyConstant.iff_continuous g.hom).mpr g.hom.hom.continuous⟩ :
+        LocallyConstant S.unop F)
+    · intro S T φ
+      ext g
+      rfl
+  · refine { hom := ?_ }
+    refine { app := ?_, naturality := ?_ }
+    · intro S
+      refine ↾fun g => ?_
+      exact ConcreteCategory.ofHom g.toContinuousMap
+    · intro S T φ
+      ext g
+      rfl
+  · apply Sheaf.hom_ext
+    ext S g
+    rfl
+  · apply Sheaf.hom_ext
+    ext S g
+    rfl
+
+/-- A finite representable light condensed set is the discrete sheaf on its finite set of points. -/
+noncomputable def finiteToCondensedIsoDiscreteSet (F : LightProfinite) [Finite F] :
+    F.toCondensed ≅ (LightCondensed.discrete (Type _)).obj F :=
+  finiteToLocallyConstantIso F ≪≫ (LightCondSet.LocallyConstant.iso.app F)
+
+/-- The composite `discrete set, then free module` is left adjoint to evaluation at the point and
+forgetting the module structure. -/
+noncomputable def discreteSetFreeAdjunction :
+    (LightCondensed.discrete (Type _) ⋙ LightCondensed.free ℤ) ⊣
+      (LightCondensed.forget ℤ ⋙ LightCondensed.underlying (Type _)) :=
+  (LightCondensed.discreteUnderlyingAdj (Type _)).comp (LightCondensed.freeForgetAdjunction ℤ)
+
+/-- The composite `free module, then discrete module` is left adjoint to evaluation at the point and
+forgetting the module structure. -/
+noncomputable def freeDiscreteModuleAdjunction :
+    (ModuleCat.free ℤ ⋙ LightCondensed.discrete (ModuleCat ℤ)) ⊣
+      (LightCondensed.underlying (ModuleCat ℤ) ⋙ CategoryTheory.forget (ModuleCat ℤ)) :=
+  (ModuleCat.adj ℤ).comp (LightCondensed.discreteUnderlyingAdj (ModuleCat ℤ))
+
+/-- Compatibility of free modules with discrete light condensed sets, by uniqueness of left
+adjoints. -/
+noncomputable def freeDiscreteSetIso :
+    LightCondensed.discrete (Type _) ⋙ LightCondensed.free ℤ ≅
+      ModuleCat.free ℤ ⋙ LightCondensed.discrete (ModuleCat ℤ) :=
+  Adjunction.leftAdjointUniq discreteSetFreeAdjunction freeDiscreteModuleAdjunction
+
 /-- The finite-rank free abelian group with basis the points of a finite light profinite set. -/
 noncomputable abbrev finiteFreeDiscreteModule (F : LightProfinite) : ModuleCat ℤ :=
   ModuleCat.of ℤ (F → ℤ)
 
-/-- Obligation: for finite `F`, the sheafified free light condensed group `ℤ[F]` is the discrete
-finite-rank free abelian group with basis `F`. -/
+/-- The usual finite-support free module on a finite type is the module of all integer-valued
+functions on that type. -/
+noncomputable def finiteFreeModuleIso (F : LightProfinite) [Finite F] :
+    (ModuleCat.free ℤ).obj F ≅ finiteFreeDiscreteModule F :=
+  LinearEquiv.toModuleIso (Finsupp.linearEquivFunOnFinite ℤ ℤ F)
+
+/-- For finite `F`, the sheafified free light condensed group `ℤ[F]` is the discrete finite-rank
+free abelian group with basis `F`. -/
 noncomputable def finiteFreeIsoDiscrete (F : LightProfinite) [Finite F] :
     (free ℤ).obj F.toCondensed ≅
-      (LightCondensed.discrete (ModuleCat ℤ)).obj (finiteFreeDiscreteModule F) := by
-  sorry
+      (LightCondensed.discrete (ModuleCat ℤ)).obj (finiteFreeDiscreteModule F) :=
+  (LightCondensed.free ℤ).mapIso (finiteToCondensedIsoDiscreteSet F) ≪≫
+    freeDiscreteSetIso.app F ≪≫
+      (LightCondensed.discrete (ModuleCat ℤ)).mapIso (finiteFreeModuleIso F)
 
 /-- The coordinate functional on the finite-rank free abelian group with basis `F`. -/
 noncomputable def finiteFreeCoordHom (F : LightProfinite) (a : F) :
