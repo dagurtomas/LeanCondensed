@@ -582,6 +582,27 @@ lemma freePointMap_comp_toPointMap (T : LightProfinite) (t : T) :
   rw [pointMap_point_eq_id]
   simp
 
+/-- The `Zdisc`-valued map out of `ℤ[T]` induced by a locally constant integer-valued
+function on `T`. -/
+noncomputable def zdiscMapOfLocallyConstant (T : LightProfinite)
+    (f : LocallyConstant T ℤ) :
+    (free ℤ).obj T.toCondensed ⟶ Zdisc :=
+  (freeHomEquivPoints T Zdisc).symm ((zdiscSectionsEquiv T).symm f)
+
+@[simp]
+lemma freeHomEquivPoints_zdiscMapOfLocallyConstant (T : LightProfinite)
+    (f : LocallyConstant T ℤ) :
+    freeHomEquivPoints T Zdisc (zdiscMapOfLocallyConstant T f) =
+      (zdiscSectionsEquiv T).symm f := by
+  dsimp [zdiscMapOfLocallyConstant]
+  rw [Equiv.apply_symm_apply]
+
+@[simp]
+lemma zdiscSectionsEquiv_zdiscMapOfLocallyConstant (T : LightProfinite)
+    (f : LocallyConstant T ℤ) :
+    zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc (zdiscMapOfLocallyConstant T f)) = f := by
+  simp
+
 /-- A `ℤ`-valued map out of `ℤ[T]` factors through a finite quotient of `T`. -/
 lemma zdisc_hom_factors_freeProj (T : LightProfinite)
     (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :

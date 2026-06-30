@@ -263,6 +263,91 @@ instance : CountableCategory ℕ+ where
 def sequential (S : LightProfinite.{0}) : Sequential :=
   colimit (seqFunctor S ⋙ lightProfiniteToSequential)
 
+/-- The discrete sequential space of integers, used as the target for finite-measure evaluations. -/
+abbrev discreteIntSeq : Sequential := Sequential.of ℤ
+
+/-- Evaluate a bounded finite-stage signed measure against an integer-valued function on the finite
+stage. -/
+noncomputable def finiteStageEval (Si : FintypeCat.{0}) (c : ℤ) (g : Si → ℤ) :
+    component Si c → ℤ :=
+  fun a => (a : set Si c).1.sum fun i n => n * g i
+
+@[simp]
+lemma finiteStageEval_boundInclusion (Si : FintypeCat.{0}) {c d : ℤ} (hcd : c ≤ d)
+    (g : Si → ℤ) (a : set Si c) :
+    finiteStageEval Si d g (boundInclusion Si hcd a) = finiteStageEval Si c g a := by
+  rfl
+
+/-- Evaluation of a bounded profinite component against a function that factors through a finite
+stage `k`. -/
+noncomputable def profiniteComponentEval (S : LightProfinite.{0}) (c : ℤ) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) :
+    lightProfiniteToSequential.obj (profiniteComponent S c) ⟶ discreteIntSeq := by
+  let πk : profiniteComponent S c ⟶ component (S.fintypeDiagram.obj ⟨k⟩) c :=
+    limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩
+  let e : component (S.fintypeDiagram.obj ⟨k⟩) c → ℤ := finiteStageEval _ c g
+  have he : Continuous e := by
+    dsimp [e, finiteStageEval, FreeImage.component, FintypeCat.toLightProfinite]
+    fun_prop
+  refine ConcreteCategory.ofHom (X := lightProfiniteToSequential.obj (profiniteComponent S c))
+    (Y := discreteIntSeq) ?_
+  refine (⟨fun x => e (πk x), ?_⟩ :
+    C(↑(lightProfiniteToSequential.obj (profiniteComponent S c)).toTop, ↑discreteIntSeq.toTop))
+  exact he.comp πk.hom.hom.continuous
+
+/-- The bounded-component evaluation maps are compatible with increasing the bound. -/
+lemma profiniteComponentEval_bound (S : LightProfinite.{0}) {c d : ℤ} (hcd : c ≤ d) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) :
+    lightProfiniteToSequential.map (profiniteComponentMap S hcd) ≫
+      profiniteComponentEval S d k g = profiniteComponentEval S c k g := by
+  ext x
+  let α := Functor.whiskerLeft S.fintypeDiagram (functorBoundInclusion hcd)
+  have hπ : profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩ =
+      limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩ ≫ α.app ⟨k⟩ := by
+    dsimp [profiniteComponentMap]
+    rw [lim_map]
+    exact limMap_π α ⟨k⟩
+  have hx : ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
+      (α.app ⟨k⟩ ((limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩) x)) := by
+    have hxraw := congrArg
+      (fun m : profiniteComponent S c ⟶ (S.fintypeDiagram ⋙ functor d).obj ⟨k⟩ => m x) hπ
+    change ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
+      ((limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩ ≫ α.app ⟨k⟩) x) at hxraw
+    simpa only [CategoryTheory.comp_apply] using hxraw
+  dsimp [profiniteComponentEval]
+  change finiteStageEval (S.fintypeDiagram.obj ⟨k⟩) d g
+      ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
+    finiteStageEval (S.fintypeDiagram.obj ⟨k⟩) c g
+      ((limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩) x)
+  rw [hx]
+  rfl
+
+/-- The cocone induced by evaluating the bounded pieces against a finite-stage integer-valued
+function. -/
+noncomputable def sequentialEvalCoconeOfFactor (S : LightProfinite.{0}) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) :
+    Cocone (seqFunctor S ⋙ lightProfiniteToSequential) where
+  pt := discreteIntSeq
+  ι := {
+    app c := profiniteComponentEval S c k g
+    naturality := by
+      intro c d h
+      exact profiniteComponentEval_bound S (pnatHomLeInt h) k g }
+
+/-- Evaluation of the sequential finite-measure model against an integer-valued function that
+factors through a finite stage. -/
+noncomputable def sequentialEvalOfFactor (S : LightProfinite.{0}) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) :
+    sequential S ⟶ discreteIntSeq :=
+  colimit.desc (seqFunctor S ⋙ lightProfiniteToSequential) (sequentialEvalCoconeOfFactor S k g)
+
+@[simp]
+lemma colimit_ι_sequentialEvalOfFactor (S : LightProfinite.{0}) (k : ℕ)
+    (g : S.fintypeDiagram.obj ⟨k⟩ → ℤ) (c : ℕ+) :
+    colimit.ι (seqFunctor S ⋙ lightProfiniteToSequential) c ≫ sequentialEvalOfFactor S k g =
+      profiniteComponentEval S c k g := by
+  exact colimit.ι_desc _ c
+
 end FreeImage
 
 end LightProfinite
@@ -284,6 +369,17 @@ def iso : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ≅
     sequentialToLightCondSet.obj (sequential S) := sorry
 
 end FreeImage
+
+/-- The sequential finite-measure model for the free light condensed abelian group on `S`. -/
+abbrev freeMeasureSequential : Sequential :=
+  LightProfinite.FreeImage.sequential S
+
+/-- The comparison isomorphism from the underlying light condensed set of `ℤ[S]` to the sequential
+finite-measure model.  The proof is currently the main remaining comparison input in this file. -/
+noncomputable def freeMeasureModelIso :
+    (forget ℤ).obj ((free ℤ).obj S.toCondensed) ≅
+      sequentialToLightCondSet.obj (freeMeasureSequential S) :=
+  FreeImage.iso S
 
 instance : IsIso (freeLightProfiniteMap S) := by
   erw [sequentialAdjunction.isIso_unit_app_iff_mem_essImage]
