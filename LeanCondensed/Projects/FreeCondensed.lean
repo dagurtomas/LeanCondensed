@@ -653,6 +653,42 @@ noncomputable def topologicalFreeDiracSection :
 abbrev discreteIntTopModule : TopModuleCat.{0} ℤ :=
   TopModuleCat.of ℤ ℤ
 
+/-- Continuous maps into the usual topological `ℤ` are the same as locally constant integer-valued
+functions, as `ModuleCat`-valued presheaves. -/
+noncomputable def discreteIntTopModulePresheafIso :
+    LightCondensed.topModulePresheaf discreteIntTopModule ≅
+      (LightCondMod.LocallyConstant.functorToPresheaves ℤ).obj (ModuleCat.of ℤ ℤ) := by
+  refine NatIso.ofComponents (fun S => ?_) ?_
+  · refine LinearEquiv.toModuleIso ?_
+    refine {
+      toFun := fun g => ({
+        toFun := fun s => g s
+        isLocallyConstant := (IsLocallyConstant.iff_continuous _).mpr g.continuous } :
+          LocallyConstant S.unop ℤ)
+      invFun := fun f => f.toContinuousMap
+      left_inv := by intro g; ext s; rfl
+      right_inv := by intro f; ext s; rfl
+      map_add' := by intro g h; ext s; rfl
+      map_smul' := by intro r g; ext s; rfl }
+  · intro S T f
+    ext g
+    rfl
+
+/-- The light condensed abelian group represented by the usual topological `ℤ` is the locally
+constant `ℤ`-sheaf. -/
+noncomputable def discreteIntTopModuleLocallyConstantIso :
+    LightCondensed.topModuleToLightCondAbObj discreteIntTopModule ≅
+      (LightCondMod.LocallyConstant.functor ℤ).obj (ModuleCat.of ℤ ℤ) :=
+  (fullyFaithfulSheafToPresheaf _ _).preimageIso discreteIntTopModulePresheafIso
+
+/-- The light condensed abelian group represented by the usual topological `ℤ` is the discrete
+light condensed abelian group `ℤ`. -/
+noncomputable def discreteIntTopModuleCondensedIso :
+    LightCondensed.topModuleToLightCondAbObj discreteIntTopModule ≅
+      (LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ) :=
+  discreteIntTopModuleLocallyConstantIso ≪≫
+    (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
+
 /-- The continuous linear map out of the topological free abelian group induced by a locally
 constant integer-valued function on `S`. -/
 noncomputable def topologicalFreeEval (f : LocallyConstant S ℤ) :
@@ -672,6 +708,13 @@ noncomputable def topologicalFreeEvalCondensed (f : LocallyConstant S ℤ) :
     topologicalFreeCondensed S ⟶
       LightCondensed.topModuleToLightCondAbObj discreteIntTopModule :=
   LightCondensed.topModuleToLightCondAbMap (topologicalFreeEval S f)
+
+/-- The induced morphism from the represented topological free abelian group to the discrete
+light condensed abelian group `ℤ`. -/
+noncomputable def topologicalFreeEvalDiscrete (f : LocallyConstant S ℤ) :
+    topologicalFreeCondensed S ⟶
+      (LightCondensed.discrete (ModuleCat ℤ)).obj (ModuleCat.of ℤ ℤ) :=
+  topologicalFreeEvalCondensed S f ≫ discreteIntTopModuleCondensedIso.hom
 
 /-- The canonical comparison from the free light condensed abelian group to the light condensed
 abelian group represented by the free topological abelian group. -/
