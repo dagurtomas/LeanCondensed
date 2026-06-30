@@ -3,6 +3,8 @@ import Mathlib.CategoryTheory.Adjunction.Reflective
 import Mathlib.CategoryTheory.FintypeCat
 import Mathlib.CategoryTheory.Limits.ConcreteCategory.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
+import Mathlib.CategoryTheory.Sites.Coherent.CoherentTopology
+import Mathlib.CategoryTheory.Sites.LocallyInjective
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.Explicit
 import Mathlib.Condensed.Light.Functors
@@ -900,6 +902,80 @@ lemma freePresheafToTopologicalFreePresheaf_naturality_apply
         ((freePresheafToTopologicalFreePresheaf S).app U a) := by
   have h := congrArg (fun m => m a) ((freePresheafToTopologicalFreePresheaf S).naturality f)
   simpa [ModuleCat.comp_apply] using h
+
+/-- Pointwise, the presheaf comparison sends a formal sum of maps `U ⟶ S` to the corresponding
+finite signed measure on `S`.  This is the algebraic reduction used in the local-injectivity
+argument: equality in the represented topological free group gives equality of these pushed-forward
+finitely supported functions at every point of `U`. -/
+lemma freePresheafToTopologicalFreePresheaf_apply
+    (S U : LightProfinite.{0}) (a : (freePresheaf S).obj ⟨U⟩) (u : U) :
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a) u) =
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a := by
+  let L : ((freePresheaf S).obj ⟨U⟩) →ₗ[ℤ] (S →₀ ℤ) := {
+    toFun := fun a => ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+      ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u)
+    map_add' := fun a b => by
+      change ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom (a + b)) u) =
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u) +
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom b) u)
+      rw [LinearMap.map_add]
+      rfl
+    map_smul' := fun n a => by
+      have h := congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from z) u))
+        (LinearMap.map_smul ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom n a)
+      change ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom (n • a)) u) =
+        n • ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u)
+      exact h.trans (ContinuousMap.smul_apply n (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat)
+        from ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u) }
+  let R : ((freePresheaf S).obj ⟨U⟩) →ₗ[ℤ] (S →₀ ℤ) := {
+    toFun := fun a =>
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a
+    map_add' := fun _ _ => Finsupp.mapDomain_add
+    map_smul' := fun n a => by
+      exact (Finsupp.mapDomain_smul
+        (f := fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) n a) }
+  change L a = R a
+  suffices L = R by rw [this]
+  refine Finsupp.lhom_ext' fun g => LinearMap.ext_ring ?_
+  change L (Finsupp.single g (1 : ℤ)) = R (Finsupp.single g (1 : ℤ))
+  dsimp [L, R]
+  rw [freePresheafToTopologicalFreePresheaf_apply_single]
+  change Finsupp.single ((show U ⟶ S from g) u) (1 : ℤ) =
+    Finsupp.mapDomain (fun h : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from h) u))
+      (Finsupp.single g (1 : ℤ))
+  rw [Finsupp.mapDomain_single]
+
+lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq
+    (S U : LightProfinite.{0}) {a b : (freePresheaf S).obj ⟨U⟩}
+    (h : (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ b) (u : U) :
+    Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a =
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) b := by
+  rw [← freePresheafToTopologicalFreePresheaf_apply S U a u,
+    ← freePresheafToTopologicalFreePresheaf_apply S U b u]
+  exact congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from z) u)) h
+
+/-- A single effective epimorphism lying in an equalizer sieve gives a coherent covering of that
+sieve.  This is the site-theoretic target for the finite clopen-refinement part of local
+injectivity. -/
+lemma freePresheaf_equalizerSieve_mem_of_effectiveEpi
+    {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U V : LightProfinite.{0}}
+    (x y : F.obj ⟨U⟩) (π : V ⟶ U) [EffectiveEpi π]
+    (hπ : F.map π.op x = F.map π.op y) :
+    CategoryTheory.Presheaf.equalizerSieve x y ∈ (coherentTopology LightProfinite) U := by
+  apply CategoryTheory.coherentTopology.mem_sieves_of_hasEffectiveEpiFamily
+  refine ⟨Unit, inferInstance, (fun _ => V), (fun _ => π), ?_, ?_⟩
+  · simpa [CategoryTheory.effectiveEpi_iff_effectiveEpiFamily] using (inferInstance : EffectiveEpi π)
+  · intro _
+    simpa [CategoryTheory.Presheaf.equalizerSieve] using hπ
 
 /-- Functoriality of the topological free abelian group on light profinite maps. -/
 noncomputable def topologicalFreeMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
