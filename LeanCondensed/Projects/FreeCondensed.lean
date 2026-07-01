@@ -703,6 +703,86 @@ lemma sequential_section_ext_of_eval (T U : LightProfinite.{0})
 
 end FreeImage
 
+/-- The finite quotient projections of a light profinite space jointly separate points. -/
+lemma eq_of_forall_proj_eq (S : LightProfinite.{0}) {x y : S}
+    (h : ∀ n : ℕ, S.proj n x = S.proj n y) : x = y := by
+  let X : LightProfinite.{0} := LightProfinite.of PUnit
+  let fx : X ⟶ S := X.const x
+  let fy : X ⟶ S := X.const y
+  have hfg : fx = fy := by
+    apply S.asLimit.hom_ext
+    intro n
+    ext p
+    change S.proj n.unop (fx p) = S.proj n.unop (fy p)
+    have hx : fx p = x := rfl
+    have hy : fy p = y := rfl
+    rw [hx, hy]
+    exact h n.unop
+  have hp := ConcreteCategory.congr_hom hfg PUnit.unit
+  have hx : fx PUnit.unit = x := rfl
+  have hy : fy PUnit.unit = y := rfl
+  simpa [hx, hy] using hp
+
+/-- Distinct points of a light profinite space are separated by some finite quotient projection. -/
+lemma exists_proj_ne (S : LightProfinite.{0}) {x y : S} (hxy : x ≠ y) :
+    ∃ n : ℕ, S.proj n x ≠ S.proj n y := by
+  by_contra h
+  apply hxy
+  apply eq_of_forall_proj_eq S
+  intro n
+  by_contra hn
+  exact h ⟨n, hn⟩
+
+/-- Distinct maps into a light profinite space are separated after postcomposition with some finite
+quotient projection. -/
+lemma exists_proj_comp_ne_of_ne {U S : LightProfinite.{0}} {g h : U ⟶ S} (hgh : g ≠ h) :
+    ∃ n : ℕ, g ≫ S.proj n ≠ h ≫ S.proj n := by
+  obtain ⟨u, hu⟩ : ∃ u : U, g u ≠ h u := by
+    by_contra H
+    apply hgh
+    ext u
+    by_contra hu
+    exact H ⟨u, hu⟩
+  obtain ⟨n, hn⟩ := exists_proj_ne S hu
+  refine ⟨n, ?_⟩
+  intro H
+  apply hn
+  exact ConcreteCategory.congr_hom H u
+
+/-- Separation by a finite quotient persists after passing to any later quotient. -/
+lemma proj_comp_ne_of_le {U S : LightProfinite.{0}} {g h : U ⟶ S} {k n : ℕ}
+    (hkn : k ≤ n) (hne : g ≫ S.proj k ≠ h ≫ S.proj k) :
+    g ≫ S.proj n ≠ h ≫ S.proj n := by
+  intro H
+  apply hne
+  calc
+    g ≫ S.proj k = g ≫ (S.proj n ≫ S.transitionMapLE hkn) := by
+      rw [S.proj_comp_transitionMapLE hkn]
+    _ = (g ≫ S.proj n) ≫ S.transitionMapLE hkn := by rw [Category.assoc]
+    _ = (h ≫ S.proj n) ≫ S.transitionMapLE hkn := by rw [H]
+    _ = h ≫ (S.proj n ≫ S.transitionMapLE hkn) := by rw [Category.assoc]
+    _ = h ≫ S.proj k := by rw [S.proj_comp_transitionMapLE hkn]
+
+/-- A finite set of maps into a light profinite space is separated by one finite quotient. -/
+lemma exists_proj_injective_on_finset_hom (U S : LightProfinite.{0}) (t : Finset (U ⟶ S)) :
+    ∃ n : ℕ, Set.InjOn (fun g : U ⟶ S => g ≫ S.proj n) (↑t : Set (U ⟶ S)) := by
+  classical
+  let sep : (U ⟶ S) × (U ⟶ S) → ℕ := fun p =>
+    if h : p.1 ≠ p.2 then Classical.choose (exists_proj_comp_ne_of_ne h) else 0
+  let N := (t.product t).sup sep
+  refine ⟨N, ?_⟩
+  intro g hg h hh H
+  by_contra hne
+  have hsep : g ≫ S.proj (sep (g, h)) ≠ h ≫ S.proj (sep (g, h)) := by
+    dsimp [sep]
+    rw [dif_pos hne]
+    exact Classical.choose_spec (exists_proj_comp_ne_of_ne hne)
+  have hle : sep (g, h) ≤ N := by
+    dsimp [N]
+    exact Finset.le_sup (s := t.product t) (f := sep) (b := (g, h)) (by
+      exact (Finset.mem_product).mpr ⟨hg, hh⟩)
+  exact proj_comp_ne_of_le hle hsep H
+
 end LightProfinite
 
 namespace LightCondensed
@@ -1055,6 +1135,158 @@ lemma finiteMapEqualityPattern_isClosed {α : Type} [Finite α] {U S : LightProf
     simp]
   exact isClosed_iInter fun i => isClosed_iInter fun j => isClosed_iInter fun _ =>
     isClosed_eq (f i).hom.hom.continuous (f j).hom.hom.continuous
+
+/-- If `f` is injective on the union of the supports of two finitely supported functions, equality
+after `Finsupp.mapDomain f` reflects equality. -/
+lemma finsupp_mapDomain_eq_of_eq_of_injOn_support_union {α β : Type*} [DecidableEq α]
+    [DecidableEq β] (f : α → β) {a b : α →₀ ℤ}
+    (hinj : Set.InjOn f ((↑((a.support : Finset α) ∪ b.support) : Set α)))
+    (h : Finsupp.mapDomain f a = Finsupp.mapDomain f b) : a = b := by
+  ext x
+  by_cases hx : x ∈ (a.support : Finset α) ∪ b.support
+  · have ha : (Finsupp.mapDomain f a) (f x) = a x := by
+      rw [Finsupp.mapDomain_apply_eq_sum]
+      refine Finset.sum_eq_single x ?_ ?_
+      · intro y hy hyx
+        rw [Finset.mem_filter] at hy
+        exact (hyx (hinj (by exact Finset.mem_coe.mpr (Finset.mem_union_left _ hy.1))
+          (by exact Finset.mem_coe.mpr hx) hy.2)).elim
+      · intro hxnot
+        have : a x = 0 := by
+          by_contra hne
+          exact hxnot (by
+            rw [Finset.mem_filter]
+            exact ⟨(Finsupp.mem_support_iff).mpr hne, rfl⟩)
+        simp [this]
+    have hb : (Finsupp.mapDomain f b) (f x) = b x := by
+      rw [Finsupp.mapDomain_apply_eq_sum]
+      refine Finset.sum_eq_single x ?_ ?_
+      · intro y hy hyx
+        rw [Finset.mem_filter] at hy
+        exact (hyx (hinj (by exact Finset.mem_coe.mpr (Finset.mem_union_right _ hy.1))
+          (by exact Finset.mem_coe.mpr hx) hy.2)).elim
+      · intro hxnot
+        have : b x = 0 := by
+          by_contra hne
+          exact hxnot (by
+            rw [Finset.mem_filter]
+            exact ⟨(Finsupp.mem_support_iff).mpr hne, rfl⟩)
+        simp [this]
+    exact ha ▸ hb ▸ DFunLike.congr_fun h (f x)
+  · have hxa : x ∉ a.support := fun hxa => hx (Finset.mem_union_left _ hxa)
+    have hxb : x ∉ b.support := fun hxb => hx (Finset.mem_union_right _ hxb)
+    have hax : a x = 0 := by
+      by_contra hne
+      exact hxa ((Finsupp.mem_support_iff).mpr hne)
+    have hbx : b x = 0 := by
+      by_contra hne
+      exact hxb ((Finsupp.mem_support_iff).mpr hne)
+    simp [hax, hbx]
+
+/-- For a finite target, the presheaf comparison is locally injective.  The covering pieces are the
+closed loci on which every support map of the two sections is constant. -/
+instance freePresheafToTopologicalFreePresheaf_isLocallyInjective_of_finite
+    (S : LightProfinite.{0}) [Finite S] :
+    CategoryTheory.Presheaf.IsLocallyInjective (coherentTopology LightProfinite)
+      (freePresheafToTopologicalFreePresheaf S) := by
+  classical
+  refine ⟨?_⟩
+  intro Uop a b h
+  rcases Uop with ⟨U⟩
+  change CategoryTheory.Presheaf.equalizerSieve a b ∈ (coherentTopology LightProfinite) U
+  let supp : Finset (U ⟶ S) := (a.support : Finset (U ⟶ S)) ∪ b.support
+  let α := { c : supp → S // ∃ u : U, ∀ g : supp, (g : U ⟶ S) u = c g }
+  haveI : Finite α := by dsimp [α]; infer_instance
+  let C : α → Set U := fun c => {u : U | ∀ g : supp, (g : U ⟶ S) u = c.1 g}
+  have hC : ∀ c, IsClosed (C c) := by
+    intro c
+    rw [show C c = ⋂ g : supp, {u : U | (g : U ⟶ S) u = c.1 g} by
+      ext u
+      simp [C]]
+    exact isClosed_iInter fun g => isClosed_eq (g : U ⟶ S).hom.hom.continuous continuous_const
+  have hcover : ∀ u : U, ∃ c, u ∈ C c := by
+    intro u
+    refine ⟨⟨fun g : supp => (g : U ⟶ S) u, ⟨u, fun g => rfl⟩⟩, ?_⟩
+    intro g
+    rfl
+  apply freePresheaf_equalizerSieve_mem_of_finite_closed_cover a b C hC hcover
+  intro c
+  let V : LightProfinite.{0} := closedSubLightProfinite (C c) (hC c)
+  let π : V ⟶ U := closedSubLightProfiniteι (C c) (hC c)
+  let a' : (freePresheaf S).obj ⟨V⟩ := (freePresheaf S).map π.op a
+  let b' : (freePresheaf S).obj ⟨V⟩ := (freePresheaf S).map π.op b
+  change a' = b'
+  obtain ⟨u0, hu0⟩ := c.2
+  let v0 : V := ⟨u0, hu0⟩
+  have hres : (freePresheafToTopologicalFreePresheaf S).app ⟨V⟩ a' =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨V⟩ b' := by
+    exact (freePresheafToTopologicalFreePresheaf_naturality_apply S π.op a).trans
+      ((congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+        (topologicalFreePresheaf S).map π.op z) h).trans
+      (freePresheafToTopologicalFreePresheaf_naturality_apply S π.op b).symm)
+  have hpoint := freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq S V hres v0
+  apply finsupp_mapDomain_eq_of_eq_of_injOn_support_union
+    (fun r : V ⟶ S => r v0) ?_ hpoint
+  intro r hr t ht hrt
+  have hconst : ∀ q : S.toCondensed.obj.obj ⟨V⟩,
+      q ∈ a'.support ∪ b'.support → ∀ x y : V,
+        (show V ⟶ S from q) x = (show V ⟶ S from q) y := by
+    intro q hq x y
+    rw [Finset.mem_union] at hq
+    rcases hq with hq | hq
+    · have himg : q ∈ Finset.image (fun g : U ⟶ S => π ≫ g) a.support :=
+        Finsupp.mapDomain_support hq
+      obtain ⟨g, hg, hgq⟩ := Finset.mem_image.mp himg
+      have hgq' : π ≫ g = q := hgq
+      have hxs : g (π x) = c.1 ⟨g, Finset.mem_union_left b.support hg⟩ := by
+        have hxmem : (π x) ∈ C c := by
+          change closedSubLightProfiniteι (C c) (hC c) x ∈ C c
+          rw [closedSubLightProfiniteι_apply]
+          exact (x : C c).2
+        exact hxmem ⟨g, Finset.mem_union_left b.support hg⟩
+      have hys : g (π y) = c.1 ⟨g, Finset.mem_union_left b.support hg⟩ := by
+        have hymem : (π y) ∈ C c := by
+          change closedSubLightProfiniteι (C c) (hC c) y ∈ C c
+          rw [closedSubLightProfiniteι_apply]
+          exact (y : C c).2
+        exact hymem ⟨g, Finset.mem_union_left b.support hg⟩
+      calc
+        (show V ⟶ S from q) x = g (π x) := by
+          simpa [CategoryTheory.comp_apply] using (ConcreteCategory.congr_hom hgq' x).symm
+        _ = c.1 ⟨g, Finset.mem_union_left b.support hg⟩ := hxs
+        _ = g (π y) := hys.symm
+        _ = (show V ⟶ S from q) y := by
+          simpa [CategoryTheory.comp_apply] using (ConcreteCategory.congr_hom hgq' y)
+    · have himg : q ∈ Finset.image (fun g : U ⟶ S => π ≫ g) b.support :=
+        Finsupp.mapDomain_support hq
+      obtain ⟨g, hg, hgq⟩ := Finset.mem_image.mp himg
+      have hgq' : π ≫ g = q := hgq
+      have hxs : g (π x) = c.1 ⟨g, Finset.mem_union_right a.support hg⟩ := by
+        have hxmem : (π x) ∈ C c := by
+          change closedSubLightProfiniteι (C c) (hC c) x ∈ C c
+          rw [closedSubLightProfiniteι_apply]
+          exact (x : C c).2
+        exact hxmem ⟨g, Finset.mem_union_right a.support hg⟩
+      have hys : g (π y) = c.1 ⟨g, Finset.mem_union_right a.support hg⟩ := by
+        have hymem : (π y) ∈ C c := by
+          change closedSubLightProfiniteι (C c) (hC c) y ∈ C c
+          rw [closedSubLightProfiniteι_apply]
+          exact (y : C c).2
+        exact hymem ⟨g, Finset.mem_union_right a.support hg⟩
+      calc
+        (show V ⟶ S from q) x = g (π x) := by
+          simpa [CategoryTheory.comp_apply] using (ConcreteCategory.congr_hom hgq' x).symm
+        _ = c.1 ⟨g, Finset.mem_union_right a.support hg⟩ := hxs
+        _ = g (π y) := hys.symm
+        _ = (show V ⟶ S from q) y := by
+          simpa [CategoryTheory.comp_apply] using (ConcreteCategory.congr_hom hgq' y)
+  ext x
+  have hr' : r ∈ (a'.support : Finset (V ⟶ S)) ∪ b'.support := Finset.mem_coe.mp hr
+  have ht' : t ∈ (a'.support : Finset (V ⟶ S)) ∪ b'.support := Finset.mem_coe.mp ht
+  calc
+    r x = r v0 := hconst r hr' x v0
+    _ = t v0 := hrt
+    _ = t x := (hconst t ht' x v0).symm
 
 /-- Functoriality of the topological free abelian group on light profinite maps. -/
 noncomputable def topologicalFreeMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
