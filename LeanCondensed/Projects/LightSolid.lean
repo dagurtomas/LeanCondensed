@@ -39,7 +39,22 @@ instance (A : LightCondMod R) : PreservesColimits (tensorRight A) :=
 
 instance : Linear R (LightCondMod R) := inferInstanceAs (Linear R (Sheaf _ _))
 
-instance : MonoidalLinear R (LightCondMod R) := by sorry
+instance [HasWeakSheafify (coherentTopology LightProfinite) (ModuleCat R)] :
+    (presheafToSheaf (coherentTopology LightProfinite) (ModuleCat R)).Linear R where
+  map_smul {P Q} f r := by
+    apply Sheaf.hom_ext
+    change sheafifyMap (coherentTopology LightProfinite) (r • f) =
+      r • sheafifyMap (coherentTopology LightProfinite) f
+    apply sheafify_hom_ext _ _ _
+      ((presheafToSheaf (coherentTopology LightProfinite) (ModuleCat R)).obj Q).property
+    rw [← toSheafify_naturality]
+    rw [Linear.comp_smul]
+    rw [← toSheafify_naturality]
+    rw [← Linear.smul_comp]
+
+set_option synthInstance.maxHeartbeats 40000 in
+instance : MonoidalLinear R (LightCondMod R) :=
+  CategoryTheory.Sheaf.monoidalLinear _ _ R
 
 set_option backward.isDefEq.respectTransparency false in
 def tensorCokerIso {A B C : LightCondMod R} (f : A ⟶ B) : cokernel f ⊗ C ≅ cokernel (f ▷ C) :=
@@ -408,7 +423,8 @@ variable {C : Type u} [SmallCategory C] (J : GrothendieckTopology C)
 end
 
 -- TODO: define this property:
--- instance : PreservesExtensions (solidToCondensed R) := sorry
+-- instance : PreservesExtensions (solidToCondensed R) := by
+--   ...
 
 def solidification : LightCondAb ⥤ Solid :=
   isSolid.ι.leftAdjoint
