@@ -1724,7 +1724,11 @@ lemma freeTarget_section_ext_of_zdisc_eval_obligation (T S : LightProfinite)
     (h : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
       φ.hom.app ⟨S⟩ x = φ.hom.app ⟨S⟩ y) :
     x = y := by
-  sorry
+  apply (show Function.Injective
+    ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩) from by
+      rw [← ModuleCat.mono_iff_injective]
+      infer_instance)
+  exact freeToTopologicalFree_section_eq_of_zdisc_eval T S h
 
 /-- The finite projections in the chosen AsLimit presentation jointly separate sections of the free
 object `ℤ[T]`, assuming separation by all integer-valued functionals. -/
