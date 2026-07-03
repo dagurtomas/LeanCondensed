@@ -1335,6 +1335,59 @@ noncomputable def freeTensorDescLin (X : LightProfinite.{0}) (B C : LightCondAb)
   exact (L.obj F ◁ cBinv) ≫
     (Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC
 
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- After replacing the sheafified right tensor factor by the original sheaf, the descended
+free-tensor map is the sheafification of its defining presheaf-level map. -/
+lemma freeTensorDescLin_fac (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m)) :
+    let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+    let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+    let α : F ⊗ G ⟶ C.obj := freeTensorPresheafDescLin X B C b hnat
+    let cB : L.obj G ⟶ B :=
+      (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+    let cC : L.obj C.obj ⟶ C :=
+      (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+    (L.obj F ◁ cB) ≫ freeTensorDescLin X B C b hnat =
+      (Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC := by
+  intro L F G α cB cC
+  haveI : IsIso cB := by
+    dsimp [cB, G, L]
+    exact isIso_sheafificationAdjunction_counit B
+  dsimp [freeTensorDescLin]
+  simp [cB, cC, L, F, G, α]
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- The sheafification part of `freeTensorDescLin` has the expected presheaf-level
+factorization. -/
+lemma freeTensorDescLin_sheafify_fac (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m)) :
+    let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+    let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+    let α : F ⊗ G ⟶ C.obj := freeTensorPresheafDescLin X B C b hnat
+    let cC : L.obj C.obj ⟶ C :=
+      (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+    CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+      ((L.map α ≫ cC).hom) = α := by
+  intro L F G α cC
+  change CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+      CategoryTheory.sheafifyMap (coherentTopology LightProfinite) α ≫ cC.hom = α
+  rw [← CategoryTheory.toSheafify_naturality_assoc]
+  dsimp [cC]
+  rw [CategoryTheory.sheafificationAdjunction_counit_app_val]
+  rw [CategoryTheory.toSheafify_sheafifyLift]
+  simp
 
 /-- Maps out of a free light condensed abelian group are the corresponding point values. -/
 noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
@@ -1685,6 +1738,47 @@ lemma freePointMap_comp_toPointMap (T : LightProfinite) (t : T) :
   dsimp [freePointMap]
   rw [pointMap_point_eq_id]
   simp
+
+/-- The sheaf morphism obtained by evaluating a sectionwise family at a fixed point of the
+left free variable. -/
+noncomputable def freeTensorFamilyMap (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m))
+    (x : LightProfinite.of PUnit.{1} ⟶ X) : B ⟶ C where
+  hom := {
+    app S := ModuleCat.ofHom (b S.unop (toPointMap S.unop ≫ x))
+    naturality := by
+      intro S T φ
+      rw [show φ = φ.unop.op by rfl]
+      ext m
+      change b T.unop (toPointMap T.unop ≫ x) (B.obj.map φ.unop.op m) =
+        C.obj.map φ.unop.op (b S.unop (toPointMap S.unop ≫ x) m)
+      have hto : φ.unop ≫ toPointMap S.unop = toPointMap T.unop := by
+        ext t
+      rw [← hto]
+      simpa [Category.assoc] using (hnat φ.unop (toPointMap S.unop ≫ x) m).symm }
+
+/-- The presheaf-level pure tensor map determined by a point of the left free variable. -/
+noncomputable def freeTensorPresheafPoint (X : LightProfinite.{0}) (B : LightCondAb)
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    B.obj ⟶ (X.toCondensed.obj ⋙ ModuleCat.free ℤ) ⊗ B.obj where
+  app S := ModuleCat.ofHom
+    ((TensorProduct.mk ℤ ((X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj S) (B.obj.obj S))
+      (Finsupp.single (toPointMap S.unop ≫ x) (1 : ℤ)))
+  naturality := by
+    intro S T φ
+    rw [show φ = φ.unop.op by rfl]
+    ext m
+    change (Finsupp.single (toPointMap T.unop ≫ x) (1 : ℤ)) ⊗ₜ[ℤ]
+        (B.obj.map φ.unop.op m) =
+      (Finsupp.lmapDomain ℤ ℤ (X.toCondensed.obj.map φ.unop.op)
+        (Finsupp.single (toPointMap S.unop ≫ x) (1 : ℤ))) ⊗ₜ[ℤ]
+          (B.obj.map φ.unop.op m)
+    rw [Finsupp.lmapDomain_apply]
+    rw [Finsupp.mapDomain_single]
+    congr 1
 
 /-- The `Zdisc`-valued map out of `ℤ[T]` induced by a locally constant integer-valued
 function on `T`. -/
