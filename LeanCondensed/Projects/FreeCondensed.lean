@@ -784,6 +784,26 @@ lemma exists_proj_injective_on_finset_hom (U S : LightProfinite.{0}) (t : Finset
       exact (Finset.mem_product).mpr ⟨hg, hh⟩)
   exact proj_comp_ne_of_le hle hsep H
 
+/-- A finite set of points in a light profinite space is separated by one finite quotient. -/
+lemma exists_proj_injective_on_finset_points (S : LightProfinite.{0}) (t : Finset S) :
+    ∃ n : ℕ, Set.InjOn (fun s : S => S.proj n s) (↑t : Set S) := by
+  classical
+  let X : LightProfinite.{0} := LightProfinite.of PUnit
+  let c : S → (X ⟶ S) := fun s => X.const s
+  obtain ⟨n, hn⟩ := exists_proj_injective_on_finset_hom X S (t.image c)
+  refine ⟨n, ?_⟩
+  intro x hx y hy hxy
+  have hcx : c x ∈ t.image c := Finset.mem_image.mpr ⟨x, hx, rfl⟩
+  have hcy : c y ∈ t.image c := Finset.mem_image.mpr ⟨y, hy, rfl⟩
+  have hcproj : c x ≫ S.proj n = c y ≫ S.proj n := by
+    ext p
+    exact hxy
+  have hc : c x = c y := hn hcx hcy hcproj
+  have hpt := ConcreteCategory.congr_hom hc PUnit.unit
+  have hx : c x PUnit.unit = x := rfl
+  have hy : c y PUnit.unit = y := rfl
+  simpa [hx, hy] using hpt
+
 end LightProfinite
 
 namespace LightCondensed
@@ -1784,6 +1804,91 @@ lemma topologicalFreeEval_apply (f : LocallyConstant S ℤ) (μ : topologicalFre
   simp [L, R]
   convert topologicalFreeEval_single S f s
   rfl
+
+/-- Locally constant integer evaluations separate distinct points of the topological free abelian
+ group. -/
+lemma topologicalFreeEval_separates_points {μ ν : topologicalFree S} (hμν : μ ≠ ν) :
+    ∃ f : LocallyConstant S ℤ,
+      (topologicalFreeEval S f).hom μ ≠ (topologicalFreeEval S f).hom ν := by
+  classical
+  let μ' : S →₀ ℤ := μ
+  let ν' : S →₀ ℤ := ν
+  have hμν' : μ' ≠ ν' := by
+    intro h
+    apply hμν
+    change μ' = ν'
+    exact h
+  obtain ⟨s₀, hs₀⟩ : ∃ s : S, μ' s ≠ ν' s := by
+    by_contra h
+    apply hμν'
+    ext s
+    by_contra hs
+    exact h ⟨s, hs⟩
+  let t : Finset S := μ'.support ∪ ν'.support
+  have hs₀t : s₀ ∈ t := by
+    by_cases hμ : μ' s₀ = 0
+    · rw [Finset.mem_union]
+      right
+      rw [Finsupp.mem_support_iff]
+      intro hν
+      exact hs₀ (hμ.trans hν.symm)
+    · rw [Finset.mem_union]
+      left
+      exact Finsupp.mem_support_iff.mpr hμ
+  obtain ⟨n, hn⟩ := LightProfinite.exists_proj_injective_on_finset_points S t
+  haveI : Finite (S.diagram.obj ⟨n⟩) := by
+    change Finite (FintypeCat.toLightProfinite.obj (S.fintypeDiagram.obj ⟨n⟩))
+    infer_instance
+  haveI : DiscreteTopology (S.diagram.obj ⟨n⟩) := Finite.instDiscreteTopology
+  let q₀ := (S.proj n).hom.hom s₀
+  let g : LocallyConstant (S.diagram.obj ⟨n⟩) ℤ :=
+    ⟨fun q => if q = q₀ then (1 : ℤ) else 0, IsLocallyConstant.of_discrete _⟩
+  let f : LocallyConstant S ℤ := g.comap (S.proj n).hom.hom
+  have hf_s₀ : f s₀ = 1 := by
+    simp [f, g, q₀]
+  have hf_eq_zero {s : S} (hst : s ∈ t) (hne : s ≠ s₀) : f s = 0 := by
+    have hproj : (S.proj n).hom.hom s ≠ (S.proj n).hom.hom s₀ := by
+      intro hq
+      apply hne
+      apply hn hst hs₀t
+      change (ConcreteCategory.hom (S.proj n)) s = (ConcreteCategory.hom (S.proj n)) s₀
+      exact hq
+    simp [f, g, q₀, hproj]
+  have h_eval (η : S →₀ ℤ) (hsupp : η.support ⊆ t) :
+      (topologicalFreeEval S f).hom η = η s₀ := by
+    rw [topologicalFreeEval_apply, Finsupp.linearCombination_apply]
+    rw [Finsupp.sum_eq_single s₀]
+    · simp [hf_s₀]
+    · intro s hs hne
+      have hst : s ∈ t := hsupp (Finsupp.mem_support_iff.mpr hs)
+      have hfs : f s = 0 := hf_eq_zero hst hne
+      simp [hfs]
+    · intro hη
+      simp
+  refine ⟨f, ?_⟩
+  have hμ : (topologicalFreeEval S f).hom μ = μ' s₀ :=
+    h_eval μ' (by intro s hs; exact Finset.mem_union_left _ hs)
+  have hν : (topologicalFreeEval S f).hom ν = ν' s₀ :=
+    h_eval ν' (by intro s hs; exact Finset.mem_union_right _ hs)
+  intro h
+  exact hs₀ (hμ.symm.trans (h.trans hν))
+
+instance topologicalFree_t2Space : T2Space (topologicalFree S) := by
+  classical
+  rw [t2Space_iff_nhds]
+  intro μ ν hμν
+  obtain ⟨f, hf⟩ := topologicalFreeEval_separates_points S hμν
+  let e : topologicalFree S → ℤ := fun η => (topologicalFreeEval S f).hom η
+  let U : Set (topologicalFree S) := e ⁻¹' {e μ}
+  let V : Set (topologicalFree S) := e ⁻¹' {e ν}
+  have he : Continuous e := (topologicalFreeEval S f).hom.continuous
+  refine ⟨U, ?_, V, ?_, ?_⟩
+  · exact (he.isOpen_preimage _ (isOpen_discrete _)).mem_nhds rfl
+  · exact (he.isOpen_preimage _ (isOpen_discrete _)).mem_nhds rfl
+  · rw [Set.disjoint_left]
+    intro η hηU hηV
+    apply hf
+    exact hηU.symm.trans hηV
 
 /-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
 lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
