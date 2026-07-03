@@ -1,0 +1,270 @@
+module
+
+public import LeanCondensed.Projects.FreeCondensed.FiniteQuotients
+
+@[expose] public section
+
+noncomputable section
+
+open CategoryTheory LightCondensed LightCondSet LightCondAb Limits
+open scoped BigOperators BoundedContinuousFunction
+
+namespace LightCondensed
+
+/-- The `ModuleCat`-valued presheaf of continuous maps from light profinite test objects into a
+topological abelian group. -/
+noncomputable def topModulePresheaf (M : TopModuleCat.{0} ℤ) :
+    LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ where
+  obj S := ModuleCat.of ℤ C(↑S.unop.toTop, M)
+  map {S T} f := by
+    let φ : C(↑T.unop.toTop, ↑S.unop.toTop) := f.unop.hom.hom
+    exact ModuleCat.ofHom {
+      toFun := fun g => g.comp φ
+      map_add' := by intro x y; ext s; rfl
+      map_smul' := by intro r x; ext s; rfl }
+  map_id := by intro S; ext f s; rfl
+  map_comp := by intro S T U f g; ext h s; rfl
+
+/-- Forgetting the module structure on `topModulePresheaf` gives the usual light-condensed set
+associated to the underlying topological space. -/
+noncomputable def topModulePresheafForgetIso (M : TopModuleCat.{0} ℤ) :
+    topModulePresheaf M ⋙ CategoryTheory.forget (ModuleCat.{0} ℤ) ≅
+      (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj := by
+  refine NatIso.ofComponents (fun _ => Iso.refl _) ?_
+  intro S T f
+  ext x
+  rfl
+
+noncomputable instance (M : TopModuleCat.{0} ℤ) :
+    PreservesFiniteProducts (topModulePresheaf M ⋙ CategoryTheory.forget (ModuleCat.{0} ℤ)) where
+  preserves n := by
+    let G := (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj
+    haveI : PreservesFiniteProducts G := inferInstance
+    exact preservesLimitsOfShape_of_natIso (J := Discrete (Fin n))
+      (topModulePresheafForgetIso M).symm
+
+/-- The light condensed abelian group represented by a topological abelian group. -/
+noncomputable def topModuleToLightCondAbObj (M : TopModuleCat.{0} ℤ) : LightCondAb := by
+  refine LightCondensed.ofSheafForgetLightProfinite (topModulePresheaf M) ?_
+  exact regularTopology.equalizerCondition_of_natIso (topModulePresheafForgetIso M).symm
+    (LightCondensed.equalizerCondition
+      (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)))
+
+/-- Postcomposition of continuous maps gives functoriality of `topModuleToLightCondAbObj`. -/
+noncomputable def topModuleToLightCondAbMap {M N : TopModuleCat.{0} ℤ} (f : M ⟶ N) :
+    topModuleToLightCondAbObj M ⟶ topModuleToLightCondAbObj N where
+  hom := {
+    app S := by
+      let φ : C(M, N) := ⟨f.hom, f.hom.continuous⟩
+      exact ModuleCat.ofHom {
+        toFun := fun g => φ.comp g
+        map_add' := by intro x y; ext s; simp [φ]
+        map_smul' := by intro r x; ext s; simp [φ] }
+    naturality := by
+      intro S T φ
+      ext g
+      rfl }
+
+/-- The underlying light condensed set of the light condensed abelian group represented by a
+topological abelian group is the usual light condensed set represented by its underlying
+space. -/
+noncomputable def topModuleToLightCondAbForgetIso (M : TopModuleCat.{0} ℤ) :
+    (forget ℤ).obj (topModuleToLightCondAbObj M) ≅
+      topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M) :=
+  (fullyFaithfulSheafToPresheaf _ _).preimageIso (topModulePresheafForgetIso M)
+
+@[simp]
+lemma topModuleToLightCondAbForgetIso_hom_app (M : TopModuleCat.{0} ℤ)
+    (S : LightProfiniteᵒᵖ)
+    (x : ((forget ℤ).obj (topModuleToLightCondAbObj M)).obj.obj S) :
+    (topModuleToLightCondAbForgetIso M).hom.hom.app S x = x := rfl
+
+@[simp]
+lemma topModuleToLightCondAbForgetIso_inv_app (M : TopModuleCat.{0} ℤ)
+    (S : LightProfiniteᵒᵖ)
+    (x : (topCatToLightCondSet.obj ((forget₂ (TopModuleCat ℤ) TopCat).obj M)).obj.obj S) :
+    (topModuleToLightCondAbForgetIso M).inv.hom.app S x = x := rfl
+
+/-- The functor from topological abelian groups to light condensed abelian groups. -/
+noncomputable def topModuleToLightCondAb : TopModuleCat.{0} ℤ ⥤ LightCondAb where
+  obj M := topModuleToLightCondAbObj M
+  map {M N} f := topModuleToLightCondAbMap f
+  map_id := by
+    intro M
+    ext S g
+    rfl
+  map_comp := by
+    intro M N K f g
+    ext S h
+    rfl
+
+end LightCondensed
+
+namespace LightCondAb
+
+variable (S : LightProfinite.{0})
+
+/-- The Markov/Graev free topological abelian group on the underlying topological space of `S`. -/
+abbrev topologicalFree : TopModuleCat.{0} ℤ :=
+  (TopModuleCat.free ℤ).obj S.toTop
+
+/-- The light condensed abelian group represented by the topological free abelian group on `S`. -/
+abbrev topologicalFreeCondensed : LightCondAb :=
+  LightCondensed.topModuleToLightCondAbObj (topologicalFree S)
+
+/-- The Dirac map from `S` into its free topological abelian group. -/
+abbrev topologicalFreeDirac : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).obj (topologicalFree S) :=
+  (TopModuleCat.freeAdj ℤ).unit.app S.toTop
+
+@[simp]
+lemma topologicalFreeDirac_apply (s : S) :
+    (topologicalFreeDirac S) s = Finsupp.single s (1 : ℤ) := rfl
+
+/-- The presheaf freely generated by the represented light condensed set `S`. -/
+abbrev freePresheaf (S : LightProfinite.{0}) : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ :=
+  S.toCondensed.obj ⋙ ModuleCat.free ℤ
+
+/-- The `ModuleCat`-valued presheaf represented by the topological free abelian group on `S`. -/
+abbrev topologicalFreePresheaf (S : LightProfinite.{0}) :
+    LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ :=
+  LightCondensed.topModulePresheaf (topologicalFree S)
+
+/-- The continuous Dirac section attached to a generator of the free presheaf. -/
+noncomputable def freePresheafToTopologicalFreePresheafGenerator
+    (S : LightProfinite.{0}) (U : LightProfiniteᵒᵖ)
+    (g : S.toCondensed.obj.obj U) : (topologicalFreePresheaf S).obj U :=
+  (show C(↑U.unop.toTop, ↑(topologicalFree S).toModuleCat) from
+    (topologicalFreeDirac S).hom.comp g.hom.hom)
+
+/-- The presheaf-level comparison from formal sums of maps into `S` to represented sections of the
+free topological abelian group on `S`. -/
+noncomputable def freePresheafToTopologicalFreePresheaf (S : LightProfinite.{0}) :
+    freePresheaf S ⟶ topologicalFreePresheaf S where
+  app U := ModuleCat.freeDesc (R := ℤ)
+    (↾freePresheafToTopologicalFreePresheafGenerator S U)
+  naturality := by
+    intro U V f
+    apply ModuleCat.free_hom_ext
+    intro g
+    change (((ModuleCat.free ℤ).map (S.toCondensed.obj.map f) ≫
+        ModuleCat.freeDesc (R := ℤ)
+          (↾freePresheafToTopologicalFreePresheafGenerator S V)) (ModuleCat.freeMk g)) =
+      ((ModuleCat.freeDesc (R := ℤ)
+          (↾freePresheafToTopologicalFreePresheafGenerator S U) ≫
+        (LightCondensed.topModulePresheaf (topologicalFree S)).map f) (ModuleCat.freeMk g))
+    rw [ModuleCat.comp_apply, ModuleCat.comp_apply, ModuleCat.free_map_apply]
+    rw [show (ModuleCat.freeDesc (R := ℤ)
+        (↾freePresheafToTopologicalFreePresheafGenerator S U)) (ModuleCat.freeMk g) =
+        freePresheafToTopologicalFreePresheafGenerator S U g from
+      ModuleCat.freeDesc_apply (↾freePresheafToTopologicalFreePresheafGenerator S U) g]
+    change (ModuleCat.freeDesc (R := ℤ)
+        (↾freePresheafToTopologicalFreePresheafGenerator S V))
+        (ModuleCat.freeMk ((S.toCondensed.obj.map f) g)) =
+      ((LightCondensed.topModulePresheaf (topologicalFree S)).map f)
+        (freePresheafToTopologicalFreePresheafGenerator S U g)
+    rw [show (ModuleCat.freeDesc (R := ℤ)
+        (↾freePresheafToTopologicalFreePresheafGenerator S V))
+        (ModuleCat.freeMk ((S.toCondensed.obj.map f) g)) =
+        freePresheafToTopologicalFreePresheafGenerator S V ((S.toCondensed.obj.map f) g) from
+      ModuleCat.freeDesc_apply (↾freePresheafToTopologicalFreePresheafGenerator S V)
+        ((S.toCondensed.obj.map f) g)]
+    apply ContinuousMap.ext
+    intro u
+    rfl
+
+@[simp]
+lemma freePresheafToTopologicalFreePresheaf_app_freeMk
+    (S : LightProfinite.{0}) (U : LightProfiniteᵒᵖ)
+    (g : S.toCondensed.obj.obj U) :
+    (freePresheafToTopologicalFreePresheaf S).app U (ModuleCat.freeMk g) =
+      freePresheafToTopologicalFreePresheafGenerator S U g := by
+  exact ModuleCat.freeDesc_apply (↾freePresheafToTopologicalFreePresheafGenerator S U) g
+
+@[simp]
+lemma freePresheafToTopologicalFreePresheaf_apply_single
+    (S U : LightProfinite.{0}) (g : U ⟶ S) (u : U) :
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ (Finsupp.single g (1 : ℤ))) u) =
+      Finsupp.single (g u) (1 : ℤ) := by
+  change ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+    (ModuleCat.freeDesc (R := ℤ)
+      (↾freePresheafToTopologicalFreePresheafGenerator S (Opposite.op U)))
+      (ModuleCat.freeMk g)) u) = Finsupp.single (g u) (1 : ℤ)
+  rw [show (ModuleCat.freeDesc (R := ℤ)
+      (↾freePresheafToTopologicalFreePresheafGenerator S (Opposite.op U)))
+      (ModuleCat.freeMk g) =
+      freePresheafToTopologicalFreePresheafGenerator S (Opposite.op U) g from
+    ModuleCat.freeDesc_apply
+      (↾freePresheafToTopologicalFreePresheafGenerator S (Opposite.op U)) g]
+  rfl
+
+lemma freePresheafToTopologicalFreePresheaf_naturality_apply
+    (S : LightProfinite.{0}) {U V : LightProfiniteᵒᵖ} (f : U ⟶ V)
+    (a : (freePresheaf S).obj U) :
+    (freePresheafToTopologicalFreePresheaf S).app V ((freePresheaf S).map f a) =
+      (topologicalFreePresheaf S).map f
+        ((freePresheafToTopologicalFreePresheaf S).app U a) := by
+  have h := congrArg (fun m => m a) ((freePresheafToTopologicalFreePresheaf S).naturality f)
+  simpa [ModuleCat.comp_apply] using h
+
+/-- Pointwise, the presheaf comparison sends a formal sum of maps `U ⟶ S` to the corresponding
+finite signed measure on `S`.  This is the algebraic reduction used in the local-injectivity
+argument: equality in the represented topological free group gives equality of these pushed-forward
+finitely supported functions at every point of `U`. -/
+lemma freePresheafToTopologicalFreePresheaf_apply
+    (S U : LightProfinite.{0}) (a : (freePresheaf S).obj ⟨U⟩) (u : U) :
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a) u) =
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a := by
+  let L : ((freePresheaf S).obj ⟨U⟩) →ₗ[ℤ] (S →₀ ℤ) := {
+    toFun := fun a => ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+      ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u)
+    map_add' := fun a b => by
+      change ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom (a + b)) u) =
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u) +
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom b) u)
+      rw [LinearMap.map_add]
+      rfl
+    map_smul' := fun n a => by
+      have h := congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from z) u))
+        (LinearMap.map_smul ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom n a)
+      change ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom (n • a)) u) =
+        n • ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from
+          ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u)
+      exact h.trans (ContinuousMap.smul_apply n (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat)
+        from ((freePresheafToTopologicalFreePresheaf S).app ⟨U⟩).hom a) u) }
+  let R : ((freePresheaf S).obj ⟨U⟩) →ₗ[ℤ] (S →₀ ℤ) := {
+    toFun := fun a =>
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a
+    map_add' := fun _ _ => Finsupp.mapDomain_add
+    map_smul' := fun n a => by
+      exact (Finsupp.mapDomain_smul
+        (f := fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) n a) }
+  change L a = R a
+  suffices L = R by rw [this]
+  refine Finsupp.lhom_ext' fun g => LinearMap.ext_ring ?_
+  change L (Finsupp.single g (1 : ℤ)) = R (Finsupp.single g (1 : ℤ))
+  dsimp [L, R]
+  rw [freePresheafToTopologicalFreePresheaf_apply_single]
+  change Finsupp.single ((show U ⟶ S from g) u) (1 : ℤ) =
+    Finsupp.mapDomain (fun h : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from h) u))
+      (Finsupp.single g (1 : ℤ))
+  rw [Finsupp.mapDomain_single]
+
+lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq
+    (S U : LightProfinite.{0}) {a b : (freePresheaf S).obj ⟨U⟩}
+    (h : (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ b) (u : U) :
+    Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) a =
+      Finsupp.mapDomain (fun g : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from g) u)) b := by
+  rw [← freePresheafToTopologicalFreePresheaf_apply S U a u,
+    ← freePresheafToTopologicalFreePresheaf_apply S U b u]
+  exact congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from z) u)) h
+
+end LightCondAb
