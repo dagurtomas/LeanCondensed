@@ -7,6 +7,7 @@ public import LeanCondensed.Projects.SolidProjectiveGenerator.SolidFreeRetracts
 public import LeanCondensed.Projects.SolidProjectiveGenerator.NinfSections
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
 public import LeanCondensed.Projects.SolidProjectiveGenerator.BoundedRetract
+public import LeanCondensed.Projects.SolidProjectiveGenerator.BoundedIso
 public import LeanCondensed.Projects.SolidProjectiveGenerator.ZdiscSeparation
 public import LeanCondensed.Projects.SolidProjectiveGenerator.InfiniteTail
 public import LeanCondensed.Projects.SolidProjectiveGenerator.InfiniteDifference
