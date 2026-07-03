@@ -1384,6 +1384,90 @@ lemma freePresheaf_collisionCover_restrict_card_lt
   rw [closedSubLightProfiniteι_apply]
   exact (x : freePresheaf_collisionCoverSet S U c g₀ i).2
 
+lemma freePresheafToTopologicalFreePresheaf_equalizerSieve_mem
+    (S U : LightProfinite.{0})
+    (a b : (freePresheaf S).obj ⟨U⟩)
+    (h : (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ b) :
+    CategoryTheory.Presheaf.equalizerSieve a b ∈
+      (coherentTopology LightProfinite) U := by
+  classical
+  let P : ℕ → Prop := fun n => ∀ (U : LightProfinite.{0})
+      (a b : (freePresheaf S).obj ⟨U⟩),
+    (a - b).support.card = n →
+    (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ b →
+    CategoryTheory.Presheaf.equalizerSieve a b ∈
+      (coherentTopology LightProfinite) U
+  have hind : ∀ n, P n := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | h n ih =>
+      intro U a b hcard h
+      by_cases hn : n = 0
+      · have hcard0 : (a - b).support.card = 0 := hcard.trans hn
+        have hempty : (a - b).support = ∅ := Finset.card_eq_zero.mp hcard0
+        have hsub : a - b = 0 := Finsupp.support_eq_empty.mp hempty
+        have hab : a = b := sub_eq_zero.mp hsub
+        subst b
+        rw [CategoryTheory.Presheaf.equalizerSieve_self_eq_top]
+        exact (coherentTopology LightProfinite).top_mem U
+      · have hcard_ne : (a - b).support.card ≠ 0 := by
+          intro hzero
+          exact hn (hcard.symm.trans hzero)
+        obtain ⟨g₀, hg₀⟩ :=
+          (Finset.card_pos.mp (Nat.pos_of_ne_zero hcard_ne) : (a - b).support.Nonempty)
+        let c : (freePresheaf S).obj ⟨U⟩ := a - b
+        have hg₀c : g₀ ∈ c.support := by
+          change g₀ ∈ (a - b).support
+          exact hg₀
+        let I := freePresheaf_collisionCoverIndex S U c g₀
+        haveI : Finite I := freePresheaf_collisionCoverIndex_finite S U c g₀
+        let C : I → Set U := freePresheaf_collisionCoverSet S U c g₀
+        let hC : ∀ i, IsClosed (C i) := freePresheaf_collisionCover_isClosed S U c g₀
+        have hzero : ∀ u : U, Finsupp.mapDomain (fun g : U ⟶ S => g u) c = 0 := by
+          intro u
+          simpa [c] using
+            freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_sub_eq_zero S U h u
+        have hcover : ∀ u : U, ∃ i, u ∈ C i := by
+          simpa [c, C] using
+            freePresheaf_collisionCover_covers_of_pointwise_zero S U c hg₀c hzero
+        refine presheaf_equalizerSieve_mem_of_finite_closed_cover_locally a b C hC hcover ?_
+        intro i
+        let V : LightProfinite.{0} := closedSubLightProfinite (C i) (hC i)
+        let π : V ⟶ U := closedSubLightProfiniteι (C i) (hC i)
+        let aV : (freePresheaf S).obj ⟨V⟩ := (freePresheaf S).map π.op a
+        let bV : (freePresheaf S).obj ⟨V⟩ := (freePresheaf S).map π.op b
+        have hres : (freePresheafToTopologicalFreePresheaf S).app ⟨V⟩ aV =
+            (freePresheafToTopologicalFreePresheaf S).app ⟨V⟩ bV := by
+          exact (freePresheafToTopologicalFreePresheaf_naturality_apply S π.op a).trans
+            ((congrArg (fun z : (topologicalFreePresheaf S).obj ⟨U⟩ =>
+              (topologicalFreePresheaf S).map π.op z) h).trans
+            (freePresheafToTopologicalFreePresheaf_naturality_apply S π.op b).symm)
+        have hdropc : (((freePresheaf S).map π.op c).support.card < c.support.card) := by
+          simpa [c, I, C, hC, V, π] using
+            freePresheaf_collisionCover_restrict_card_lt S U c hg₀c i
+        have hmap_sub : (freePresheaf S).map π.op c = aV - bV := by
+          exact freePresheaf_map_sub S π a b
+        have hdrop : (aV - bV).support.card < n := by
+          calc
+            (aV - bV).support.card = ((freePresheaf S).map π.op c).support.card := by
+              rw [← hmap_sub]
+            _ < c.support.card := hdropc
+            _ = n := by simpa [c] using hcard
+        exact ih (aV - bV).support.card hdrop V aV bV rfl hres
+  exact hind (a - b).support.card U a b rfl h
+
+instance freePresheafToTopologicalFreePresheaf_isLocallyInjective
+    (S : LightProfinite.{0}) :
+    CategoryTheory.Presheaf.IsLocallyInjective (coherentTopology LightProfinite)
+      (freePresheafToTopologicalFreePresheaf S) := by
+  refine ⟨?_⟩
+  intro Uop a b h
+  rcases Uop with ⟨U⟩
+  change CategoryTheory.Presheaf.equalizerSieve a b ∈ (coherentTopology LightProfinite) U
+  exact freePresheafToTopologicalFreePresheaf_equalizerSieve_mem S U a b h
+
 /-- For a finite target, the presheaf comparison is locally injective.  The covering pieces are the
 closed loci on which every support map of the two sections is constant. -/
 instance freePresheafToTopologicalFreePresheaf_isLocallyInjective_of_finite
