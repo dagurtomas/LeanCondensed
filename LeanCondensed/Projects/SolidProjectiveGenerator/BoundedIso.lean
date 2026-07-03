@@ -640,6 +640,181 @@ lemma boundedDifferenceFreeNumerator_comp_P_proj :
         (boundedDifferenceTopologicalSection f (show BoundedIntSeqSection S from m)))
   exact map_zsmul ((P_proj ℤ).hom.app ⟨S⟩).hom r _
 
+lemma basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint (n : ℕ) :
+    basisMapNumerator ≫
+      freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences
+        ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+        boundedDifferenceFreeFamilyLinear boundedDifferenceFreeFamilyLinear_naturality'
+        (natPoint n) =
+      (free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap n)) -
+        (free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap (n + 1))) := by
+  apply (freeHomEquivPoints (ℕ∪{∞} : LightProfinite)
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed)).injective
+  apply LightCondAb.freeSection_map_eq_of_pointwise_measure_eq
+    (ℕ∪{∞} : LightProfinite) (ℕ∪{∞} : LightProfinite)
+  intro t
+  rw [freeHomEquivPoints_comp]
+  rw [freeHomEquivPoints_sub]
+  dsimp [freeTensorFamilyMap, boundedDifferenceFreeFamilyLinear, basisMapNumerator]
+  rw [Equiv.apply_symm_apply]
+  dsimp [boundedDifferenceFreeSection]
+  change (show C(↑(ℕ∪{∞} : LightProfinite).toTop,
+      ↑(LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree (ℕ∪{∞} : LightProfinite)).hom.app
+        ⟨(ℕ∪{∞} : LightProfinite)⟩
+        ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).symm.hom.hom.app
+          ⟨(ℕ∪{∞} : LightProfinite)⟩
+          (boundedDifferenceTopologicalSection (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
+            ((boundedIntSequencesSectionsEquiv (ℕ∪{∞} : LightProfinite)).symm
+              boundedStandardBasisSection)))) t = _
+  rw [LightCondAb.freeToTopologicalFree_app_section_of_iso_symm]
+  rw [map_sub]
+  change (show C(↑(ℕ∪{∞} : LightProfinite).toTop,
+        ↑(LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)).toModuleCat) from
+        boundedDifferenceTopologicalSection (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
+          ((boundedIntSequencesSectionsEquiv (ℕ∪{∞} : LightProfinite)).symm
+            boundedStandardBasisSection)) t =
+      (show C(↑(ℕ∪{∞} : LightProfinite).toTop,
+        ↑(LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree (ℕ∪{∞} : LightProfinite)).hom.app
+          ⟨(ℕ∪{∞} : LightProfinite)⟩
+          (freeHomEquivPoints (ℕ∪{∞} : LightProfinite) ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+            ((free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap n))))) t -
+      (show C(↑(ℕ∪{∞} : LightProfinite).toTop,
+        ↑(LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree (ℕ∪{∞} : LightProfinite)).hom.app
+          ⟨(ℕ∪{∞} : LightProfinite)⟩
+          (freeHomEquivPoints (ℕ∪{∞} : LightProfinite) ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+            ((free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap (n + 1)))))) t
+  rw [freeMap_topologicalFree_apply, freeMap_topologicalFree_apply]
+  change boundedDifferenceMeasure (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
+      boundedStandardBasisSection t =
+    Finsupp.single ((ConcreteCategory.hom (pTailProjectionPointMap n)) t) 1 -
+      Finsupp.single ((ConcreteCategory.hom (pTailProjectionPointMap (n + 1))) t) 1
+  cases t using OnePoint.rec with
+  | infty =>
+      change boundedDifferenceMeasure (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
+          boundedStandardBasisSection (∞ : (ℕ∪{∞} : LightProfinite)) =
+        Finsupp.single (pTailTruncFun (((n : ℕ) : ℕ∪{∞}), (∞ : ℕ∪{∞}))) 1 -
+          Finsupp.single (pTailTruncFun ((((n + 1 : ℕ) : ℕ∪{∞})), (∞ : ℕ∪{∞}))) 1
+      simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
+        boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun]
+      abel
+  | coe k =>
+      change boundedDifferenceMeasure (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
+          boundedStandardBasisSection (k : (ℕ∪{∞} : LightProfinite)) =
+        Finsupp.single (pTailTruncFun (((n : ℕ) : ℕ∪{∞}), ((k : ℕ) : ℕ∪{∞}))) 1 -
+          Finsupp.single (pTailTruncFun ((((n + 1 : ℕ) : ℕ∪{∞})), ((k : ℕ) : ℕ∪{∞}))) 1
+      by_cases hnk : n = k
+      · subst k
+        simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
+          boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun]
+        rfl
+      · have hkn : k ≠ n := fun hk => hnk hk.symm
+        by_cases hlt : n < k
+        · have hnle : n ≤ k := Nat.le_of_lt hlt
+          have hsucc : n + 1 ≤ k := by omega
+          simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
+            boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun,
+            hkn, hnle, hsucc]
+          abel
+        · have hnle : ¬ n ≤ k := by omega
+          have hsucc : ¬ n + 1 ≤ k := by omega
+          simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
+            boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun,
+            hkn, hnle, hsucc]
+          abel
+
+lemma boundedDifferenceFreeNumerator_basisMapNumerator :
+    (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
+        boundedDifferenceFreeNumerator =
+      (oneMinusShift' ℤ ▷ ((free ℤ).obj (ℕ∪{∞}).toCondensed)) ≫ pTailFreeFreeLift := by
+  apply freeTarget_numerator_ext_of_slices (ℕ∪{∞} : LightProfinite)
+  · intro n
+    rw [numeratorSlice_whiskerRight]
+    rw [boundedDifferenceFreeNumerator_slice]
+    rw [basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint n]
+    rw [numeratorSlice_oneMinusShift']
+    rw [pTailFreeFreeLift_slice]
+    rw [pTailFreeFreeLift_slice]
+  · rw [inftySlice_whiskerRight]
+    rw [boundedDifferenceFreeNumerator_infty]
+    rw [inftySlice_oneMinusShift']
+    simp
+
+lemma epi_tensor_P_proj (M : LightCondAb) : Epi (M ◁ P_proj ℤ) := by
+  let freeNinfObj : LightCondAb := (free ℤ).obj (ℕ∪{∞}).toCondensed
+  let e : M ⊗ freeNinfObj ⟶ M ⊗ P ℤ :=
+    (β_ M freeNinfObj).hom ≫ (P_proj ℤ ▷ M) ≫ (β_ (P ℤ) M).hom
+  have he : e = M ◁ (P_proj ℤ) := by
+    apply (cancel_mono (β_ M (P ℤ)).hom).1
+    dsimp [e, freeNinfObj]
+    rw [Category.assoc]
+    rw [BraidedCategory.braiding_naturality_right]
+    simp
+  haveI : Epi (P_proj ℤ ▷ M) := epi_P_proj_tensor M
+  haveI : Epi e := by dsimp [e]; infer_instance
+  rw [← he]
+  infer_instance
+
+lemma freeFreeBasisMap_square :
+    (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ) ≫
+      (P_proj ℤ ▷ P ℤ) ≫ (P ℤ ◁ basisMap) =
+    (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
+      (P_proj ℤ ▷ boundedIntSequences) := by
+  rw [← Category.assoc]
+  rw [whisker_exchange]
+  rw [Category.assoc]
+  rw [← whiskerLeft_comp]
+  rw [P_proj_comp_basisMap]
+  rw [whisker_exchange]
+
+lemma pDifferenceMap_freeFree_lift :
+    (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ) ≫
+      (P_proj ℤ ▷ P ℤ) ≫ pDifferenceMap =
+    (oneMinusShift' ℤ ▷ ((free ℤ).obj (ℕ∪{∞}).toCondensed)) ≫
+      pTailFreeFreeLift ≫ P_proj ℤ := by
+  dsimp [pDifferenceMap, pTailMap]
+  slice_lhs 2 3 => rw [P_proj_tensor_oneMinusShift]
+  slice_lhs 1 2 => rw [whisker_exchange]
+  slice_lhs 3 4 => rw [pTensorDesc_comp_proj]
+  dsimp [pTailNumerator]
+  slice_lhs 2 3 => rw [pTensorDescRight_comp_proj]
+  dsimp [pTailFreeFree]
+
+/-- Compatibility of the bounded diagonal-difference map with the standard-basis copy of `P ℤ`. -/
+lemma pDifferenceMap_compat :
+    (P ℤ ◁ basisMap) ≫ boundedDifferenceMap = pDifferenceMap := by
+  haveI : Epi (P_proj ℤ ▷ P ℤ) := epi_P_proj_tensor (P ℤ)
+  apply (cancel_epi (P_proj ℤ ▷ P ℤ)).1
+  haveI : Epi (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ) :=
+    epi_tensor_P_proj ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+  apply (cancel_epi (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ)).1
+  dsimp [boundedDifferenceMap]
+  calc
+    (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ) ≫
+        ((P_proj ℤ ▷ P ℤ) ≫ ((P ℤ ◁ basisMap) ≫
+          pTensorDesc boundedIntSequences (P ℤ) boundedDifferenceNumerator boundedDifferenceNumerator_kills))
+        = ((((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
+            (P_proj ℤ ▷ boundedIntSequences)) ≫
+              pTensorDesc boundedIntSequences (P ℤ) boundedDifferenceNumerator boundedDifferenceNumerator_kills := by
+          rw [← freeFreeBasisMap_square]
+          simp [Category.assoc]
+    _ = (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
+            boundedDifferenceNumerator := by
+          rw [Category.assoc]
+          rw [pTensorDesc_comp_proj]
+    _ = (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
+            boundedDifferenceFreeNumerator ≫ P_proj ℤ := by
+          rw [boundedDifferenceFreeNumerator_comp_P_proj]
+    _ = (oneMinusShift' ℤ ▷ ((free ℤ).obj (ℕ∪{∞}).toCondensed)) ≫
+            pTailFreeFreeLift ≫ P_proj ℤ := by
+          simpa [Category.assoc] using
+            congrArg (fun q => q ≫ P_proj ℤ) boundedDifferenceFreeNumerator_basisMapNumerator
+    _ = (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_proj ℤ) ≫
+        ((P_proj ℤ ▷ P ℤ) ≫ pDifferenceMap) := by
+          simpa [Category.assoc] using pDifferenceMap_freeFree_lift.symm
+
 lemma basisMap_boundedTailSection :
     basisMap ≫ boundedTailSection = pTailSection ≫ (P ℤ ◁ basisMap) := by
   dsimp [boundedTailSection, pTailSection]
@@ -723,6 +898,24 @@ lemma boundedShiftRetract_idempotent_eq_identity_of_pDifferenceMap_compat
                 = solidification.map pTailSection ≫ solidification.map pTailMap := by simp
             _ = solidification.map (pTailSection ≫ pTailMap) := by rw [Functor.map_comp]
             _ = 𝟙 (solidification.obj (P ℤ)) := by simp [pTailSection_fac]
+
+lemma boundedShiftRetract_idempotent_eq_identity :
+    solidification.map basisMap ≫ (boundedShiftRetractData.retract).i =
+      𝟙 (solidification.obj (P ℤ)) :=
+  boundedShiftRetract_idempotent_eq_identity_of_pDifferenceMap_compat pDifferenceMap_compat
+
+instance instIsIso_solidification_map_basisMap :
+    IsIso (solidification.map basisMap) :=
+  boundedShiftRetractData.isIso_map_g boundedShiftRetract_idempotent_eq_identity
+
+/-- The solidification of `P ℤ` is the solidification of bounded integer sequences. -/
+noncomputable def solidPIsoBounded :
+    solidP ≅ solidification.obj boundedIntSequences :=
+  asIso (solidification.map basisMap)
+
+@[simp]
+lemma solidPIsoBounded_hom :
+    solidPIsoBounded.hom = solidification.map basisMap := rfl
 
 /-- Formal SPG9 reduction: once `solidification.map basisMap` is known to be mono, the split-epi
 retract from the bounded shift diagram is automatically the two-sided inverse. -/
