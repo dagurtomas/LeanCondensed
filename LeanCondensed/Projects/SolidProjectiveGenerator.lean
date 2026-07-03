@@ -1096,6 +1096,104 @@ lemma boundedToProduct_apply_coord (S : LightProfinite)
   exact congrFun (LinearEquiv.apply_symm_apply (productIntLocallyConstantSectionsEquiv S)
     (show BoundedIntSeqSection S from x).val) n
 
+/-- In-place truncation of a bounded sequence section: coordinates before `n` are set to zero,
+and all later coordinates keep their original positions. -/
+def boundedTailProjectionSection (n : ℕ) {S : LightProfinite}
+    (x : BoundedIntSeqSection S) : BoundedIntSeqSection S where
+  val k := if n ≤ k then x.val k else 0
+  isBounded := by
+    obtain ⟨N, hN⟩ := x.isBounded
+    refine ⟨N, ?_⟩
+    intro s k
+    by_cases h : n ≤ k
+    · simpa [h] using hN s k
+    · simp [h]
+
+@[simp]
+lemma boundedTailProjectionSection_val (n : ℕ) {S : LightProfinite}
+    (x : BoundedIntSeqSection S) (k : ℕ) :
+    (boundedTailProjectionSection n x).val k = if n ≤ k then x.val k else 0 :=
+  rfl
+
+/-- The in-place bounded-tail projection.  The finite stage `n` keeps the coordinates `k ≥ n`
+and zeroes the first `n` coordinates. -/
+noncomputable def boundedTailProjection (n : ℕ) :
+    boundedIntSequences ⟶ boundedIntSequences where
+  hom := {
+    app S := ModuleCat.ofHom {
+      toFun := fun x => boundedTailProjectionSection n (show BoundedIntSeqSection S.unop from x)
+      map_add' := by
+        intro x y
+        apply BoundedIntSeqSection.ext
+        intro k
+        by_cases h : n ≤ k <;> ext s <;> simp [boundedTailProjectionSection, h]
+      map_smul' := by
+        intro a x
+        apply BoundedIntSeqSection.ext
+        intro k
+        by_cases h : n ≤ k <;> ext s <;> simp [boundedTailProjectionSection, h] }
+    naturality := by
+      intro S T φ
+      rw [show φ = φ.unop.op by rfl]
+      ext x
+      change boundedTailProjectionSection n
+          (boundedIntSeqSectionComap φ.unop (show BoundedIntSeqSection S.unop from x)) =
+        boundedIntSeqSectionComap φ.unop
+          (boundedTailProjectionSection n (show BoundedIntSeqSection S.unop from x))
+      apply BoundedIntSeqSection.ext_apply
+      intro k s
+      by_cases h : n ≤ k <;> simp [boundedTailProjectionSection, boundedIntSeqSectionComap, h] }
+
+@[simp]
+lemma boundedTailProjection_apply_coord (n : ℕ) (S : LightProfinite)
+    (x : boundedIntSequences.obj.obj ⟨S⟩) (k : ℕ) :
+    (boundedIntSequencesSectionsEquiv S ((boundedTailProjection n).hom.app ⟨S⟩ x)).val k =
+      if n ≤ k then (boundedIntSequencesSectionsEquiv S x).val k else 0 := by
+  rfl
+
+@[simp]
+lemma boundedTailProjection_zero :
+    boundedTailProjection 0 = 𝟙 boundedIntSequences := by
+  ext S x
+  change boundedTailProjectionSection 0 (show BoundedIntSeqSection S.unop from x) = x
+  apply BoundedIntSeqSection.ext
+  intro k
+  simp [boundedTailProjectionSection]
+
+@[simp]
+lemma boundedTailProjection_succ_diff_apply_coord (n : ℕ) (S : LightProfinite)
+    (x : boundedIntSequences.obj.obj ⟨S⟩) (k : ℕ) :
+    (boundedIntSequencesSectionsEquiv S
+      (((boundedTailProjection n - boundedTailProjection (n + 1)).hom.app ⟨S⟩) x)).val k =
+      if k = n then (boundedIntSequencesSectionsEquiv S x).val n else 0 := by
+  change ((boundedIntSequencesSectionsEquiv S ((boundedTailProjection n).hom.app ⟨S⟩ x) -
+        boundedIntSequencesSectionsEquiv S ((boundedTailProjection (n + 1)).hom.app ⟨S⟩ x)).val k) =
+      if k = n then (boundedIntSequencesSectionsEquiv S x).val n else 0
+  rw [BoundedIntSeqSection.val_sub]
+  rw [boundedTailProjection_apply_coord, boundedTailProjection_apply_coord]
+  by_cases hkn : k = n
+  · subst k
+    ext s
+    simp
+  · rw [if_neg hkn]
+    by_cases hnk : n ≤ k
+    · have hn1k : n + 1 ≤ k := by omega
+      ext s
+      simp [hnk, hn1k]
+    · have hn1k : ¬ n + 1 ≤ k := by omega
+      ext s
+      simp [hnk, hn1k]
+
+/-- For every fixed coordinate, the in-place bounded-tail projections are eventually zero. -/
+lemma boundedTailProjection_eventually_coord_zero (S : LightProfinite)
+    (x : boundedIntSequences.obj.obj ⟨S⟩) (k : ℕ) :
+    ∀ᶠ n : ℕ in Filter.atTop,
+      (boundedIntSequencesSectionsEquiv S ((boundedTailProjection n).hom.app ⟨S⟩ x)).val k = 0 := by
+  refine Filter.eventually_atTop.2 ⟨k + 1, ?_⟩
+  intro n hn
+  rw [boundedTailProjection_apply_coord]
+  simp [show ¬ n ≤ k by omega]
+
 /-- Maps out of a free light condensed abelian group are the corresponding point values. -/
 noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
     ((free ℤ).obj T.toCondensed ⟶ A) ≃ A.obj.obj ⟨T⟩ :=
