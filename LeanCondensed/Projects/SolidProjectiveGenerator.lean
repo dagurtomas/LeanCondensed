@@ -3149,6 +3149,389 @@ lemma freeTailEndomorphism_topologicalFree_apply
       rw [freeToTopologicalFree_id_apply, freeFiniteApproxRetraction_topologicalFree_apply]
       rfl
 
+/-- The signed difference of two Dirac measures in a represented topological-free group. -/
+def topologicalFreeDiracDiff (T : LightProfinite) (a b : T) : LightCondAb.topologicalFree T :=
+  (show ↑(LightCondAb.topologicalFree T).toModuleCat from
+    Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ))
+
+lemma topologicalFreeMap_diracDiff {T U : LightProfinite} (q : T ⟶ U) (a b : T) :
+    (LightCondAb.topologicalFreeMap q).hom (topologicalFreeDiracDiff T a b) =
+      topologicalFreeDiracDiff U (q a) (q b) := by
+  let μ₁ : LightCondAb.topologicalFree T := Finsupp.single a (1 : ℤ)
+  let μ₂ : LightCondAb.topologicalFree T := Finsupp.single b (1 : ℤ)
+  change (LightCondAb.topologicalFreeMap q).hom (μ₁ - μ₂) =
+    (show ↑(LightCondAb.topologicalFree U).toModuleCat from
+      Finsupp.single (q a) (1 : ℤ) - Finsupp.single (q b) (1 : ℤ))
+  rw [((LightCondAb.topologicalFreeMap q).hom).map_sub]
+  dsimp [μ₁, μ₂]
+  rw [LightCondAb.topologicalFreeMap_single]
+  rw [LightCondAb.topologicalFreeMap_single]
+  rfl
+
+lemma topologicalFreeDiracDiff_self (T : LightProfinite) (a : T) :
+    topologicalFreeDiracDiff T a a = 0 := by
+  simp [topologicalFreeDiracDiff]
+  rfl
+
+lemma totalVariation_zsmul_diracDiff_le_two_mul_natAbs {α : Type*} [DecidableEq α]
+    (a b : α) (c : ℤ) :
+    LightProfinite.FreeImage.totalVariation
+      (c • (Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ))) ≤
+        (2 * (Int.natAbs c : ℤ)) := by
+  classical
+  let μ : α →₀ ℤ := c • (Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ))
+  have hsupp : μ.support ⊆ ({a, b} : Finset α) := by
+    intro x hx
+    rw [Finsupp.mem_support_iff] at hx
+    rw [Finset.mem_insert, Finset.mem_singleton]
+    by_contra h
+    push Not at h
+    have hxzero : μ x = 0 := by simp [μ, h.1, h.2]
+    exact hx hxzero
+  calc
+    LightProfinite.FreeImage.totalVariation μ
+        = ∑ x ∈ μ.support, |μ x| := by
+          rw [LightProfinite.FreeImage.totalVariation, Finsupp.sum]
+    _ ≤ ∑ x ∈ ({a, b} : Finset α), |μ x| := by
+          exact Finset.sum_le_sum_of_subset_of_nonneg hsupp
+            (by intro x _ _; positivity)
+    _ ≤ 2 * (Int.natAbs c : ℤ) := by
+          by_cases h : a = b
+          · subst h
+            simp [μ]
+          · simp [μ, h, abs_of_nonneg, abs_of_nonpos]
+            ring_nf
+            exact le_rfl
+
+lemma ninf_map_eventually_eq_infty (F : LightProfinite) [Finite F]
+    (q : (ℕ∪{∞} : LightProfinite) ⟶ F) :
+    ∀ᶠ n : ℕ in Filter.atTop, q (n : ℕ∪{∞}) = q (∞ : ℕ∪{∞}) := by
+  letI : DiscreteTopology F := Finite.instDiscreteTopology
+  have hcont : Continuous (fun a : (ℕ∪{∞} : LightProfinite) => q a) := q.hom.hom.continuous
+  have htend : Filter.Tendsto (fun n : ℕ => q (n : ℕ∪{∞})) Filter.atTop
+      (nhds (q (∞ : ℕ∪{∞}))) :=
+    (LightProfinite.continuous_iff_convergent
+      (fun a : (ℕ∪{∞} : LightProfinite) => q a)).mp hcont
+  have hsing : {q (∞ : ℕ∪{∞})} ∈ nhds (q (∞ : ℕ∪{∞})) := by
+    simp [nhds_discrete]
+  filter_upwards [htend hsing] with n hn
+  simpa using hn
+
+/-- The coefficient of the bounded diagonal-difference measure.  It is zero at `∞` and is the
+corresponding bounded-sequence coordinate at finite points. -/
+def boundedDifferenceCoeff {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (s : S) : ℤ :=
+  match f s with
+  | ∞ => 0
+  | OnePoint.some n => x.val n s
+
+/-- The pointwise signed measure `m_{f(s)}(s) • (δ_{f(s)} - δ_∞)`. -/
+def boundedDifferenceMeasure {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (s : S) :
+    LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite) :=
+  boundedDifferenceCoeff f x s •
+    topologicalFreeDiracDiff (ℕ∪{∞} : LightProfinite) (f s) (∞ : ℕ∪{∞})
+
+lemma boundedDifferenceMeasure_add {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x y : BoundedIntSeqSection S) (s : S) :
+    boundedDifferenceMeasure f (x + y) s =
+      boundedDifferenceMeasure f x s + boundedDifferenceMeasure f y s := by
+  dsimp [boundedDifferenceMeasure]
+  cases hfs : f s using OnePoint.rec with
+  | infty => simp [boundedDifferenceCoeff, hfs]
+  | coe n =>
+      have hxy : boundedDifferenceCoeff f (x + y) s = x.val n s + y.val n s := by
+        simp [boundedDifferenceCoeff, hfs]
+      have hx : boundedDifferenceCoeff f x s = x.val n s := by
+        simp [boundedDifferenceCoeff, hfs]
+      have hy : boundedDifferenceCoeff f y s = y.val n s := by
+        simp [boundedDifferenceCoeff, hfs]
+      rw [hxy, hx, hy]
+      let d := topologicalFreeDiracDiff (ℕ∪{∞} : LightProfinite)
+        (n : ℕ∪{∞}) (∞ : ℕ∪{∞})
+      change ((x.val n s + y.val n s) • d) = (x.val n s) • d + (y.val n s) • d
+      rw [add_zsmul]
+
+lemma boundedDifferenceMeasure_zsmul {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (a : ℤ) (x : BoundedIntSeqSection S) (s : S) :
+    boundedDifferenceMeasure f (a • x) s = a • boundedDifferenceMeasure f x s := by
+  dsimp [boundedDifferenceMeasure]
+  cases hfs : f s using OnePoint.rec with
+  | infty =>
+      dsimp [boundedDifferenceCoeff]
+      rw [hfs]
+      rw [topologicalFreeDiracDiff_self]
+      simp
+      exact (smul_zero a : a • (0 : LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)) = 0).symm
+  | coe n =>
+      have hax : boundedDifferenceCoeff f (a • x) s = a * x.val n s := by
+        dsimp [boundedDifferenceCoeff]
+        rw [hfs]
+      have hx : boundedDifferenceCoeff f x s = x.val n s := by
+        simp [boundedDifferenceCoeff, hfs]
+      rw [hax, hx]
+      let d := topologicalFreeDiracDiff (ℕ∪{∞} : LightProfinite)
+        (n : ℕ∪{∞}) (∞ : ℕ∪{∞})
+      change (a * x.val n s) • d = a • ((x.val n s) • d)
+      rw [mul_smul]
+
+lemma boundedDifferenceMeasure_comap {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S)
+    (t : T) :
+    boundedDifferenceMeasure (g ≫ f) (boundedIntSeqSectionComap g x) t =
+      boundedDifferenceMeasure f x (g t) := by
+  dsimp [boundedDifferenceMeasure, boundedDifferenceCoeff]
+  rfl
+
+lemma boundedDifferenceMeasure_totalVariation_le {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (s : S) :
+    LightProfinite.FreeImage.totalVariation (boundedDifferenceMeasure f x s) ≤
+      (2 * x.isBounded.choose : ℤ) := by
+  classical
+  dsimp [boundedDifferenceMeasure, topologicalFreeDiracDiff]
+  have hcoeff : Int.natAbs (boundedDifferenceCoeff f x s) ≤ x.isBounded.choose := by
+    cases hfs : f s using OnePoint.rec with
+    | infty => simp [boundedDifferenceCoeff, hfs]
+    | coe n =>
+        simpa [boundedDifferenceCoeff, hfs] using x.isBounded.choose_spec s n
+  have htv := totalVariation_zsmul_diracDiff_le_two_mul_natAbs (f s)
+    (∞ : ℕ∪{∞}) (boundedDifferenceCoeff f x s)
+  refine le_trans htv ?_
+  exact_mod_cast Nat.mul_le_mul_left 2 hcoeff
+
+lemma boundedDifferenceMeasure_finiteProj_continuous {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (k : ℕ) :
+    Continuous fun s : S =>
+      (LightCondAb.topologicalFreeMap ((ℕ∪{∞} : LightProfinite).proj k)).hom
+        (boundedDifferenceMeasure f x s) := by
+  let q : (ℕ∪{∞} : LightProfinite) ⟶ (ℕ∪{∞} : LightProfinite).component k :=
+    (ℕ∪{∞} : LightProfinite).proj k
+  let g : ℕ → C(↑S.toTop,
+      ↑(LightCondAb.topologicalFree ((ℕ∪{∞} : LightProfinite).component k)).toModuleCat) := fun n =>
+    ⟨fun s => (x.val n s) •
+        topologicalFreeDiracDiff ((ℕ∪{∞} : LightProfinite).component k)
+          (q (n : ℕ∪{∞})) (q (∞ : ℕ∪{∞})),
+      by exact (x.val n).continuous.smul continuous_const⟩
+  have hg : ∀ᶠ n : ℕ in Filter.atTop, g n = 0 := by
+    filter_upwards [ninf_map_eventually_eq_infty ((ℕ∪{∞} : LightProfinite).component k) q] with n hn
+    ext s
+    change (x.val n s) •
+        topologicalFreeDiracDiff ((ℕ∪{∞} : LightProfinite).component k)
+          (q (n : ℕ∪{∞})) (q (∞ : ℕ∪{∞})) = 0
+    rw [hn]
+    rw [topologicalFreeDiracDiff_self]
+    exact smul_zero (x.val n s)
+  have hcont := continuous_ninfTensor_of_eventually_eq_zero S g hg
+  have hgraph : Continuous fun s : S => ((f s), s) := by
+    exact f.hom.hom.continuous.prodMk continuous_id
+  refine (hcont.comp hgraph).congr ?_
+  intro s
+  dsimp [boundedDifferenceMeasure]
+  cases hfs : f s using OnePoint.rec with
+  | infty =>
+      simp [boundedDifferenceCoeff, hfs]
+  | coe n =>
+      have hcoeff : boundedDifferenceCoeff f x s = x.val n s := by
+        simp [boundedDifferenceCoeff, hfs]
+      rw [hcoeff]
+      change (x.val n s) •
+          topologicalFreeDiracDiff ((ℕ∪{∞} : LightProfinite).component k)
+            (q (n : ℕ∪{∞})) (q (∞ : ℕ∪{∞})) =
+        (LightCondAb.topologicalFreeMap q).hom
+          ((x.val n s) • topologicalFreeDiracDiff (ℕ∪{∞} : LightProfinite)
+            (n : ℕ∪{∞}) (∞ : ℕ∪{∞}))
+      rw [map_smul]
+      rw [topologicalFreeMap_diracDiff]
+
+/-- The represented topological-free section underlying the bounded diagonal-difference family. -/
+noncomputable def boundedDifferenceTopologicalSection {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    (LightCondAb.topologicalFreeCondensed (ℕ∪{∞} : LightProfinite)).obj.obj ⟨S⟩ :=
+  LightCondAb.topologicalFreeSectionOfBoundedFiniteProj (ℕ∪{∞} : LightProfinite) S
+    (boundedDifferenceMeasure f x) (2 * x.isBounded.choose)
+    (boundedDifferenceMeasure_totalVariation_le f x)
+    (boundedDifferenceMeasure_finiteProj_continuous f x)
+
+lemma boundedDifferenceTopologicalSection_add {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x y : BoundedIntSeqSection S) :
+    boundedDifferenceTopologicalSection f (x + y) =
+      boundedDifferenceTopologicalSection f x + boundedDifferenceTopologicalSection f y := by
+  apply ContinuousMap.ext
+  intro s
+  change boundedDifferenceMeasure f (x + y) s =
+    boundedDifferenceMeasure f x s + boundedDifferenceMeasure f y s
+  exact boundedDifferenceMeasure_add f x y s
+
+lemma boundedDifferenceTopologicalSection_zsmul {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (a : ℤ) (x : BoundedIntSeqSection S) :
+    boundedDifferenceTopologicalSection f (a • x) =
+      a • boundedDifferenceTopologicalSection f x := by
+  apply ContinuousMap.ext
+  intro s
+  change boundedDifferenceMeasure f (a • x) s = a • boundedDifferenceMeasure f x s
+  exact boundedDifferenceMeasure_zsmul f a x s
+
+lemma boundedDifferenceTopologicalSection_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    (LightCondAb.topologicalFreeCondensed (ℕ∪{∞} : LightProfinite)).obj.map g.op
+      (boundedDifferenceTopologicalSection f x) =
+    boundedDifferenceTopologicalSection (g ≫ f) (boundedIntSeqSectionComap g x) := by
+  apply ContinuousMap.ext
+  intro t
+  change boundedDifferenceMeasure f x (g t) =
+    boundedDifferenceMeasure (g ≫ f) (boundedIntSeqSectionComap g x) t
+  exact (boundedDifferenceMeasure_comap g f x t).symm
+
+/-- The `P`-valued section obtained by projecting the bounded diagonal-difference free section. -/
+noncomputable def boundedDifferencePSection {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    (P ℤ).obj.obj ⟨S⟩ :=
+  (P_proj ℤ).hom.app ⟨S⟩
+    ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).symm.hom.hom.app ⟨S⟩
+      (boundedDifferenceTopologicalSection f x))
+
+lemma boundedDifferencePSection_add {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x y : BoundedIntSeqSection S) :
+    boundedDifferencePSection f (x + y) =
+      boundedDifferencePSection f x + boundedDifferencePSection f y := by
+  dsimp [boundedDifferencePSection]
+  rw [boundedDifferenceTopologicalSection_add]
+  rw [((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom.map_add]
+  rw [((P_proj ℤ).hom.app ⟨S⟩).hom.map_add]
+
+lemma boundedDifferencePSection_zsmul {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (a : ℤ) (x : BoundedIntSeqSection S) :
+    boundedDifferencePSection f (a • x) = a • boundedDifferencePSection f x := by
+  dsimp [boundedDifferencePSection]
+  rw [boundedDifferenceTopologicalSection_zsmul]
+  let u := boundedDifferenceTopologicalSection f x
+  have hfree :
+      ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom
+        (a • u) =
+      a • ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom u := by
+    exact map_zsmul
+      (((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom) a u
+  change ((P_proj ℤ).hom.app ⟨S⟩).hom
+      (((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom
+        (a • u)) =
+    a • ((P_proj ℤ).hom.app ⟨S⟩).hom
+      (((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom u)
+  rw [hfree]
+  exact map_zsmul (((P_proj ℤ).hom.app ⟨S⟩).hom) a _
+
+lemma boundedDifferencePSection_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    (P ℤ).obj.map g.op (boundedDifferencePSection f x) =
+      boundedDifferencePSection (g ≫ f) (boundedIntSeqSectionComap g x) := by
+  dsimp [boundedDifferencePSection]
+  rw [← LightCondMod.hom_naturality_apply ℤ (P_proj ℤ) g.op]
+  rw [← LightCondMod.hom_naturality_apply ℤ
+    (LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv g.op]
+  rw [boundedDifferenceTopologicalSection_naturality]
+
+/-- The sectionwise linear family defining the bounded diagonal-difference numerator. -/
+noncomputable def boundedDifferenceFamilyLinear (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) :
+    boundedIntSequences.obj.obj ⟨S⟩ →ₗ[ℤ] (P ℤ).obj.obj ⟨S⟩ where
+  toFun x := boundedDifferencePSection f (show BoundedIntSeqSection S from x)
+  map_add' := by
+    intro x y
+    exact boundedDifferencePSection_add f (show BoundedIntSeqSection S from x)
+      (show BoundedIntSeqSection S from y)
+  map_smul' := by
+    intro a x
+    have hx : (show BoundedIntSeqSection S from a • x) =
+        a • (show BoundedIntSeqSection S from x) := by
+      apply BoundedIntSeqSection.ext_apply
+      intro n s
+      rfl
+    convert boundedDifferencePSection_zsmul f a (show BoundedIntSeqSection S from x) using 1
+    · exact congrArg (boundedDifferencePSection f) hx
+    · simpa [RingHom.id_apply] using
+        (Int.cast_smul_eq_zsmul (R := ℤ) a
+          (boundedDifferencePSection f (show BoundedIntSeqSection S from x)))
+
+lemma boundedDifferenceFamilyLinear_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : boundedIntSequences.obj.obj ⟨S⟩) :
+    (P ℤ).obj.map g.op (boundedDifferenceFamilyLinear S f m) =
+      boundedDifferenceFamilyLinear T (g ≫ f) (boundedIntSequences.obj.map g.op m) := by
+  exact boundedDifferencePSection_naturality g f (show BoundedIntSeqSection S from m)
+
+/-- The free numerator for the bounded diagonal-difference map. -/
+noncomputable def boundedDifferenceNumerator :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ boundedIntSequences ⟶ P ℤ :=
+  freeTensorDescLin (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
+    boundedDifferenceFamilyLinear (by
+      intro S T g f m
+      exact boundedDifferenceFamilyLinear_naturality g f m)
+
+/-- Finite slices of the bounded diagonal-difference numerator are given by the defining family. -/
+lemma boundedDifferenceNumerator_slice (n : ℕ) :
+    numeratorSlice boundedIntSequences (P ℤ) n boundedDifferenceNumerator =
+      freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
+        boundedDifferenceFamilyLinear (by
+          intro S T g f m
+          exact boundedDifferenceFamilyLinear_naturality g f m) (natPoint n) := by
+  dsimp [numeratorSlice, freeNatBasis, boundedDifferenceNumerator]
+  rw [freeTensorDescLin_point]
+
+lemma boundedDifferenceFamilyMap_infty :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
+      boundedDifferenceFamilyLinear (by
+        intro S T g f m
+        exact boundedDifferenceFamilyLinear_naturality g f m) ι =
+    0 := by
+  ext S x
+  change boundedDifferenceFamilyLinear S.unop (toPointMap S.unop ≫ ι) x =
+    (0 : boundedIntSequences ⟶ P ℤ).hom.app S x
+  dsimp [boundedDifferenceFamilyLinear, boundedDifferencePSection]
+  have htop : boundedDifferenceTopologicalSection (toPointMap S.unop ≫ ι)
+      (show BoundedIntSeqSection S.unop from x) = 0 := by
+    apply ContinuousMap.ext
+    intro s
+    change boundedDifferenceMeasure (toPointMap S.unop ≫ ι)
+        (show BoundedIntSeqSection S.unop from x) s = 0
+    dsimp [boundedDifferenceMeasure, boundedDifferenceCoeff]
+    have hf : (ConcreteCategory.hom (toPointMap S.unop ≫ ι)) s =
+        (∞ : ℕ∪{∞}) := rfl
+    rw [hf]
+    rw [topologicalFreeDiracDiff_self]
+    change (0 : ℤ) • (0 : LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)) = 0
+    exact zero_smul ℤ (0 : LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite))
+  rw [htop]
+  simp
+
+/-- The bounded diagonal-difference numerator has zero `∞` slice. -/
+lemma boundedDifferenceNumerator_infty :
+    inftySlice boundedIntSequences (P ℤ) boundedDifferenceNumerator = 0 := by
+  dsimp [inftySlice, freeInftyBasis, P_map, boundedDifferenceNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedDifferenceFamilyMap_infty
+
+/-- The bounded diagonal-difference numerator kills the basepoint summand. -/
+lemma boundedDifferenceNumerator_kills :
+    (P_map ℤ ▷ boundedIntSequences) ≫ boundedDifferenceNumerator = 0 :=
+  numerator_kills_of_inftySlice_zero boundedIntSequences (P ℤ)
+    boundedDifferenceNumerator boundedDifferenceNumerator_infty
+
+/-- The bounded diagonal-difference map descended to `P ℤ ⊗ boundedIntSequences`. -/
+noncomputable def boundedDifferenceMap :
+    P ℤ ⊗ boundedIntSequences ⟶ P ℤ :=
+  pTensorDesc boundedIntSequences (P ℤ) boundedDifferenceNumerator
+    boundedDifferenceNumerator_kills
+
+/-- Finite slices of the descended bounded diagonal-difference map. -/
+lemma boundedDifferenceMap_slice (n : ℕ) :
+    ((λ_ boundedIntSequences).inv ≫ pBasis n ▷ boundedIntSequences) ≫ boundedDifferenceMap =
+      freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
+        boundedDifferenceFamilyLinear (by
+          intro S T g f m
+          exact boundedDifferenceFamilyLinear_naturality g f m) (natPoint n) := by
+  dsimp [boundedDifferenceMap]
+  rw [pTensorDesc_slice]
+  exact boundedDifferenceNumerator_slice n
+
 /-- The clopen indicator as an integer-valued locally constant function. -/
 noncomputable def clopenIndicatorInt {X : Type*} [TopologicalSpace X]
     (U : Set X) (hU : IsClopen U) : LocallyConstant X ℤ :=
