@@ -3,16 +3,20 @@ Copyright (c) 2026 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-import LeanCondensed.Projects.Sequence
-import Mathlib.Algebra.Category.ModuleCat.AB
-import Mathlib.Algebra.Category.ModuleCat.FilteredColimits
-import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
-import Mathlib.CategoryTheory.Adjunction.Additive
-import Mathlib.CategoryTheory.Limits.FilteredColimitCommutesFiniteLimit
-import Mathlib.CategoryTheory.Limits.IndYoneda
-import Mathlib.CategoryTheory.Sites.Limits
-import Mathlib.Condensed.Light.InternallyProjective
+module
+
+public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+public import LeanCondensed.Projects.Sequence
+public import Mathlib.Algebra.Category.ModuleCat.AB
+public import Mathlib.Algebra.Category.ModuleCat.FilteredColimits
+public import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
+public import Mathlib.CategoryTheory.Adjunction.Additive
+public import Mathlib.CategoryTheory.Limits.FilteredColimitCommutesFiniteLimit
+public import Mathlib.CategoryTheory.Limits.IndYoneda
+public import Mathlib.CategoryTheory.Sites.Limits
+public import Mathlib.Condensed.Light.InternallyProjective
+
+@[expose] public section
 
 /-!
 # Scaffold for filtered colimits of internal homs out of `P`

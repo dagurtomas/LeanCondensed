@@ -195,7 +195,7 @@ lemma freeToTopologicalFree_naturality {S T : LightProfinite.{0}} (f : S ⟶ T) 
   exact topologicalFreeDiracSection_naturality f
 
 /-- The represented topological-free sheaf is isomorphic to its sheafification. -/
-private noncomputable def topologicalFreeCondensedSheafifyIso (S : LightProfinite.{0}) :
+noncomputable def topologicalFreeCondensedSheafifyIso (S : LightProfinite.{0}) :
     topologicalFreeCondensed S ≅
       (CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).obj
         (topologicalFreePresheaf S) where
@@ -214,7 +214,7 @@ private noncomputable def topologicalFreeCondensedSheafifyIso (S : LightProfinit
 
 /-- The sheafified presheaf comparison is the comparison followed by the inverse sheafification
 identification of the represented target. -/
-private lemma sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafifyIso_inv
+lemma sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafifyIso_inv
     (S : LightProfinite.{0}) :
     (((CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).map
       (freePresheafToTopologicalFreePresheaf S)) ≫
@@ -232,7 +232,7 @@ private lemma sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafi
   rw [CategoryTheory.sheafifyMap_sheafifyLift]
   simp
 
-private instance instIsIso_sheafifiedPresheafComparison (S : LightProfinite.{0}) :
+instance instIsIso_sheafifiedPresheafComparison (S : LightProfinite.{0}) :
     IsIso (((CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).map
       (freePresheafToTopologicalFreePresheaf S))) := by
   rw [← CategoryTheory.GrothendieckTopology.W_iff]

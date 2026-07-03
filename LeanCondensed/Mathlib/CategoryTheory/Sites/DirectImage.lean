@@ -3,11 +3,15 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Adjunction.Restrict
-import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
-import Mathlib.CategoryTheory.Sites.Continuous
-import Mathlib.CategoryTheory.Sites.Sheafification
-import Mathlib.Order.CompletePartialOrder
+module
+
+public import Mathlib.CategoryTheory.Adjunction.Restrict
+public import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
+public import Mathlib.CategoryTheory.Sites.Continuous
+public import Mathlib.CategoryTheory.Sites.Sheafification
+public import Mathlib.Order.CompletePartialOrder
+
+@[expose] public section
 
 universe w
 

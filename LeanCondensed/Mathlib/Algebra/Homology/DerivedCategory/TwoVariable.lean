@@ -3,11 +3,15 @@ Copyright (c) 2026 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Algebra.Homology.DerivedCategory.KProjective
-import Mathlib.Algebra.Homology.DerivedCategory.KInjective
-import Mathlib.Algebra.Homology.Monoidal
-import Mathlib.CategoryTheory.Localization.Prod
-import Mathlib.CategoryTheory.Localization.DerivabilityStructure.Derives
+module
+
+public import Mathlib.Algebra.Homology.DerivedCategory.KProjective
+public import Mathlib.Algebra.Homology.DerivedCategory.KInjective
+public import Mathlib.Algebra.Homology.Monoidal
+public import Mathlib.CategoryTheory.Localization.Prod
+public import Mathlib.CategoryTheory.Localization.DerivabilityStructure.Derives
+
+@[expose] public section
 
 /-!
 # Two-variable derived functors from concrete replacements

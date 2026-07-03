@@ -3,11 +3,15 @@ Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Algebra.Module.TransferInstance
-import Mathlib.CategoryTheory.Linear.FunctorCategory
-import Mathlib.CategoryTheory.Monoidal.Linear
-import Mathlib.CategoryTheory.Sites.Monoidal
-import Mathlib.Combinatorics.Quiver.ReflQuiver
+module
+
+public import Mathlib.Algebra.Module.TransferInstance
+public import Mathlib.CategoryTheory.Linear.FunctorCategory
+public import Mathlib.CategoryTheory.Monoidal.Linear
+public import Mathlib.CategoryTheory.Sites.Monoidal
+public import Mathlib.Combinatorics.Quiver.ReflQuiver
+
+@[expose] public section
 
 universe v u
 

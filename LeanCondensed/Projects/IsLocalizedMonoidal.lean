@@ -3,8 +3,12 @@ Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Localization.Monoidal.Functor
-import Mathlib.CategoryTheory.Localization.Monoidal.Basic
+module
+
+public import Mathlib.CategoryTheory.Localization.Monoidal.Functor
+public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
+
+@[expose] public section
 
 open CategoryTheory Localization.Monoidal MonoidalCategory
 

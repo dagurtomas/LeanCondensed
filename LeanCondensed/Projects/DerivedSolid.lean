@@ -3,16 +3,20 @@ Copyright (c) 2026 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Projects.SolidProjectiveGenerator
-import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
-import Mathlib.Algebra.Homology.DerivedCategory.ExactFunctor
-import Mathlib.Algebra.Homology.Monoidal
-import Mathlib.CategoryTheory.Monoidal.Preadditive
-import Mathlib.CategoryTheory.Functor.Derived.Adjunction
-import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
-import Mathlib.CategoryTheory.Functor.Derived.PointwiseRightDerived
-import Mathlib.CategoryTheory.Functor.Derived.RightDerived
-import Mathlib.CategoryTheory.Generator.Preadditive
+module
+
+public import LeanCondensed.Projects.SolidProjectiveGenerator
+public import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
+public import Mathlib.Algebra.Homology.DerivedCategory.ExactFunctor
+public import Mathlib.Algebra.Homology.Monoidal
+public import Mathlib.CategoryTheory.Monoidal.Preadditive
+public import Mathlib.CategoryTheory.Functor.Derived.Adjunction
+public import Mathlib.CategoryTheory.Functor.Derived.LeftDerived
+public import Mathlib.CategoryTheory.Functor.Derived.PointwiseRightDerived
+public import Mathlib.CategoryTheory.Functor.Derived.RightDerived
+public import Mathlib.CategoryTheory.Generator.Preadditive
+
+@[expose] public section
 
 /-!
 # Scaffold for derived light solid abelian groups

@@ -3,19 +3,23 @@ Copyright (c) 2025 Jonas van der Schaaf. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jonas van der Schaaf
 -/
-import Mathlib.Algebra.Homology.ShortComplex.ShortExact
-import Mathlib.Combinatorics.Quiver.ReflQuiver
-import Mathlib.Condensed.Light.Functors
-import Mathlib.Condensed.Light.Module
-import Mathlib.Topology.Category.LightProfinite.Sequence
-import Mathlib.Data.Finset.Attr
-import Mathlib.Tactic.Common
-import Mathlib.Tactic.Continuity
-import Mathlib.Tactic.Finiteness.Attr
-import Mathlib.Tactic.SetLike
-import Mathlib.Util.CompileInductive
-import Mathlib.Topology.Connected.Separation
-import Mathlib.Topology.Spectral.Prespectral
+module
+
+public import Mathlib.Algebra.Homology.ShortComplex.ShortExact
+public import Mathlib.Combinatorics.Quiver.ReflQuiver
+public import Mathlib.Condensed.Light.Functors
+public import Mathlib.Condensed.Light.Module
+public import Mathlib.Topology.Category.LightProfinite.Sequence
+public import Mathlib.Data.Finset.Attr
+public import Mathlib.Tactic.Common
+public import Mathlib.Tactic.Continuity
+public import Mathlib.Tactic.Finiteness.Attr
+public import Mathlib.Tactic.SetLike
+public import Mathlib.Util.CompileInductive
+public import Mathlib.Topology.Connected.Separation
+public import Mathlib.Topology.Spectral.Prespectral
+
+@[expose] public section
 
 open CategoryTheory Limits LightProfinite OnePoint
 

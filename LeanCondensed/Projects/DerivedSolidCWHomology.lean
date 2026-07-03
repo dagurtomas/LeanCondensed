@@ -3,10 +3,14 @@ Copyright (c) 2026 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Projects.DerivedSolid
-import Mathlib.Algebra.Homology.DerivedCategory.HomologySequence
-import Mathlib.AlgebraicTopology.SingularHomology.Basic
-import Mathlib.Topology.CWComplex.Classical.Basic
+module
+
+public import LeanCondensed.Projects.DerivedSolid
+public import Mathlib.Algebra.Homology.DerivedCategory.HomologySequence
+public import Mathlib.AlgebraicTopology.SingularHomology.Basic
+public import Mathlib.Topology.CWComplex.Classical.Basic
+
+@[expose] public section
 
 /-!
 # Derived solidification of free CW complexes

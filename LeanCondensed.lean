@@ -1,14 +1,19 @@
-import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
-import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
-import LeanCondensed.Mathlib.Condensed.Adjunctions
-import LeanCondensed.Mathlib.Condensed.Light.Limits
-import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-import LeanCondensed.Projects.AdjointFunctorTheorem
-import LeanCondensed.Projects.FreeCondensed
-import LeanCondensed.Projects.IsLocalizedMonoidal
-import LeanCondensed.Projects.LightSolid
-import LeanCondensed.Projects.DerivedSolid
-import LeanCondensed.Projects.DerivedSolidCWHomology
-import LeanCondensed.Projects.MonoidalLinear
-import LeanCondensed.Projects.Sequence
-import LeanCondensed.Projects.SheafMonoidal
+module
+
+public import LeanCondensed.Mathlib.Algebra.Homology.DerivedCategory.TwoVariable
+public import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
+public import LeanCondensed.Mathlib.Condensed.Adjunctions
+public import LeanCondensed.Mathlib.Condensed.Light.Limits
+public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+public import LeanCondensed.Projects.AdjointFunctorTheorem
+public import LeanCondensed.Projects.FreeCondensed
+public import LeanCondensed.Projects.IsLocalizedMonoidal
+public import LeanCondensed.Projects.LightSolid
+public import LeanCondensed.Projects.DerivedSolid
+public import LeanCondensed.Projects.DerivedSolidCWHomology
+public import LeanCondensed.Projects.MonoidalLinear
+public import LeanCondensed.Projects.Sequence
+public import LeanCondensed.Projects.SheafMonoidal
+public import LeanCondensed.Projects.SolidProjectiveGenerator
+
+@[expose] public section

@@ -3,8 +3,12 @@ Copyright (c) 2026 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Limits.Constructions.Filtered
-import Mathlib.CategoryTheory.Limits.Preserves.Filtered
+module
+
+public import Mathlib.CategoryTheory.Limits.Constructions.Filtered
+public import Mathlib.CategoryTheory.Limits.Preserves.Filtered
+
+@[expose] public section
 
 /-!
 # Preservation of coproducts from finite coproducts and filtered colimits

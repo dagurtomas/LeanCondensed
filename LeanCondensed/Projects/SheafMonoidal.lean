@@ -3,13 +3,17 @@ Copyright (c) 2025 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
-import Mathlib.CategoryTheory.Limits.Shapes.Countable
-import Mathlib.CategoryTheory.Localization.Monoidal.Functor
-import Mathlib.CategoryTheory.Sites.CartesianMonoidal
-import Mathlib.CategoryTheory.Sites.LeftExact
-import Mathlib.CategoryTheory.Sites.Monoidal
-import Mathlib.CategoryTheory.Sites.PreservesSheafification
+module
+
+public import Mathlib.CategoryTheory.Functor.ReflectsIso.Balanced
+public import Mathlib.CategoryTheory.Limits.Shapes.Countable
+public import Mathlib.CategoryTheory.Localization.Monoidal.Functor
+public import Mathlib.CategoryTheory.Sites.CartesianMonoidal
+public import Mathlib.CategoryTheory.Sites.LeftExact
+public import Mathlib.CategoryTheory.Sites.Monoidal
+public import Mathlib.CategoryTheory.Sites.PreservesSheafification
+
+@[expose] public section
 
 universe v u
 

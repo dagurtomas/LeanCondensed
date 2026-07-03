@@ -3,8 +3,13 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import Mathlib.Algebra.Category.ModuleCat.Adjunctions
-import Mathlib.Condensed.Module
+module
+
+public import Mathlib.Algebra.Category.ModuleCat.Adjunctions
+public import Mathlib.Condensed.Module
+
+@[expose] public section
+
 /-!
 # Adjunctions regarding categories of condensed objects
 

@@ -1,12 +1,16 @@
-import Mathlib.Data.Finsupp.Basic
-import Mathlib.Algebra.BigOperators.Finsupp.Basic
-import Mathlib.Algebra.Module.LinearMap.Defs
-import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-import LeanCondensed.Projects.Sequence
-import Mathlib.Condensed.Discrete.Module
-import Mathlib.Condensed.Light.InternallyProjective
-import Mathlib.Topology.Compactification.OnePoint.Basic
-import Mathlib.Tactic
+module
+
+public import Mathlib.Data.Finsupp.Basic
+public import Mathlib.Algebra.BigOperators.Finsupp.Basic
+public import Mathlib.Algebra.Module.LinearMap.Defs
+public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+public import LeanCondensed.Projects.Sequence
+public import Mathlib.Condensed.Discrete.Module
+public import Mathlib.Condensed.Light.InternallyProjective
+public import Mathlib.Topology.Compactification.OnePoint.Basic
+public import Mathlib.Tactic
+
+@[expose] public section
 
 /-!
 # Algebra for the proof that `ℤ` is solid

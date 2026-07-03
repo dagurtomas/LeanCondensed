@@ -3,20 +3,25 @@ Copyright (c) 2024 Dagur Asgeirsson. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dagur Asgeirsson
 -/
-import LeanCondensed.Mathlib.CategoryTheory.Limits.Constructions.Filtered
-import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-import LeanCondensed.Projects.AdjointFunctorTheorem
-import LeanCondensed.Projects.LightSolidInt
-import LeanCondensed.Projects.LightSolidFilteredScaffold
-import LeanCondensed.Projects.Sequence
-import Mathlib.Condensed.Light.Sequence
-import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
-import Mathlib.CategoryTheory.Abelian.Subcategory
-import Mathlib.CategoryTheory.Adjunction.Additive
-import Mathlib.Algebra.Order.Ring.Star
-import Mathlib.CategoryTheory.Localization.Bousfield
-import Mathlib.Tactic.CategoryTheory.Coherence
-import Mathlib.Condensed.Light.Small
+module
+
+public import LeanCondensed.Mathlib.CategoryTheory.Limits.Constructions.Filtered
+public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
+public import LeanCondensed.Projects.AdjointFunctorTheorem
+public import LeanCondensed.Projects.LightSolidInt
+public import LeanCondensed.Projects.LightSolidFilteredScaffold
+public import LeanCondensed.Projects.Sequence
+public import Mathlib.Condensed.Light.Sequence
+public import Mathlib.Algebra.Homology.ShortComplex.ExactFunctor
+public import Mathlib.CategoryTheory.Abelian.Subcategory
+public import Mathlib.CategoryTheory.Adjunction.Additive
+public import Mathlib.Algebra.Order.Ring.Star
+public import Mathlib.CategoryTheory.Localization.Bousfield
+public import Mathlib.Tactic.CategoryTheory.Coherence
+public import Mathlib.Condensed.Light.Small
+
+@[expose] public section
+
 /-!
 
 # Project: light solid abelian groups

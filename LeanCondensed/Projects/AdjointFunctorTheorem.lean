@@ -1,7 +1,11 @@
-import Mathlib.CategoryTheory.Adjunction.AdjointFunctorTheorems
-import Mathlib.CategoryTheory.Presentable.Adjunction
-import Mathlib.CategoryTheory.Presentable.LocallyPresentable
-import Mathlib.CategoryTheory.Presentable.StrongGenerator
+module
+
+public import Mathlib.CategoryTheory.Adjunction.AdjointFunctorTheorems
+public import Mathlib.CategoryTheory.Presentable.Adjunction
+public import Mathlib.CategoryTheory.Presentable.LocallyPresentable
+public import Mathlib.CategoryTheory.Presentable.StrongGenerator
+
+@[expose] public section
 
 universe w v₁ v₂ v₃ u₁ u₂ u₃
 
@@ -10,7 +14,7 @@ open CategoryTheory Limits Functor
 namespace CategoryTheory.Adjunction
 
 set_option backward.isDefEq.respectTransparency false in
-private lemma aux {C : Type u₁} {D : Type u₂} [Category.{w} C] [Category.{w} D]
+lemma aux {C : Type u₁} {D : Type u₂} [Category.{w} C] [Category.{w} D]
     (R : C ⥤ D) [IsLocallyPresentable.{w} C] [IsLocallyPresentable.{w} D]
     [IsAccessible.{w} R] [PreservesLimitsOfSize.{w, w} R]
     [HasLimits C] : R.IsRightAdjoint := by
@@ -187,7 +191,7 @@ lemma solutionSetCondition_of_isAccessible (R : C ⥤ D) [IsAccessible.{w} R] :
   refine ⟨equivShrink _ ⟨x, qx⟩, eqToHom (by simp) ≫ ix.inv.right ≫ (ι.app _).right, ?_⟩
   simp [← Category.assoc, eqToHom_map, ← CommaMorphism.w, CA]
 
-private lemma aux' {C : Type u₁} {D : Type u₂} [Category.{w} C] [Category.{w} D]
+lemma aux' {C : Type u₁} {D : Type u₂} [Category.{w} C] [Category.{w} D]
     (R : C ⥤ D) [IsAccessible.{w} R] [PreservesLimits R] [HasLimits C] : R.IsRightAdjoint := by
   exact isRightAdjoint_of_preservesLimits_of_solutionSetCondition _
     (solutionSetCondition_of_isAccessible R)
