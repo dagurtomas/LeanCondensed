@@ -535,6 +535,193 @@ lemma productIntLocallyConstantSectionsEquiv_map {S S' : LightProfinite} (φ : S
     productIntLocallyConstantSectionsEquiv_apply]
   rw [productIntSectionsEquiv_map, zdiscSectionsEquiv_map]
 
+/-- Uniformly bounded sequences of locally constant integer-valued functions on a light profinite
+space.  The bound is uniform both in the source point and in the sequence coordinate. -/
+structure BoundedIntSeqSection (S : LightProfinite) where
+  val : ℕ → LocallyConstant S ℤ
+  isBounded : ∃ N : ℕ, ∀ s : S, ∀ n : ℕ, Int.natAbs (val n s) ≤ N
+
+namespace BoundedIntSeqSection
+
+@[ext]
+lemma ext {S : LightProfinite} {x y : BoundedIntSeqSection S}
+    (h : ∀ n : ℕ, x.val n = y.val n) : x = y := by
+  cases x
+  cases y
+  simp only at h
+  congr
+  exact funext h
+
+lemma ext_apply {S : LightProfinite} {x y : BoundedIntSeqSection S}
+    (h : ∀ n : ℕ, ∀ s : S, x.val n s = y.val n s) : x = y := by
+  apply ext
+  intro n
+  exact LocallyConstant.ext (h n)
+
+lemma val_ext_iff {S : LightProfinite} {x y : BoundedIntSeqSection S} :
+    x = y ↔ ∀ n : ℕ, x.val n = y.val n := by
+  constructor
+  · intro h n
+    rw [h]
+  · exact ext
+
+instance (S : LightProfinite) : Zero (BoundedIntSeqSection S) where
+  zero := {
+    val := 0
+    isBounded := by
+      refine ⟨0, ?_⟩
+      intro s n
+      simp }
+
+instance (S : LightProfinite) : Add (BoundedIntSeqSection S) where
+  add x y := {
+    val := fun n => x.val n + y.val n
+    isBounded := by
+      obtain ⟨Nx, hx⟩ := x.isBounded
+      obtain ⟨Ny, hy⟩ := y.isBounded
+      refine ⟨Nx + Ny, ?_⟩
+      intro s n
+      calc
+        Int.natAbs ((x.val n + y.val n) s)
+            = Int.natAbs (x.val n s + y.val n s) := rfl
+        _ ≤ Int.natAbs (x.val n s) + Int.natAbs (y.val n s) :=
+            Int.natAbs_add_le _ _
+        _ ≤ Nx + Ny := Nat.add_le_add (hx s n) (hy s n) }
+
+instance (S : LightProfinite) : Neg (BoundedIntSeqSection S) where
+  neg x := {
+    val := fun n => -x.val n
+    isBounded := by
+      obtain ⟨N, hN⟩ := x.isBounded
+      refine ⟨N, ?_⟩
+      intro s n
+      simpa [Int.natAbs_neg] using hN s n }
+
+instance (S : LightProfinite) : Sub (BoundedIntSeqSection S) where
+  sub x y := {
+    val := fun n => x.val n - y.val n
+    isBounded := by
+      obtain ⟨Nx, hx⟩ := x.isBounded
+      obtain ⟨Ny, hy⟩ := y.isBounded
+      refine ⟨Nx + Ny, ?_⟩
+      intro s n
+      calc
+        Int.natAbs ((x.val n - y.val n) s)
+            = Int.natAbs (x.val n s - y.val n s) := rfl
+        _ ≤ Int.natAbs (x.val n s) + Int.natAbs (y.val n s) :=
+            Int.natAbs_sub_le _ _
+        _ ≤ Nx + Ny := Nat.add_le_add (hx s n) (hy s n) }
+
+instance (S : LightProfinite) : SMul ℕ (BoundedIntSeqSection S) where
+  smul m x := {
+    val := fun n => m • x.val n
+    isBounded := by
+      obtain ⟨N, hN⟩ := x.isBounded
+      refine ⟨m * N, ?_⟩
+      intro s n
+      calc
+        Int.natAbs ((m • x.val n) s)
+            = Int.natAbs (m • x.val n s) := rfl
+        _ = Int.natAbs ((m : ℤ) * x.val n s) := by rw [nsmul_eq_mul]
+        _ = m * Int.natAbs (x.val n s) := by rw [Int.natAbs_mul, Int.natAbs_natCast]
+        _ ≤ m * N := Nat.mul_le_mul_left m (hN s n) }
+
+instance (S : LightProfinite) : SMul ℤ (BoundedIntSeqSection S) where
+  smul a x := {
+    val := fun n => a • x.val n
+    isBounded := by
+      obtain ⟨N, hN⟩ := x.isBounded
+      refine ⟨Int.natAbs a * N, ?_⟩
+      intro s n
+      calc
+        Int.natAbs ((a • x.val n) s)
+            = Int.natAbs (a • x.val n s) := rfl
+        _ = Int.natAbs (a * x.val n s) := by simp
+        _ = Int.natAbs a * Int.natAbs (x.val n s) := Int.natAbs_mul _ _
+        _ ≤ Int.natAbs a * N := Nat.mul_le_mul_left (Int.natAbs a) (hN s n) }
+
+instance (S : LightProfinite) : AddCommGroup (BoundedIntSeqSection S) :=
+  Function.Injective.addCommGroup (fun x : BoundedIntSeqSection S => x.val)
+    (fun _ _ h => ext (fun n => congrFun h n)) rfl (fun _ _ => rfl) (fun _ => rfl)
+    (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl)
+
+instance (S : LightProfinite) : Module ℤ (BoundedIntSeqSection S) :=
+  AddCommGroup.toIntModule (BoundedIntSeqSection S)
+
+@[simp]
+lemma val_zero (S : LightProfinite) (n : ℕ) :
+    (0 : BoundedIntSeqSection S).val n = 0 :=
+  rfl
+
+@[simp]
+lemma val_add {S : LightProfinite} (x y : BoundedIntSeqSection S) (n : ℕ) :
+    (x + y).val n = x.val n + y.val n :=
+  rfl
+
+@[simp]
+lemma val_neg {S : LightProfinite} (x : BoundedIntSeqSection S) (n : ℕ) :
+    (-x).val n = -x.val n :=
+  rfl
+
+@[simp]
+lemma val_sub {S : LightProfinite} (x y : BoundedIntSeqSection S) (n : ℕ) :
+    (x - y).val n = x.val n - y.val n :=
+  rfl
+
+@[simp]
+lemma val_nsmul {S : LightProfinite} (m : ℕ) (x : BoundedIntSeqSection S) (n : ℕ) :
+    (m • x).val n = m • x.val n :=
+  rfl
+
+@[simp]
+lemma val_zsmul {S : LightProfinite} (a : ℤ) (x : BoundedIntSeqSection S) (n : ℕ) :
+    (a • x).val n = a • x.val n :=
+  rfl
+
+end BoundedIntSeqSection
+
+/-- Restrict a bounded integer sequence section along a map of light profinite spaces. -/
+def boundedIntSeqSectionComap {S T : LightProfinite} (f : T ⟶ S)
+    (x : BoundedIntSeqSection S) : BoundedIntSeqSection T where
+  val n := (x.val n).comap f.hom.hom
+  isBounded := by
+    obtain ⟨N, hN⟩ := x.isBounded
+    exact ⟨N, fun t n => hN (f t) n⟩
+
+@[simp]
+lemma boundedIntSeqSectionComap_val {S T : LightProfinite} (f : T ⟶ S)
+    (x : BoundedIntSeqSection S) (n : ℕ) :
+    (boundedIntSeqSectionComap f x).val n = (x.val n).comap f.hom.hom :=
+  rfl
+
+/-- The presheaf of uniformly bounded integer sequences of locally constant functions. -/
+noncomputable def boundedIntSeqPresheaf : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ where
+  obj S := ModuleCat.of ℤ (BoundedIntSeqSection S.unop)
+  map {S T} f := ModuleCat.ofHom {
+    toFun := boundedIntSeqSectionComap f.unop
+    map_add' := by
+      intro x y
+      ext n s
+      rfl
+    map_smul' := by
+      intro a x
+      ext n s
+      rfl }
+  map_id := by
+    intro S
+    ext x n s
+    rfl
+  map_comp := by
+    intro S T U f g
+    ext x n s
+    rfl
+
+@[simp]
+lemma boundedIntSeqPresheaf_map_val {S T : LightProfinite} (f : T ⟶ S)
+    (x : boundedIntSeqPresheaf.obj ⟨S⟩) (n : ℕ) :
+    ((boundedIntSeqPresheaf.map f.op) x).val n = (x.val n).comap f.hom.hom :=
+  rfl
+
 /-- Maps out of a free light condensed abelian group are the corresponding point values. -/
 noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
     ((free ℤ).obj T.toCondensed ⟶ A) ≃ A.obj.obj ⟨T⟩ :=
