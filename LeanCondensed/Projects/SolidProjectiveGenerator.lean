@@ -2071,7 +2071,6 @@ lemma freeTensorHom_ext (X : LightProfinite.{0}) (B C : LightCondAb)
     infer_instance
   apply (cancel_epi e).1
   apply Sheaf.hom_ext
-  change (e ≫ g₁).hom = (e ≫ g₂).hom
   apply CategoryTheory.sheafify_hom_ext _ _ _ C.property
   ext S z
   change (freeTensorHomPresheafComposite X B C g₁).app S z =
@@ -2123,7 +2122,7 @@ lemma freeTensorHomPresheafComposite_desc (X : LightProfinite.{0}) (B C : LightC
   rw [hfac]
   have hμ : (Functor.Monoidal.μIso L F G).inv ≫
       ((Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC) = L.map α ≫ cC := by
-    simp [Category.assoc]
+    simp
   rw [hμ]
   exact hsheaf
 
