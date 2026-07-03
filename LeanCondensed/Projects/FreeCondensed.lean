@@ -2331,6 +2331,157 @@ lemma freePresheafToTopologicalFreePresheaf_signedTupleSection
   rw [map_sum]
   simp [Finsupp.mapDomain_single]
 
+/-- The closed equality locus in `U × signedTupleSpace S i` where a signed tuple represents the
+value of a topological-free section. -/
+def signedTuplePullbackSet
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) : Set (LightProfinite.of (U × signedTupleSpace S i)) :=
+  {p | (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a) p.1 =
+    signedTupleMap S i p.2}
+
+lemma signedTuplePullbackSet_isClosed
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) : IsClosed (signedTuplePullbackSet S U a i) := by
+  change IsClosed {p : U × signedTupleSpace S i |
+    (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a) p.1 =
+      signedTupleMap S i p.2}
+  exact isClosed_eq
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a).continuous.comp continuous_fst)
+    ((signedTupleMap S i).continuous.comp continuous_snd)
+
+/-- The closed pullback of a topological-free section along a signed-tuple parametrization. -/
+noncomputable def signedTuplePullback
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) : LightProfinite.{0} :=
+  closedSubLightProfinite (signedTuplePullbackSet S U a i)
+    (signedTuplePullbackSet_isClosed S U a i)
+
+/-- Projection from the signed-tuple pullback to the original test object. -/
+noncomputable def signedTuplePullbackπ
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) :
+    signedTuplePullback S U a i ⟶ U := by
+  let _ : CompactSpace (signedTuplePullbackSet S U a i) :=
+    isCompact_iff_compactSpace.mp (signedTuplePullbackSet_isClosed S U a i).isCompact
+  exact CompHausLike.ofHom _ ⟨fun v => ((v : signedTuplePullbackSet S U a i).1 :
+      U × signedTupleSpace S i).1,
+    continuous_fst.comp continuous_subtype_val⟩
+
+/-- Projection from the signed-tuple pullback to the signed-tuple parameter space. -/
+noncomputable def signedTuplePullbackτ
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) :
+    signedTuplePullback S U a i ⟶ signedTupleSpace S i := by
+  let _ : CompactSpace (signedTuplePullbackSet S U a i) :=
+    isCompact_iff_compactSpace.mp (signedTuplePullbackSet_isClosed S U a i).isCompact
+  exact CompHausLike.ofHom _ ⟨fun v => ((v : signedTuplePullbackSet S U a i).1 :
+      U × signedTupleSpace S i).2,
+    continuous_snd.comp continuous_subtype_val⟩
+
+@[simp]
+lemma signedTuplePullbackπ_apply
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) (v : signedTuplePullback S U a i) :
+    signedTuplePullbackπ S U a i v = ((v : signedTuplePullbackSet S U a i).1 :
+      U × signedTupleSpace S i).1 := by
+  let _ : CompactSpace (signedTuplePullbackSet S U a i) :=
+    isCompact_iff_compactSpace.mp (signedTuplePullbackSet_isClosed S U a i).isCompact
+  change (ConcreteCategory.hom (signedTuplePullbackπ S U a i)) v = _
+  rw [show ConcreteCategory.hom (signedTuplePullbackπ S U a i) =
+      (⟨fun v => ((v : signedTuplePullbackSet S U a i).1 :
+        U × signedTupleSpace S i).1, continuous_fst.comp continuous_subtype_val⟩ :
+          C(↑(signedTuplePullback S U a i).toTop, ↑U.toTop)) by
+    exact CompHausLike.hom_ofHom _ _]
+  rfl
+
+@[simp]
+lemma signedTuplePullbackτ_apply
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) (v : signedTuplePullback S U a i) :
+    signedTuplePullbackτ S U a i v = ((v : signedTuplePullbackSet S U a i).1 :
+      U × signedTupleSpace S i).2 := by
+  let _ : CompactSpace (signedTuplePullbackSet S U a i) :=
+    isCompact_iff_compactSpace.mp (signedTuplePullbackSet_isClosed S U a i).isCompact
+  change (ConcreteCategory.hom (signedTuplePullbackτ S U a i)) v = _
+  rw [show ConcreteCategory.hom (signedTuplePullbackτ S U a i) =
+      (⟨fun v => ((v : signedTuplePullbackSet S U a i).1 :
+        U × signedTupleSpace S i).2, continuous_snd.comp continuous_subtype_val⟩ :
+          C(↑(signedTuplePullback S U a i).toTop, ↑(signedTupleSpace S i).toTop)) by
+    exact CompHausLike.hom_ofHom _ _]
+  rfl
+
+lemma signedTuplePullback_mem
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) (v : signedTuplePullback S U a i) :
+    (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a)
+        (signedTuplePullbackπ S U a i v) =
+      signedTupleMap S i (signedTuplePullbackτ S U a i v) := by
+  rw [signedTuplePullbackπ_apply, signedTuplePullbackτ_apply]
+  exact (v : signedTuplePullbackSet S U a i).2
+
+lemma signedTuplePullback_condition
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (i : signedTupleIndex N) :
+    (show C(↑(signedTuplePullback S U a i).toTop, ↑(topologicalFree S).toModuleCat) from
+      (signedTupleMap S i).comp (signedTuplePullbackτ S U a i).hom.hom) =
+    (show C(↑(signedTuplePullback S U a i).toTop, ↑(topologicalFree S).toModuleCat) from
+      (topologicalFreePresheaf S).map (signedTuplePullbackπ S U a i).op a) := by
+  apply ContinuousMap.ext
+  intro v
+  change signedTupleMap S i (signedTuplePullbackτ S U a i v) =
+    (show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a)
+      (signedTuplePullbackπ S U a i v)
+  exact (signedTuplePullback_mem S U a i v).symm
+
+lemma signedTuplePullback_jointly_surjective_of_bound
+    (S U : LightProfinite.{0}) {N : ℕ}
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩)
+    (hN : ∀ u : U,
+      LightProfinite.FreeImage.totalVariation
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a) u) ≤ (N : ℤ)) :
+    ∀ u : U, ∃ i : signedTupleIndex N,
+      ∃ v : signedTuplePullback S U a i,
+        signedTuplePullbackπ S U a i v = u := by
+  intro u
+  obtain ⟨i, x, hx⟩ := exists_signedTuple_of_totalVariation_le S
+    ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a) u) (hN u)
+  refine ⟨i, ⟨⟨(u, x), hx.symm⟩, ?_⟩⟩
+  rfl
+
+lemma freePresheafToTopologicalFreePresheaf_imageSieve_mem
+    (S U : LightProfinite.{0})
+    (a : (topologicalFreePresheaf S).obj ⟨U⟩) :
+    CategoryTheory.Presheaf.imageSieve
+      (freePresheafToTopologicalFreePresheaf S) a ∈
+        (coherentTopology LightProfinite) U := by
+  obtain ⟨N, hN⟩ := topologicalFree_totalVariation_bounded_of_continuous S U a
+  let V : signedTupleIndex N → LightProfinite.{0} := fun i => signedTuplePullback S U a i
+  let π : (i : signedTupleIndex N) → V i ⟶ U := fun i => signedTuplePullbackπ S U a i
+  refine presheaf_imageSieve_mem_of_finite_jointly_surjective
+    (freePresheafToTopologicalFreePresheaf S) a V π ?_ ?_
+  · exact signedTuplePullback_jointly_surjective_of_bound S U a hN
+  · intro i
+    refine ⟨freePresheaf_signedTupleSection S (V i) i (signedTuplePullbackτ S U a i), ?_⟩
+    rw [freePresheafToTopologicalFreePresheaf_signedTupleSection]
+    exact signedTuplePullback_condition S U a i
+
+instance freePresheafToTopologicalFreePresheaf_isLocallySurjective
+    (S : LightProfinite.{0}) :
+    CategoryTheory.Presheaf.IsLocallySurjective (coherentTopology LightProfinite)
+      (freePresheafToTopologicalFreePresheaf S) := by
+  refine ⟨?_⟩
+  intro U a
+  exact freePresheafToTopologicalFreePresheaf_imageSieve_mem S U a
+
 /-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
 lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
     (g : LocallyConstant T ℤ) :
