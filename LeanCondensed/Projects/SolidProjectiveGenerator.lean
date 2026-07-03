@@ -2023,6 +2023,288 @@ lemma freeTensorDescLin_point (X : LightProfinite.{0}) (B C : LightCondAb)
             rw [hfac]
             exact freeTensorPresheafPoint_desc X B C b hnat x
 
+/-- The presheaf-level composite used to test maps out of a free-left tensor.  The source
+`((free ℤ).obj X.toCondensed) ⊗ B` is pulled back to the sheafification of the pointwise
+presheaf tensor. -/
+noncomputable def freeTensorHomPresheafComposite (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C) :
+    (X.toCondensed.obj ⋙ ModuleCat.free ℤ) ⊗ B.obj ⟶ C.obj := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let g' : L.obj F ⊗ B ⟶ C := g
+  exact CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+    (((Functor.Monoidal.μIso L F G).inv ≫ (L.obj F ◁ cB) ≫ g').hom)
+
+/-- Evaluation of a map out of `ℤ[X] ⊗ B` on a presheaf generator
+`r • [f] ⊗ m`. -/
+noncomputable def freeTensorHomEval (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    (S : LightProfinite.{0}) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    C.obj.obj ⟨S⟩ :=
+  (freeTensorHomPresheafComposite X B C g).app ⟨S⟩ ((Finsupp.single f r) ⊗ₜ[ℤ] m)
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- Maps out of a free-left tensor are determined by their values on the elementary presheaf
+free generators. -/
+lemma freeTensorHom_ext (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g₁ g₂ : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    (h : ∀ (S : LightProfinite.{0}) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩),
+      freeTensorHomEval X B C g₁ S f r m = freeTensorHomEval X B C g₂ S f r m) :
+    g₁ = g₂ := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  haveI : IsIso cB := by
+    dsimp [cB, G, L]
+    exact isIso_sheafificationAdjunction_counit B
+  let e : L.obj (F ⊗ G) ⟶ L.obj F ⊗ B :=
+    (Functor.Monoidal.μIso L F G).inv ≫ (L.obj F ◁ cB)
+  haveI : Epi e := by
+    dsimp [e]
+    infer_instance
+  apply (cancel_epi e).1
+  apply Sheaf.hom_ext
+  change (e ≫ g₁).hom = (e ≫ g₂).hom
+  apply CategoryTheory.sheafify_hom_ext _ _ _ C.property
+  ext S z
+  change (freeTensorHomPresheafComposite X B C g₁).app S z =
+    (freeTensorHomPresheafComposite X B C g₂).app S z
+  induction z using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a m =>
+      induction a using Finsupp.induction_linear with
+      | zero => simp
+      | add a₁ a₂ ha₁ ha₂ =>
+          simpa [TensorProduct.add_tmul] using congrArg₂ HAdd.hAdd ha₁ ha₂
+      | single f r =>
+          simpa [freeTensorHomEval, freeTensorSectionHom] using h S.unop
+            (freeTensorSectionHom X S f) r m
+  | add z₁ z₂ hz₁ hz₂ =>
+      simpa [map_add] using congrArg₂ HAdd.hAdd hz₁ hz₂
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- The testing composite of a map produced by `freeTensorDescLin` is its defining presheaf map. -/
+lemma freeTensorHomPresheafComposite_desc (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m)) :
+    freeTensorHomPresheafComposite X B C (freeTensorDescLin X B C b hnat) =
+      freeTensorPresheafDescLin X B C b hnat := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let α : F ⊗ G ⟶ C.obj := freeTensorPresheafDescLin X B C b hnat
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let cC : L.obj C.obj ⟶ C :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+  have hfac := freeTensorDescLin_fac X B C b hnat
+  dsimp only at hfac
+  change (L.obj F ◁ cB) ≫ freeTensorDescLin X B C b hnat =
+    (Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC at hfac
+  dsimp [freeTensorHomPresheafComposite]
+  have hsheaf := freeTensorDescLin_sheafify_fac X B C b hnat
+  dsimp only at hsheaf
+  change CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+      ((L.map α ≫ cC).hom) = α at hsheaf
+  change CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+      (((Functor.Monoidal.μIso L F G).inv ≫
+        ((L.obj F ◁ cB) ≫ freeTensorDescLin X B C b hnat)).hom) = α
+  rw [hfac]
+  have hμ : (Functor.Monoidal.μIso L F G).inv ≫
+      ((Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC) = L.map α ≫ cC := by
+    simp [Category.assoc]
+  rw [hμ]
+  exact hsheaf
+
+/-- Evaluation of `freeTensorDescLin` on an elementary generator. -/
+lemma freeTensorHomEval_desc (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m))
+    (S : LightProfinite.{0}) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B C (freeTensorDescLin X B C b hnat) S f r m = r • b S f m := by
+  rw [freeTensorHomEval, freeTensorHomPresheafComposite_desc]
+  letI hC : @SMulCommClass ℤ ℤ (↑(C.obj.obj ⟨S⟩))
+      (C.obj.obj ⟨S⟩).isModule.toDistribMulAction.toSMul
+      (C.obj.obj ⟨S⟩).isModule.toDistribMulAction.toSMul :=
+    intModuleCatModuleSMulComm (C.obj.obj ⟨S⟩)
+  letI : Module ℤ (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩) :=
+    @LinearMap.module ℤ ℤ ℤ (B.obj.obj ⟨S⟩) (C.obj.obj ⟨S⟩) _ _ _ _ _ _
+      (RingHom.id ℤ) _ _ hC
+  change (TensorProduct.lift
+      ((Finsupp.lift (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩) ℤ
+        (X.toCondensed.obj.obj ⟨S⟩)) fun f' => b S (freeTensorSectionHom X ⟨S⟩ f')))
+      ((Finsupp.single f r) ⊗ₜ[ℤ] m) = r • b S f m
+  rw [TensorProduct.lift.tmul]
+  rw [Finsupp.lift_apply]
+  rw [Finsupp.sum_single_index]
+  · have hf : freeTensorSectionHom X (Opposite.op S) f = f := rfl
+    rw [hf]
+    rw [LinearMap.smul_apply]
+    simpa [RingHom.id_apply] using
+      (Int.cast_smul_eq_zsmul (R := ℤ) r ((b S f) m))
+  · apply LinearMap.ext
+    intro y
+    rw [LinearMap.smul_apply]
+    let mod : Module ℤ (C.obj.obj ⟨S⟩) := (C.obj.obj ⟨S⟩).isModule
+    change mod.toDistribMulAction.smul 0 ((b S f) y) = 0
+    exact mod.zero_smul ((b S f) y)
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- Evaluation at a constant point of the free variable is the corresponding point slice. -/
+lemma freeTensorHomEval_point_one (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    (x : LightProfinite.of PUnit.{1} ⟶ X)
+    (S : LightProfinite.{0}) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B C g S (toPointMap S ≫ x) 1 m =
+      (((λ_ B).inv ≫
+        (freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)) ▷ B ≫
+          g).hom.app ⟨S⟩ m) := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let p : 𝟙_ LightCondAb ⟶ L.obj F :=
+    freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)
+  have hmove :
+      (λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫ (L.obj F ◁ cB) =
+        cB ≫ (λ_ B).inv ≫ p ▷ B := by
+    calc
+      (λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫ (L.obj F ◁ cB)
+          = (λ_ (L.obj G)).inv ≫ (𝟙_ LightCondAb ◁ cB) ≫ p ▷ B := by
+              rw [MonoidalCategory.whisker_exchange p cB]
+      _ = cB ≫ (λ_ B).inv ≫ p ▷ B := by
+              rw [← MonoidalCategory.leftUnitor_inv_naturality_assoc cB]
+  have hcompat := freeTensorPresheafPoint_sheafify_comp X B x
+  dsimp only at hcompat
+  change CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+      (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+        (Functor.Monoidal.μIso L F G).hom).hom) =
+    freeTensorPresheafPoint X B x ≫
+      CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) at hcompat
+  have hpresheaf :
+      freeTensorPresheafPoint X B x ≫ freeTensorHomPresheafComposite X B C g =
+        ((λ_ B).inv ≫ p ▷ B ≫ g).hom := by
+    dsimp [freeTensorHomPresheafComposite]
+    rw [← Category.assoc]
+    rw [← hcompat]
+    simp only [Category.assoc]
+    have hμ : ((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+        (Functor.Monoidal.μIso L F G).hom ≫
+        (Functor.Monoidal.μIso L F G).inv ≫ (L.obj F ◁ cB) ≫ g) =
+        ((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫ (L.obj F ◁ cB) ≫ g) := by
+      simp [Category.assoc]
+    change CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+        (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+          (Functor.Monoidal.μIso L F G).hom ≫
+          (Functor.Monoidal.μIso L F G).inv ≫ (L.obj F ◁ cB) ≫ g).hom) =
+      ((λ_ B).inv ≫ p ▷ B ≫ g).hom
+    rw [hμ]
+    have hmove_g :
+        (λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫ (L.obj F ◁ cB) ≫ g =
+          cB ≫ (λ_ B).inv ≫ p ▷ B ≫ g := by
+      simpa [Category.assoc] using congrArg (fun q => q ≫ g) hmove
+    calc
+      CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+          (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫ (L.obj F ◁ cB) ≫ g).hom)
+          = CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+              ((cB ≫ (λ_ B).inv ≫ p ▷ B ≫ g).hom) := by
+              exact congrArg (fun q => CategoryTheory.toSheafify
+                (coherentTopology LightProfinite) G ≫ q.hom) hmove_g
+      _ = ((λ_ B).inv ≫ p ▷ B ≫ g).hom := by
+              change CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫ cB.hom ≫
+                  (((λ_ B).inv ≫ p ▷ B ≫ g).hom) =
+                ((λ_ B).inv ≫ p ▷ B ≫ g).hom
+              dsimp [cB]
+              rw [CategoryTheory.sheafificationAdjunction_counit_app_val]
+              rw [← Category.assoc]
+              rw [CategoryTheory.toSheafify_sheafifyLift]
+              rw [Category.id_comp]
+  dsimp [freeTensorHomEval]
+  have happ := congrArg (fun η => η.app ⟨S⟩ m) hpresheaf
+  let fS : X.toCondensed.obj.obj ⟨S⟩ := toPointMap S ≫ x
+  change (freeTensorHomPresheafComposite X B C g).app ⟨S⟩
+      (((TensorProduct.mk ℤ ((X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj ⟨S⟩)
+        (B.obj.obj ⟨S⟩)) (Finsupp.single fS (1 : ℤ))) m) = _
+  exact happ
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- The testing evaluation on unit generators is natural in the test profinite set. -/
+lemma freeTensorHomEval_naturality_one (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    {S T : LightProfinite.{0}} (u : T ⟶ S) (f : S ⟶ X)
+    (m : B.obj.obj ⟨S⟩) :
+    C.obj.map u.op (freeTensorHomEval X B C g S f 1 m) =
+      freeTensorHomEval X B C g T (u ≫ f) 1 (B.obj.map u.op m) := by
+  let η := freeTensorHomPresheafComposite X B C g
+  let fS : X.toCondensed.obj.obj ⟨S⟩ := f
+  let fT : X.toCondensed.obj.obj ⟨T⟩ := u ≫ f
+  have hn := ConcreteCategory.congr_hom (η.naturality u.op)
+      ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)
+  dsimp [freeTensorHomEval]
+  calc
+    C.obj.map u.op (η.app ⟨S⟩ ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m))
+        = η.app ⟨T⟩
+            ((((ModuleCat.free ℤ).map (X.toCondensed.obj.map u.op)) ⊗ₘ B.obj.map u.op)
+              ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)) := by
+            exact hn.symm
+    _ = η.app ⟨T⟩ ((Finsupp.single fT (1 : ℤ)) ⊗ₜ[ℤ] (B.obj.map u.op m)) := by
+            change η.app ⟨T⟩
+              (((Finsupp.lmapDomain ℤ ℤ (X.toCondensed.obj.map u.op))
+                  (Finsupp.single fS (1 : ℤ))) ⊗ₜ[ℤ] (B.obj.map u.op m)) =
+                η.app ⟨T⟩ ((Finsupp.single fT (1 : ℤ)) ⊗ₜ[ℤ] (B.obj.map u.op m))
+            rw [Finsupp.lmapDomain_apply]
+            rw [Finsupp.mapDomain_single]
+            rfl
+
+/-- A coefficient on the free generator acts by the same integer on the testing evaluation. -/
+lemma freeTensorHomEval_zsmul (X : LightProfinite.{0}) (B C : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    (S : LightProfinite.{0}) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B C g S f r m =
+      r • freeTensorHomEval X B C g S f 1 m := by
+  let η := freeTensorHomPresheafComposite X B C g
+  let fS : X.toCondensed.obj.obj ⟨S⟩ := f
+  dsimp [freeTensorHomEval]
+  change η.app ⟨S⟩ ((Finsupp.single fS r) ⊗ₜ[ℤ] m) =
+    r • η.app ⟨S⟩ ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)
+  have hsingle :
+      (Finsupp.single fS r : (X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj ⟨S⟩) =
+      r • (Finsupp.single fS (1 : ℤ) :
+        (X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj ⟨S⟩) := by
+    ext y
+    by_cases hy : y = fS <;> simp [hy]
+  rw [hsingle]
+  change η.app ⟨S⟩
+      (((r • (Finsupp.single fS (1 : ℤ) :
+        (X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj ⟨S⟩)) ⊗ₜ[ℤ] m)) =
+    r • η.app ⟨S⟩ ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)
+  rw [← TensorProduct.smul_tmul']
+  change (ModuleCat.Hom.hom (η.app ⟨S⟩))
+      (r • ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)) =
+    r • η.app ⟨S⟩ ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)
+  rw [LinearMap.map_smul]
+  simpa [RingHom.id_apply] using
+    (Int.cast_smul_eq_zsmul (R := ℤ) r
+      (η.app ⟨S⟩ ((Finsupp.single fS (1 : ℤ)) ⊗ₜ[ℤ] m)))
+
 /-- The `Zdisc`-valued map out of `ℤ[T]` induced by a locally constant integer-valued
 function on `T`. -/
 noncomputable def zdiscMapOfLocallyConstant (T : LightProfinite)
@@ -2070,6 +2352,22 @@ lemma zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval (T : LightProfinit
     dsimp [zdiscSectionsEquiv]
     exact LightCondAb.topologicalFreeEvalDiscrete_diracSection T f
   rw [hz]
+
+lemma zdiscSectionsEquiv_topologicalFreeEvalDiscrete_apply (T S : LightProfinite)
+    (f : LocallyConstant T ℤ)
+    (x : (LightCondAb.topologicalFreeCondensed T).obj.obj ⟨S⟩) (s : S) :
+    zdiscSectionsEquiv S ((LightCondAb.topologicalFreeEvalDiscrete T f).hom.app ⟨S⟩ x) s =
+      (LightCondAb.topologicalFreeEval T f).hom
+        ((show C(↑S.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from x) s) := by
+  rw [show LightCondAb.topologicalFreeEvalDiscrete T f =
+    LightCondAb.topologicalFreeEvalCondensed T f ≫
+      LightCondAb.discreteIntTopModuleCondensedIso.hom by rfl]
+  change (show LocallyConstant S ℤ from
+    ((LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).inv.app (ModuleCat.of ℤ ℤ)).hom.app ⟨S⟩
+      (LightCondAb.discreteIntTopModuleCondensedIso.hom.hom.app ⟨S⟩
+        ((LightCondAb.topologicalFreeEvalCondensed T f).hom.app ⟨S⟩ x))) s = _
+  rw [LightCondAb.discreteIntTopModuleCondensedIso_sections]
+  rfl
 
 /-- Reconstruct a `Zdisc`-valued map from the locally constant function it induces. -/
 lemma zdiscMapOfLocallyConstant_of_freeHomEquivPoints (T : LightProfinite)
@@ -2664,6 +2962,40 @@ lemma basisMap_apply_infty (i : ℕ) :
   rw [Equiv.apply_symm_apply]
   rfl
 
+/-- The `i`th coordinate map from bounded sequences to `Zdisc`. -/
+noncomputable def boundedCoord (i : ℕ) : boundedIntSequences ⟶ Zdisc :=
+  boundedToProduct ≫ productIntLightIsoProductZdisc.hom ≫ Pi.π (fun _ : ℕ => Zdisc) i
+
+@[simp]
+lemma boundedCoord_apply (S : LightProfinite) (x : boundedIntSequences.obj.obj ⟨S⟩)
+    (i : ℕ) :
+    zdiscSectionsEquiv S ((boundedCoord i).hom.app ⟨S⟩ x) =
+      (boundedIntSequencesSectionsEquiv S x).val i := by
+  dsimp [boundedCoord]
+  change zdiscSectionsEquiv S
+      (((productIntLightIsoProductZdisc.hom ≫ Pi.π (fun _ : ℕ => Zdisc) i).hom.app ⟨S⟩)
+        ((boundedToProduct.hom.app ⟨S⟩) x)) =
+    (boundedIntSequencesSectionsEquiv S x).val i
+  rw [← productIntSectionsEquiv_apply]
+  rw [← productIntLocallyConstantSectionsEquiv_apply]
+  rw [boundedToProduct_apply_coord]
+
+lemma P_proj_comp_basisMap_boundedCoord (i : ℕ) :
+    P_proj ℤ ≫ basisMap ≫ boundedCoord i =
+      zdiscMapOfLocallyConstant (ℕ∪{∞} : LightProfinite) (boundedStandardBasisCoord i) := by
+  rw [← Category.assoc]
+  rw [P_proj_comp_basisMap]
+  apply (freeHomEquivPoints (ℕ∪{∞}) Zdisc).injective
+  apply (zdiscSectionsEquiv (ℕ∪{∞} : LightProfinite)).injective
+  rw [freeHomEquivPoints_comp]
+  dsimp [basisMapNumerator]
+  rw [Equiv.apply_symm_apply]
+  rw [boundedCoord_apply]
+  rw [freeHomEquivPoints_zdiscMapOfLocallyConstant]
+  rw [LinearEquiv.apply_symm_apply]
+  rw [Equiv.apply_symm_apply]
+  rfl
+
 /-- The `∞` slice of a numerator map `ℤ[ℕ∪∞] ⊗ M ⟶ N`. -/
 noncomputable def inftySlice (M N : LightCondAb)
     (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) : M ⟶ N :=
@@ -2685,6 +3017,97 @@ lemma inftySlice_oneMinusShift' (M N : LightCondAb)
   rw [← comp_whiskerRight_assoc]
   rw [freeInftyBasis_oneMinusShift']
   simp
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- Numerator maps to bounded sequences are determined by their finite slices and their `∞`
+slice. -/
+lemma boundedTarget_numerator_ext_of_slices
+    (g₁ g₂ : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ boundedIntSequences ⟶
+      boundedIntSequences)
+    (hfinite : ∀ n : ℕ,
+      numeratorSlice boundedIntSequences boundedIntSequences n g₁ =
+        numeratorSlice boundedIntSequences boundedIntSequences n g₂)
+    (hinfty : inftySlice boundedIntSequences boundedIntSequences g₁ =
+      inftySlice boundedIntSequences boundedIntSequences g₂) :
+    g₁ = g₂ := by
+  apply freeTensorHom_ext (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+  intro S f r m
+  conv_lhs => rw [freeTensorHomEval_zsmul]
+  conv_rhs => rw [freeTensorHomEval_zsmul]
+  congr 1
+  apply BoundedIntSeqSection.ext_apply
+  intro k s
+  let pt : LightProfinite := LightProfinite.of PUnit.{1}
+  let ps : pt ⟶ S := pointMap S s
+  let mpt : boundedIntSequences.obj.obj ⟨pt⟩ := boundedIntSequences.obj.map ps.op m
+  have hpt :
+      freeTensorHomEval (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+          g₁ pt (ps ≫ f) 1 mpt =
+        freeTensorHomEval (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+          g₂ pt (ps ≫ f) 1 mpt := by
+    cases hfs : f s using OnePoint.rec with
+    | infty =>
+        have hpoint : ps ≫ f = ι := by
+          ext u
+          change f s = (∞ : ℕ∪{∞})
+          exact hfs
+        subst mpt
+        rw [hpoint]
+        have hto : toPointMap pt ≫ ι = ι := by ext u; rfl
+        rw [← hto]
+        have hs := congrArg (fun q => q.hom.app ⟨pt⟩ (boundedIntSequences.obj.map ps.op m)) hinfty
+        rw [freeTensorHomEval_point_one, freeTensorHomEval_point_one]
+        simpa [inftySlice, freeInftyBasis, P_map, pt] using hs
+    | coe n =>
+        have hpoint : ps ≫ f = natPoint n := by
+          ext u
+          change f s = (n : ℕ∪{∞})
+          exact hfs
+        subst mpt
+        rw [hpoint]
+        have hto : toPointMap pt ≫ natPoint n = natPoint n := by ext u; rfl
+        rw [← hto]
+        have hs := congrArg (fun q => q.hom.app ⟨pt⟩ (boundedIntSequences.obj.map ps.op m))
+          (hfinite n)
+        rw [freeTensorHomEval_point_one, freeTensorHomEval_point_one]
+        simpa [numeratorSlice, freeNatBasis, pt] using hs
+  have hnat₁ := freeTensorHomEval_naturality_one (ℕ∪{∞} : LightProfinite)
+    boundedIntSequences boundedIntSequences g₁ ps f m
+  have hnat₂ := freeTensorHomEval_naturality_one (ℕ∪{∞} : LightProfinite)
+    boundedIntSequences boundedIntSequences g₂ ps f m
+  have hmap : boundedIntSequences.obj.map ps.op
+        (freeTensorHomEval (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+          g₁ S f 1 m) =
+      boundedIntSequences.obj.map ps.op
+        (freeTensorHomEval (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+          g₂ S f 1 m) := by
+    rw [hnat₁, hnat₂]
+    exact hpt
+  have hcoord := congrArg (fun y : boundedIntSequences.obj.obj ⟨pt⟩ =>
+      (boundedIntSequencesSectionsEquiv pt y).val k PUnit.unit) hmap
+  change (boundedIntSeqSectionComap ps
+      (show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₁ S f 1 m)).val k
+        PUnit.unit =
+    (boundedIntSeqSectionComap ps
+      (show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₂ S f 1 m)).val k
+        PUnit.unit at hcoord
+  change ((show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₁ S f 1 m).val k)
+        (ps PUnit.unit) =
+    ((show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₂ S f 1 m).val k)
+        (ps PUnit.unit) at hcoord
+  have hps_apply : ps PUnit.unit = s := rfl
+  rw [hps_apply] at hcoord
+  change ((show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₁ S f 1 m).val k) s =
+    ((show BoundedIntSeqSection S from freeTensorHomEval
+        (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences g₂ S f 1 m).val k) s
+  exact hcoord
 
 /-- If the `∞` slice of a numerator is zero, then it kills the denominator defining `P ℤ`. -/
 lemma numerator_kills_of_inftySlice_zero (M N : LightCondAb)
@@ -3154,6 +3577,16 @@ def topologicalFreeDiracDiff (T : LightProfinite) (a b : T) : LightCondAb.topolo
   (show ↑(LightCondAb.topologicalFree T).toModuleCat from
     Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ))
 
+lemma topologicalFreeEval_diracDiff (T : LightProfinite) (f : LocallyConstant T ℤ) (a b : T) :
+    (LightCondAb.topologicalFreeEval T f).hom (topologicalFreeDiracDiff T a b) = f a - f b := by
+  let μ₁ : LightCondAb.topologicalFree T := Finsupp.single a (1 : ℤ)
+  let μ₂ : LightCondAb.topologicalFree T := Finsupp.single b (1 : ℤ)
+  change (LightCondAb.topologicalFreeEval T f).hom (μ₁ - μ₂) = f a - f b
+  rw [map_sub]
+  dsimp [μ₁, μ₂]
+  rw [LightCondAb.topologicalFreeEval_single]
+  rw [LightCondAb.topologicalFreeEval_single]
+
 lemma topologicalFreeMap_diracDiff {T U : LightProfinite} (q : T ⟶ U) (a b : T) :
     (LightCondAb.topologicalFreeMap q).hom (topologicalFreeDiracDiff T a b) =
       topologicalFreeDiracDiff U (q a) (q b) := by
@@ -3531,6 +3964,105 @@ lemma boundedDifferenceMap_slice (n : ℕ) :
   dsimp [boundedDifferenceMap]
   rw [pTensorDesc_slice]
   exact boundedDifferenceNumerator_slice n
+
+lemma boundedDifferenceFamilyMap_natPoint_comp_basisMap (n : ℕ) :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
+      boundedDifferenceFamilyLinear (by
+        intro S T g f m
+        exact boundedDifferenceFamilyLinear_naturality g f m) (natPoint n) ≫ basisMap =
+      boundedTailProjection n - boundedTailProjection (n + 1) := by
+  ext S x
+  apply BoundedIntSeqSection.ext_apply
+  intro k s
+  let fconst : S.unop ⟶ (ℕ∪{∞} : LightProfinite) := toPointMap S.unop ≫ natPoint n
+  let topSec : (LightCondAb.topologicalFreeCondensed (ℕ∪{∞} : LightProfinite)).obj.obj S :=
+    boundedDifferenceTopologicalSection fconst (show BoundedIntSeqSection S.unop from x)
+  let freeSec : ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.obj S :=
+    (LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).symm.hom.hom.app S topSec
+  have hcoord := boundedCoord_apply S.unop
+    ((basisMap.hom.app S) (boundedDifferenceFamilyLinear S.unop fconst x)) k
+  change zdiscSectionsEquiv S.unop
+      (((boundedCoord k).hom.app S)
+        ((basisMap.hom.app S) (boundedDifferenceFamilyLinear S.unop fconst x))) =
+    (boundedIntSequencesSectionsEquiv S.unop
+      ((basisMap.hom.app S) (boundedDifferenceFamilyLinear S.unop fconst x))).val k at hcoord
+  have hleft : zdiscSectionsEquiv S.unop
+      (((boundedCoord k).hom.app S)
+        ((basisMap.hom.app S) (boundedDifferenceFamilyLinear S.unop fconst x))) s =
+      (boundedStandardBasisCoord k (n : ℕ∪{∞})) *
+        (show BoundedIntSeqSection S.unop from x).val n s := by
+    dsimp [boundedDifferenceFamilyLinear, boundedDifferencePSection, fconst, freeSec, topSec]
+    change zdiscSectionsEquiv S.unop
+        (((P_proj ℤ ≫ basisMap ≫ boundedCoord k).hom.app S) freeSec) s = _
+    rw [P_proj_comp_basisMap_boundedCoord]
+    rw [zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval]
+    change zdiscSectionsEquiv S.unop
+        ((LightCondAb.topologicalFreeEvalDiscrete (ℕ∪{∞} : LightProfinite)
+            (boundedStandardBasisCoord k)).hom.app S
+          ((LightCondAb.freeToTopologicalFree (ℕ∪{∞} : LightProfinite)).hom.app S freeSec)) s = _
+    rw [LightCondAb.freeToTopologicalFree_app_section_of_iso_symm]
+    rw [zdiscSectionsEquiv_topologicalFreeEvalDiscrete_apply]
+    dsimp [topSec, boundedDifferenceTopologicalSection]
+    change (LightCondAb.topologicalFreeEval (ℕ∪{∞} : LightProfinite)
+        (boundedStandardBasisCoord k)).hom
+        (boundedDifferenceMeasure fconst (show BoundedIntSeqSection S.unop from x) s) = _
+    dsimp [boundedDifferenceMeasure, boundedDifferenceCoeff]
+    change (LightCondAb.topologicalFreeEval (ℕ∪{∞} : LightProfinite)
+        (boundedStandardBasisCoord k)).hom
+        (((show BoundedIntSeqSection S.unop from x).val n s) •
+          topologicalFreeDiracDiff (ℕ∪{∞} : LightProfinite) (n : ℕ∪{∞}) (∞ : ℕ∪{∞})) = _
+    rw [map_zsmul]
+    rw [topologicalFreeEval_diracDiff]
+    rw [boundedStandardBasisCoord_infty]
+    ring
+  have hcoord_point := congrArg (fun lc : LocallyConstant S.unop ℤ => lc s) hcoord
+  rw [hleft] at hcoord_point
+  change (((boundedIntSequencesSectionsEquiv S.unop
+      ((basisMap.hom.app S) (boundedDifferenceFamilyLinear S.unop fconst x))).val k) s) =
+    (((boundedIntSequencesSectionsEquiv S.unop
+      (((boundedTailProjection n - boundedTailProjection (n + 1)).hom.app S) x)).val k) s)
+  rw [← hcoord_point]
+  rw [boundedTailProjection_succ_diff_apply_coord]
+  rw [boundedStandardBasisCoord_finite]
+  by_cases hkn : n = k
+  · subst k
+    simp
+    change (x.val n) s = (x.val n) s
+    rfl
+  · have hkn' : k ≠ n := by exact fun hk => hkn hk.symm
+    simp [hkn, hkn']
+
+/-- The numerator-level bounded shift-retract square. -/
+lemma boundedShiftRetract_numerator_comm :
+    (oneMinusShift' ℤ ▷ boundedIntSequences) ≫ boundedTailNumerator =
+      boundedDifferenceNumerator ≫ basisMap := by
+  apply boundedTarget_numerator_ext_of_slices
+  · intro n
+    rw [numeratorSlice_oneMinusShift']
+    rw [boundedTailNumerator_slice]
+    rw [boundedTailNumerator_slice]
+    rw [numeratorSlice_comp]
+    rw [boundedDifferenceNumerator_slice]
+    rw [boundedDifferenceFamilyMap_natPoint_comp_basisMap]
+  · rw [inftySlice_oneMinusShift']
+    rw [inftySlice_comp]
+    rw [boundedDifferenceNumerator_infty]
+    simp
+
+/-- The bounded shift-retract square for Lemma 3.3.3. -/
+lemma boundedShiftRetract_comm :
+    ((oneMinusShift ℤ) ▷ boundedIntSequences) ≫ boundedTailMap =
+      boundedDifferenceMap ≫ basisMap := by
+  haveI : Epi (P_proj ℤ ▷ boundedIntSequences) := epi_P_proj_tensor boundedIntSequences
+  apply (cancel_epi (P_proj ℤ ▷ boundedIntSequences)).1
+  dsimp [boundedTailMap, boundedDifferenceMap]
+  rw [← Category.assoc]
+  rw [P_proj_tensor_oneMinusShift]
+  rw [Category.assoc]
+  rw [pTensorDesc_comp_proj]
+  rw [← Category.assoc]
+  rw [pTensorDesc_comp_proj]
+  exact boundedShiftRetract_numerator_comm
 
 /-- The clopen indicator as an integer-valued locally constant function. -/
 noncomputable def clopenIndicatorInt {X : Type*} [TopologicalSpace X]
