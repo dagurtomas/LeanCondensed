@@ -364,6 +364,97 @@ lemma freeHomEquivPoints_zero (T : LightProfinite) (A : LightCondAb) :
     (0 : (free ℤ).obj T.toCondensed ⟶ A)
   simpa using h
 
+/-- The point-value description of maps out of a free object preserves subtraction. -/
+lemma freeHomEquivPoints_sub (T : LightProfinite) (A : LightCondAb)
+    (f g : (free ℤ).obj T.toCondensed ⟶ A) :
+    freeHomEquivPoints T A (f - g) =
+      freeHomEquivPoints T A f - freeHomEquivPoints T A g := by
+  change (show A.obj.obj ⟨T⟩ from (coherentTopology LightProfinite).yonedaEquiv
+      (((freeForgetAdjunction ℤ).homEquiv T.toCondensed A) (f - g))) =
+    (show A.obj.obj ⟨T⟩ from (coherentTopology LightProfinite).yonedaEquiv
+      (((freeForgetAdjunction ℤ).homEquiv T.toCondensed A) f)) -
+    (show A.obj.obj ⟨T⟩ from (coherentTopology LightProfinite).yonedaEquiv
+      (((freeForgetAdjunction ℤ).homEquiv T.toCondensed A) g))
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [GrothendieckTopology.yonedaEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  rw [Adjunction.homEquiv_apply]
+  let u := (((freeForgetAdjunction ℤ).unit.app T.toCondensed).hom.app ⟨T⟩ (𝟙 T))
+  change (show A.obj.obj ⟨T⟩ from ((forget ℤ).map (f - g)).hom.app ⟨T⟩ u) =
+    (show A.obj.obj ⟨T⟩ from ((forget ℤ).map f).hom.app ⟨T⟩ u) -
+    (show A.obj.obj ⟨T⟩ from ((forget ℤ).map g).hom.app ⟨T⟩ u)
+  change (f - g).hom.app ⟨T⟩ u = f.hom.app ⟨T⟩ u - g.hom.app ⟨T⟩ u
+  rfl
+
+/-- The free/topological-free comparison sends the free map induced by a continuous map to the
+corresponding Dirac family. -/
+lemma freeMap_topologicalFree_apply {S T : LightProfinite} (f : S ⟶ T) (s : S) :
+    (show C(↑S.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩
+        (freeHomEquivPoints S ((free ℤ).obj T.toCondensed)
+          ((free ℤ).map (lightProfiniteToLightCondSet.map f)))) s =
+      Finsupp.single (f s) (1 : ℤ) := by
+  have hcomp := (freeHomEquivPoints_comp S
+    ((free ℤ).map (lightProfiniteToLightCondSet.map f))
+    (LightCondAb.freeToTopologicalFree T)).symm
+  have hsec : (LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩
+        (freeHomEquivPoints S ((free ℤ).obj T.toCondensed)
+          ((free ℤ).map (lightProfiniteToLightCondSet.map f))) =
+      freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed T)
+        (((free ℤ).map (lightProfiniteToLightCondSet.map f)) ≫
+          LightCondAb.freeToTopologicalFree T) := by
+    simpa using hcomp
+  rw [hsec]
+  change (show C(↑S.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed T)
+        (((free ℤ).map (lightProfiniteToLightCondSet.map f)) ≫
+          LightCondAb.freeToTopologicalFree T)) s = _
+  rw [LightCondAb.freeToTopologicalFree_naturality]
+  have hcomp2 := (freeHomEquivPoints_comp S (LightCondAb.freeToTopologicalFree S)
+    (LightCondAb.topologicalFreeCondensedMap f)).symm
+  have hsec2 : freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed T)
+      (LightCondAb.freeToTopologicalFree S ≫ LightCondAb.topologicalFreeCondensedMap f) =
+      (LightCondAb.topologicalFreeCondensedMap f).hom.app ⟨S⟩
+        (freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed S)
+          (LightCondAb.freeToTopologicalFree S)) := by
+    simpa using hcomp2.symm
+  rw [hsec2]
+  have hfree : freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed S)
+      (LightCondAb.freeToTopologicalFree S) =
+      (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection S) := by
+    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints]
+    rfl
+  rw [hfree]
+  change (LightCondAb.topologicalFreeMap f).hom
+      ((show C(↑S.toTop, ↑(LightCondAb.topologicalFree S).toModuleCat) from
+        (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection S)) s) = _
+  rw [LightCondAb.topologicalFreeDiracSection_yoneda_apply]
+  rw [LightCondAb.topologicalFreeMap_single]
+
+/-- The identity endomorphism corresponds to the topological Dirac family. -/
+lemma freeToTopologicalFree_id_apply (T : LightProfinite) (t : T) :
+    (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩
+        (freeHomEquivPoints T ((free ℤ).obj T.toCondensed) (𝟙 _))) t =
+      Finsupp.single t (1 : ℤ) := by
+  have hcomp := (freeHomEquivPoints_comp T (𝟙 ((free ℤ).obj T.toCondensed))
+    (LightCondAb.freeToTopologicalFree T)).symm
+  have hsec : (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩
+        (freeHomEquivPoints T ((free ℤ).obj T.toCondensed) (𝟙 _)) =
+      freeHomEquivPoints T (LightCondAb.topologicalFreeCondensed T)
+        (LightCondAb.freeToTopologicalFree T) := by
+    simpa using hcomp
+  rw [hsec]
+  have hfree : freeHomEquivPoints T (LightCondAb.topologicalFreeCondensed T)
+      (LightCondAb.freeToTopologicalFree T) =
+      (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection T) := by
+    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints]
+    rfl
+  rw [hfree]
+  exact LightCondAb.topologicalFreeDiracSection_yoneda_apply T t
+
 /-- The free light condensed abelian group on the point is the tensor unit. -/
 noncomputable def freePointIsoUnit :
     (LightCondensed.free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ≅ 𝟙_ LightCondAb :=
@@ -660,20 +751,6 @@ lemma zdisc_hom_factors_freeProj (T : LightProfinite)
   rw [hg]
   simp
 
-/-- If a sequence of endomorphisms is eventually killed by every finite quotient, then every
-integer-valued evaluation is eventually zero. -/
-lemma eventually_comp_zdisc_zero_of_eventually_freeProj_zero
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
-    ∀ᶠ n : ℕ in Filter.atTop, u n ≫ φ = 0 := by
-  obtain ⟨k, ψ, hφ⟩ := zdisc_hom_factors_freeProj T φ
-  filter_upwards [hu k] with n hn
-  rw [← hφ]
-  rw [← Category.assoc, hn]
-  simp
-
 /-- Maps from a free object to the discrete integers are determined by their values on ordinary
 points. -/
 lemma zdisc_hom_ext_of_points (T : LightProfinite)
@@ -803,155 +880,101 @@ lemma ninf_tail_open (N : ℕ) :
   have hA : IsOpen A := (OnePoint.isOpen_iff_of_mem' hinfty).2 ⟨hcompact, hopenpre⟩
   simpa [A] using hA
 
-/-- A sequence of locally constant integer-valued functions that is eventually zero extends by zero
-across `∞`. -/
-lemma ninfLocallyConstant_fun_isLocallyConstant
-    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
-    (N : ℕ) (hN : ∀ n : ℕ, N ≤ n → f n = 0) :
-    IsLocallyConstant (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
+/-- A sequence of continuous maps on `T` that is eventually the zero map extends continuously over
+`(ℕ∪∞) × T` by the zero value at `∞`. -/
+lemma continuous_ninfTensor_of_eventually_eq_zero
+    {Y : Type*} [TopologicalSpace Y] [Zero Y]
+    (T : LightProfinite) (f : ℕ → C(↑T.toTop, Y))
+    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
+    Continuous (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
       match x.1 with
-      | ∞ => (0 : ℤ)
+      | ∞ => (0 : Y)
       | OnePoint.some n => f n x.2) := by
-  rw [IsLocallyConstant.iff_exists_open]
-  rintro ⟨a, t⟩
+  rw [continuous_iff_continuousAt]
+  intro x
+  rcases x with ⟨a, t⟩
   cases a using OnePoint.rec with
   | infty =>
-      let A : Set (ℕ∪{∞}) := {a | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n}
-      refine ⟨Set.prod A Set.univ, ?_, ?_, ?_⟩
-      · exact (ninf_tail_open N).prod isOpen_univ
-      · exact ⟨by simp [A], trivial⟩
-      · rintro ⟨a', t'⟩ h
-        rcases h with ⟨ha', _⟩
-        rcases ha' with rfl | ⟨n, hn_eq, hn_le⟩
-        · rfl
+      obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 hf
+      let A : Set (ℕ∪{∞}) :=
+        {a | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n}
+      have hmem : ((∞ : ℕ∪{∞}), t) ∈ Set.prod A Set.univ := by
+        exact ⟨by simp [A], trivial⟩
+      have hAopen : IsOpen A := by simpa [A] using ninf_tail_open N
+      have hopen : IsOpen (Set.prod A (Set.univ : Set T)) := hAopen.prod isOpen_univ
+      have h_event : (fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
+          match x.1 with
+          | ∞ => (0 : Y)
+          | OnePoint.some n => f n x.2) =ᶠ[nhds ((∞ : ℕ∪{∞}), t)] fun _ => (0 : Y) := by
+        filter_upwards [hopen.mem_nhds hmem] with y hy
+        rcases y with ⟨a', t'⟩
+        rcases hy with ⟨ha', _⟩
+        rcases ha' with h_inf | ⟨n, hn_eq, hn_le⟩
+        · cases h_inf
+          rfl
         · cases hn_eq
           change f n t' = 0
           rw [hN n hn_le]
           rfl
+      exact continuousAt_const.congr_of_eventuallyEq h_event
   | coe n =>
-      obtain ⟨U, hUopen, htU, hUconst⟩ := (f n).isLocallyConstant.exists_open t
-      refine ⟨Set.prod ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) U, ?_, ?_, ?_⟩
-      · exact (finite_nat_singleton_open n).prod hUopen
-      · exact ⟨rfl, htU⟩
-      · rintro ⟨a', t'⟩ h
-        rcases h with ⟨ha', ht'⟩
-        have haeq : a' = (n : ℕ∪{∞}) := by simpa using ha'
-        cases haeq
-        change f n t' = f n t
-        exact hUconst t' ht'
+      have hmem : ((n : ℕ∪{∞}), t) ∈
+          Set.prod ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) (Set.univ : Set T) := by
+        exact ⟨rfl, trivial⟩
+      have hopen : IsOpen (Set.prod ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) (Set.univ : Set T)) := by
+        exact (finite_nat_singleton_open n).prod isOpen_univ
+      have h_event : (fun y : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
+          match y.1 with
+          | ∞ => (0 : Y)
+          | OnePoint.some m => f m y.2) =ᶠ[nhds ((n : ℕ∪{∞}), t)] fun y => f n y.2 := by
+        filter_upwards [hopen.mem_nhds hmem] with y hy
+        rcases y with ⟨a', t'⟩
+        have ha' : a' = (n : ℕ∪{∞}) := by simpa using hy.1
+        cases ha'
+        rfl
+      exact (((f n).continuous.comp continuous_snd).continuousAt).congr h_event.symm
 
-/-- Extend an eventually-zero sequence of locally constant integer-valued functions on `T` to a
-locally constant function on `(ℕ∪∞) × T`, with value zero on the `∞` slice. -/
-noncomputable def ninfLocallyConstantOfEventuallyZero
-    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
-    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
-    LocallyConstant (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)) ℤ :=
-  let N := Classical.choose (Filter.eventually_atTop.1 hf)
-  have hN : ∀ n : ℕ, N ≤ n → f n = 0 := Classical.choose_spec (Filter.eventually_atTop.1 hf)
-  ⟨fun x => match x.1 with
-    | ∞ => (0 : ℤ)
-    | OnePoint.some n => f n x.2,
-    ninfLocallyConstant_fun_isLocallyConstant T f N hN⟩
-
-@[simp]
-lemma ninfLocallyConstantOfEventuallyZero_finite
-    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
-    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) (n : ℕ) :
-    (ninfLocallyConstantOfEventuallyZero T f hf).comap (finiteTensorPoint T n).hom.hom = f n := by
-  dsimp [ninfLocallyConstantOfEventuallyZero]
-  ext t
-  rfl
-
-@[simp]
-lemma ninfLocallyConstantOfEventuallyZero_infty
-    (T : LightProfinite) (f : ℕ → LocallyConstant T ℤ)
-    (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
-    (ninfLocallyConstantOfEventuallyZero T f hf).comap (inftyTensorPoint T).hom.hom = 0 := by
-  dsimp [ninfLocallyConstantOfEventuallyZero]
-  ext t
-  rfl
-
-/-- A sequence of `ℤ`-valued maps out of `ℤ[T]` that is eventually zero gives a `Zdisc`-section
-over `(ℕ∪∞) × T`, extended by zero at `∞`. -/
-noncomputable def zdiscSectionOverNinfOfEventuallyZero
-    (T : LightProfinite)
-    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
-    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) :
-    Zdisc.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
-  let f : ℕ → LocallyConstant T ℤ := fun n =>
-    zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc (v n))
-  have hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0 := by
-    filter_upwards [hv] with n hn
-    dsimp [f]
-    rw [hn]
-    simp
-  (zdiscSectionsEquiv (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite))).symm
-    (ninfLocallyConstantOfEventuallyZero T f hf)
-
-/-- Finite slices of the zero-extended `Zdisc`-section recover the original sequence. -/
-lemma zdiscSectionOverNinfOfEventuallyZero_finite
-    (T : LightProfinite)
-    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
-    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) (n : ℕ) :
-    (freeHomEquivPoints T Zdisc).symm
-      (Zdisc.obj.map (finiteTensorPoint T n).op
-        (zdiscSectionOverNinfOfEventuallyZero T v hv)) = v n := by
-  apply (freeHomEquivPoints T Zdisc).injective
-  rw [Equiv.apply_symm_apply]
-  apply (zdiscSectionsEquiv T).injective
-  rw [zdiscSectionsEquiv_map]
-  dsimp [zdiscSectionOverNinfOfEventuallyZero]
-  rw [Equiv.apply_symm_apply]
-  simp
-
-/-- The `∞` slice of the zero-extended `Zdisc`-section is zero. -/
-lemma zdiscSectionOverNinfOfEventuallyZero_infty
-    (T : LightProfinite)
-    (v : ℕ → ((free ℤ).obj T.toCondensed ⟶ Zdisc))
-    (hv : ∀ᶠ n : ℕ in Filter.atTop, v n = 0) :
-    (freeHomEquivPoints T Zdisc).symm
-      (Zdisc.obj.map (inftyTensorPoint T).op
-        (zdiscSectionOverNinfOfEventuallyZero T v hv)) = 0 := by
-  apply (freeHomEquivPoints T Zdisc).injective
-  rw [Equiv.apply_symm_apply]
-  apply (zdiscSectionsEquiv T).injective
-  rw [zdiscSectionsEquiv_map]
-  dsimp [zdiscSectionOverNinfOfEventuallyZero]
-  rw [Equiv.apply_symm_apply]
-  simp
-
-/-- Applying an integer-valued functional to a null sequence of endomorphisms gives the corresponding
-zero-extended `Zdisc`-section over `(ℕ∪∞) × T`. -/
-noncomputable def zdiscSectionOverNinfOfEventuallyFreeProjZero
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
-    Zdisc.obj.obj ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
-  zdiscSectionOverNinfOfEventuallyZero T (fun n => u n ≫ φ)
-    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ)
-
-lemma zdiscSectionOverNinfOfEventuallyFreeProjZero_finite
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) (n : ℕ) :
-    (freeHomEquivPoints T Zdisc).symm
-      (Zdisc.obj.map (finiteTensorPoint T n).op
-        (zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)) = u n ≫ φ :=
-  zdiscSectionOverNinfOfEventuallyZero_finite T (fun n => u n ≫ φ)
-    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ) n
-
-lemma zdiscSectionOverNinfOfEventuallyFreeProjZero_infty
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
-    (freeHomEquivPoints T Zdisc).symm
-      (Zdisc.obj.map (inftyTensorPoint T).op
-        (zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)) = 0 :=
-  zdiscSectionOverNinfOfEventuallyZero_infty T (fun n => u n ≫ φ)
-    (eventually_comp_zdisc_zero_of_eventually_freeProj_zero T u hu φ)
+/-- A sequence of points in a topological space that is eventually zero extends continuously over
+`ℕ∪∞` by the zero value at `∞`. -/
+lemma continuous_ninf_of_eventually_eq_zero
+    {Y : Type*} [TopologicalSpace Y] [Zero Y]
+    (f : ℕ → Y) (hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0) :
+    Continuous (fun x : (ℕ∪{∞} : LightProfinite) =>
+      match x with
+      | ∞ => (0 : Y)
+      | OnePoint.some n => f n) := by
+  rw [continuous_iff_continuousAt]
+  intro a
+  cases a using OnePoint.rec with
+  | infty =>
+      obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 hf
+      let A : Set (ℕ∪{∞}) :=
+        {a | a = ∞ ∨ ∃ n : ℕ, a = (n : ℕ∪{∞}) ∧ N ≤ n}
+      have hmem : (∞ : ℕ∪{∞}) ∈ A := by simp [A]
+      have hAopen : IsOpen A := by simpa [A] using ninf_tail_open N
+      have h_event : (fun x : (ℕ∪{∞} : LightProfinite) =>
+          match x with
+          | ∞ => (0 : Y)
+          | OnePoint.some n => f n) =ᶠ[nhds (∞ : ℕ∪{∞})] fun _ => (0 : Y) := by
+        filter_upwards [hAopen.mem_nhds hmem] with y hy
+        rcases hy with h_inf | ⟨n, hn_eq, hn_le⟩
+        · cases h_inf
+          rfl
+        · cases hn_eq
+          exact hN n hn_le
+      exact continuousAt_const.congr_of_eventuallyEq h_event
+  | coe n =>
+      have hmem : (n : ℕ∪{∞}) ∈ ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) := rfl
+      have hopen : IsOpen ({(n : ℕ∪{∞})} : Set ℕ∪{∞}) := finite_nat_singleton_open n
+      have h_event : (fun x : (ℕ∪{∞} : LightProfinite) =>
+          match x with
+          | ∞ => (0 : Y)
+          | OnePoint.some m => f m) =ᶠ[nhds (n : ℕ∪{∞})] fun _ => f n := by
+        filter_upwards [hopen.mem_nhds hmem] with y hy
+        have hy' : y = (n : ℕ∪{∞}) := by simpa using hy
+        cases hy'
+        rfl
+      exact continuousAt_const.congr_of_eventuallyEq h_event
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
@@ -1348,6 +1371,170 @@ lemma zdisc_section_ext_of_slices (T : LightProfinite)
 
 /-- Finite signed integer measures on a light profinite set. -/
 abbrev FreeMeasure (T : LightProfinite) := T →₀ ℤ
+
+lemma totalVariation_single_one_le_two {α : Type*} (a : α) :
+    LightProfinite.FreeImage.totalVariation (Finsupp.single a (1 : ℤ)) ≤ (2 : ℤ) := by
+  rw [LightProfinite.FreeImage.totalVariation]
+  simp
+
+lemma totalVariation_single_sub_single_le_two {α : Type*} [DecidableEq α] (a b : α) :
+    LightProfinite.FreeImage.totalVariation
+      (Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ)) ≤ (2 : ℤ) := by
+  classical
+  let μ : α →₀ ℤ := Finsupp.single a (1 : ℤ) - Finsupp.single b (1 : ℤ)
+  have hsupp : μ.support ⊆ ({a, b} : Finset α) := by
+    intro x hx
+    rw [Finsupp.mem_support_iff] at hx
+    rw [Finset.mem_insert, Finset.mem_singleton]
+    by_contra h
+    push Not at h
+    have hxzero : μ x = 0 := by simp [μ, h.1, h.2]
+    exact hx hxzero
+  calc
+    LightProfinite.FreeImage.totalVariation μ
+        = ∑ x ∈ μ.support, |μ x| := by
+          rw [LightProfinite.FreeImage.totalVariation, Finsupp.sum]
+    _ ≤ ∑ x ∈ ({a, b} : Finset α), |μ x| := by
+          exact Finset.sum_le_sum_of_subset_of_nonneg hsupp
+            (by intro x _ _; positivity)
+    _ ≤ 2 := by
+          by_cases h : a = b
+          · subst h
+            simp [μ]
+          · simp [μ, h, abs_of_nonneg, abs_of_nonpos]
+
+/-- The finite signed measure underlying the tail family over `(ℕ∪∞) × T`. -/
+noncomputable def topologicalTailMeasure (T : LightProfinite) :
+    ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) → LightCondAb.topologicalFree T
+  | (∞, _) => 0
+  | (OnePoint.some 0, t) => Finsupp.single t (1 : ℤ)
+  | (OnePoint.some (m + 1), t) =>
+      Finsupp.single t (1 : ℤ) -
+        Finsupp.single (LightProfinite.finiteApproxRetraction T m t) (1 : ℤ)
+
+@[simp]
+lemma topologicalTailMeasure_zero (T : LightProfinite) (t : T) :
+    topologicalTailMeasure T (((0 : ℕ) : ℕ∪{∞}), t) = Finsupp.single t (1 : ℤ) := rfl
+
+@[simp]
+lemma topologicalTailMeasure_succ (T : LightProfinite) (m : ℕ) (t : T) :
+    topologicalTailMeasure T (((m + 1 : ℕ) : ℕ∪{∞}), t) =
+      Finsupp.single t (1 : ℤ) -
+        Finsupp.single (LightProfinite.finiteApproxRetraction T m t) (1 : ℤ) := rfl
+
+@[simp]
+lemma topologicalTailMeasure_infty (T : LightProfinite) (t : T) :
+    topologicalTailMeasure T ((∞ : ℕ∪{∞}), t) = 0 := rfl
+
+lemma topologicalTailMeasure_totalVariation_le_two (T : LightProfinite)
+    (x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)) :
+    LightProfinite.FreeImage.totalVariation (topologicalTailMeasure T x) ≤ (2 : ℤ) := by
+  classical
+  rcases x with ⟨a, t⟩
+  cases a using OnePoint.rec with
+  | infty =>
+      change LightProfinite.FreeImage.totalVariation (0 : T →₀ ℤ) ≤ (2 : ℤ)
+      simp [LightProfinite.FreeImage.totalVariation]
+  | coe n =>
+      cases n with
+      | zero => simpa [topologicalTailMeasure] using totalVariation_single_one_le_two t
+      | succ m =>
+          simpa [topologicalTailMeasure] using
+            totalVariation_single_sub_single_le_two t
+              (LightProfinite.finiteApproxRetraction T m t)
+
+/-- Continuity of every finite quotient projection of the topological tail family. -/
+lemma topologicalTailMeasure_finiteProj_continuous (T : LightProfinite) (k : ℕ) :
+    Continuous fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
+      (LightCondAb.topologicalFreeMap (T.proj k)).hom (topologicalTailMeasure T x) := by
+  let f : ℕ → C(↑T.toTop, ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat) :=
+    fun n => match n with
+    | 0 => ⟨fun t =>
+        (show ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat from
+          Finsupp.single (T.proj k t) (1 : ℤ)),
+        (LightCondAb.topologicalFreeDirac (T.component k)).hom.continuous.comp
+          (T.proj k).hom.hom.continuous⟩
+    | m + 1 => ⟨fun t =>
+        (show ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat from
+          Finsupp.single (T.proj k t) (1 : ℤ)) -
+          (show ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat from
+            Finsupp.single (T.proj k (LightProfinite.finiteApproxRetraction T m t)) (1 : ℤ)),
+        by fun_prop⟩
+  have hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0 := by
+    refine Filter.eventually_atTop.2 ⟨k + 1, ?_⟩
+    intro n hn
+    ext t
+    cases n with
+    | zero => omega
+    | succ m =>
+        have hle : k ≤ m := by omega
+        dsimp [f]
+        have hpts : T.proj k (LightProfinite.finiteApproxRetraction T m t) = T.proj k t := by
+          have hmap := congrArg (fun f : T ⟶ T.component k => f t)
+            (LightProfinite.finiteApproxRetraction_proj_le T hle)
+          simpa using hmap
+        rw [hpts]
+        simp
+  have hcont := continuous_ninfTensor_of_eventually_eq_zero T f hf
+  convert hcont using 1
+  ext x
+  rcases x with ⟨a, t⟩
+  cases a using OnePoint.rec with
+  | infty => simp [topologicalTailMeasure]
+  | coe n =>
+      cases n with
+      | zero => simp [f, topologicalTailMeasure, LightCondAb.topologicalFreeMap_single]
+      | succ m =>
+          let μ₁ : LightCondAb.topologicalFree T := Finsupp.single t (1 : ℤ)
+          let μ₂ : LightCondAb.topologicalFree T :=
+            Finsupp.single (LightProfinite.finiteApproxRetraction T m t) (1 : ℤ)
+          change (LightCondAb.topologicalFreeMap (T.proj k)).hom (μ₁ - μ₂) =
+            (show ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat from
+              Finsupp.single (T.proj k t) (1 : ℤ)) -
+            (show ↑(LightCondAb.topologicalFree (T.component k)).toModuleCat from
+              Finsupp.single (T.proj k (LightProfinite.finiteApproxRetraction T m t)) (1 : ℤ))
+          rw [((LightCondAb.topologicalFreeMap (T.proj k)).hom).map_sub]
+          dsimp [μ₁, μ₂]
+          rw [LightCondAb.topologicalFreeMap_single]
+          rw [LightCondAb.topologicalFreeMap_single]
+
+lemma freeFiniteApproxRetraction_topologicalFree_apply
+    (T : LightProfinite) (m : ℕ) (t : T) :
+    (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩
+        (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)
+          (freeFiniteApproxRetraction T m))) t =
+      Finsupp.single (LightProfinite.finiteApproxRetraction T m t) (1 : ℤ) := by
+  dsimp [freeFiniteApproxRetraction]
+  exact freeMap_topologicalFree_apply (LightProfinite.finiteApproxRetraction T m) t
+
+lemma freeTailEndomorphism_topologicalFree_apply
+    (T : LightProfinite) (n : ℕ) (t : T) :
+    (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩
+        (freeHomEquivPoints T ((free ℤ).obj T.toCondensed) (freeTailEndomorphism T n))) t =
+      topologicalTailMeasure T ((n : ℕ∪{∞}), t) := by
+  cases n with
+  | zero =>
+      exact freeToTopologicalFree_id_apply T t
+  | succ m =>
+      dsimp [freeTailEndomorphism]
+      rw [freeHomEquivPoints_sub]
+      let a := freeHomEquivPoints T ((free ℤ).obj T.toCondensed) (𝟙 ((free ℤ).obj T.toCondensed))
+      let b := freeHomEquivPoints T ((free ℤ).obj T.toCondensed) (freeFiniteApproxRetraction T m)
+      have hmap : (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ (a - b) =
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ a -
+            (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ b := by
+        exact ((LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩).hom.map_sub a b
+      change (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ (a - b)) t = _
+      rw [hmap]
+      change (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ a) t -
+        (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨T⟩ b) t = _
+      rw [freeToTopologicalFree_id_apply, freeFiniteApproxRetraction_topologicalFree_apply]
+      rfl
 
 /-- The clopen indicator as an integer-valued locally constant function. -/
 noncomputable def clopenIndicatorInt {X : Type*} [TopologicalSpace X]
@@ -1835,152 +2022,53 @@ lemma freeTarget_numerator_ext_of_slices (T : LightProfinite)
   apply (cancel_epi (IntProof.freeTensorIsoInt (ℕ∪{∞}) T).inv).1
   exact hmaps
 
-/-- Obligation: the remaining realization part of the AsLimit/compactness bridge.  The
-`Zdisc`-valued evaluations of a null sequence of endomorphisms have already been constructed
-explicitly; this obligation asks that those compatible evaluations come from an actual section of
-`ℤ[T]` over `(ℕ∪∞) × T`. -/
-lemma exists_freeSectionOverNinf_realizing_zdisc_evaluations
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
-    ∃ x : ((free ℤ).obj T.toCondensed).obj.obj
-        ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩,
-      ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
-        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ x =
-          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ := by
-  sorry
-
-/-- The section realizing all `Zdisc` evaluations of a null endomorphism sequence is unique, once it
-exists. -/
-lemma freeSectionOverNinf_realizing_zdisc_evaluations_unique
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    {x y : ((free ℤ).obj T.toCondensed).obj.obj
-        ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩}
-    (hx : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
-        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ x =
-          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ)
-    (hy : ∀ φ : (free ℤ).obj T.toCondensed ⟶ Zdisc,
-        φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ y =
-          zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ) :
-    x = y := by
-  apply freeTarget_section_ext_of_zdisc_eval T (((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite))
-  intro φ
-  rw [hx φ, hy φ]
-
-/-- The AsLimit/compactness bridge turning a sequence of endomorphisms of `ℤ[T]` which is
-eventually zero after every finite quotient of `T` into a continuous section over `(ℕ∪∞) × T`,
-with prescribed finite slices and zero `∞` slice.  The finite/∞ slice verification is formal from
-the `Zdisc`-evaluation realization and the free-target separation obligation. -/
-lemma exists_freeSectionOverNinf_of_eventually_freeProj_zero
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+/-- Direct bounded construction of the section over `(ℕ∪∞) × T` whose finite slices are the
+tail endomorphisms and whose `∞` slice is zero. -/
+lemma exists_infiniteTailElement_direct (T : LightProfinite) :
     ∃ x : ((free ℤ).obj T.toCondensed).obj.obj
         ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩,
       (∀ n : ℕ,
         (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
-          (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op x) = u n) ∧
+          (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op x) =
+            freeTailEndomorphism T n) ∧
       (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
         (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x) = 0 := by
-  let A := (free ℤ).obj T.toCondensed
-  obtain ⟨x, hx⟩ := exists_freeSectionOverNinf_realizing_zdisc_evaluations T u hu
+  let X : LightProfinite := ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
+  let s : (LightCondAb.topologicalFreeCondensed T).obj.obj ⟨X⟩ :=
+    LightCondAb.topologicalFreeSectionOfBoundedFiniteProj T X (topologicalTailMeasure T) 2
+      (topologicalTailMeasure_totalVariation_le_two T)
+      (topologicalTailMeasure_finiteProj_continuous T)
+  let x : ((free ℤ).obj T.toCondensed).obj.obj ⟨X⟩ :=
+    (LightCondAb.freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s
   refine ⟨x, ?_, ?_⟩
   · intro n
-    apply (freeHomEquivPoints T A).injective
+    apply (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).injective
     rw [Equiv.apply_symm_apply]
-    apply freeTarget_section_ext_of_zdisc_eval T T
-    intro φ
-    rw [LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op x]
-    rw [hx φ]
-    have hY := congrArg (freeHomEquivPoints T Zdisc)
-      (zdiscSectionOverNinfOfEventuallyFreeProjZero_finite T u hu φ n)
-    rw [Equiv.apply_symm_apply] at hY
-    rw [freeHomEquivPoints_comp] at hY
-    exact hY
-  · apply (freeHomEquivPoints T A).injective
+    apply LightCondAb.freeSection_map_eq_of_pointwise_measure_eq T T
+    intro t
+    rw [LightCondAb.freeToTopologicalFree_app_map_section_of_iso_symm]
+    rw [LightCondAb.topologicalFreeCondensed_section_map_apply]
+    rw [LightCondAb.topologicalFreeSectionOfBoundedFiniteProj_apply]
+    rw [freeTailEndomorphism_topologicalFree_apply]
+    rfl
+  · apply (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).injective
     rw [Equiv.apply_symm_apply]
-    change A.obj.map (inftyTensorPoint T).op x = (0 : A.obj.obj ⟨T⟩)
-    apply freeTarget_section_ext_of_zdisc_eval T T
-    intro φ
-    rw [LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op x]
-    rw [hx φ]
-    have hY := congrArg (freeHomEquivPoints T Zdisc)
-      (zdiscSectionOverNinfOfEventuallyFreeProjZero_infty T u hu φ)
-    rw [Equiv.apply_symm_apply] at hY
-    simpa using hY
-
-/-- The section over `(ℕ∪∞) × T` associated to a null sequence of endomorphisms of `ℤ[T]`. -/
-noncomputable def freeSectionOverNinfOfNullSequence
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
-    ((free ℤ).obj T.toCondensed).obj.obj
-      ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
-  (exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose
-
-/-- Finite slices of the section associated to a null sequence are the prescribed endomorphisms. -/
-lemma freeSectionOverNinfOfNullSequence_finite
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) (n : ℕ) :
-    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
-      (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op
-        (freeSectionOverNinfOfNullSequence T u hu)) = u n :=
-  ((exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose_spec).1 n
-
-/-- The section associated to a null sequence has zero `∞` slice. -/
-lemma freeSectionOverNinfOfNullSequence_infty
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
-    (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
-      (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
-        (freeSectionOverNinfOfNullSequence T u hu)) = 0 :=
-  ((exists_freeSectionOverNinf_of_eventually_freeProj_zero T u hu).choose_spec).2
-
-/-- After applying any integer-valued functional, the chosen free null-section is the explicit
-zero-extended `Zdisc`-section. -/
-lemma freeSectionOverNinfOfNullSequence_zdisc_eval
-    (T : LightProfinite)
-    (u : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0)
-    (φ : (free ℤ).obj T.toCondensed ⟶ Zdisc) :
-    φ.hom.app ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩
-      (freeSectionOverNinfOfNullSequence T u hu) =
-        zdiscSectionOverNinfOfEventuallyFreeProjZero T u hu φ := by
-  apply zdisc_section_ext_of_slices T
-  · intro n
-    rw [← LightCondMod.hom_naturality_apply ℤ φ (finiteTensorPoint T n).op
-      (freeSectionOverNinfOfNullSequence T u hu)]
-    have hX := congrArg (freeHomEquivPoints T ((free ℤ).obj T.toCondensed))
-      (freeSectionOverNinfOfNullSequence_finite T u hu n)
-    rw [Equiv.apply_symm_apply] at hX
-    have hY := congrArg (freeHomEquivPoints T Zdisc)
-      (zdiscSectionOverNinfOfEventuallyFreeProjZero_finite T u hu φ n)
-    rw [Equiv.apply_symm_apply] at hY
-    rw [freeHomEquivPoints_comp] at hY
-    rw [hX]
-    exact hY.symm
-  · rw [← LightCondMod.hom_naturality_apply ℤ φ (inftyTensorPoint T).op
-      (freeSectionOverNinfOfNullSequence T u hu)]
-    have hX := congrArg (freeHomEquivPoints T ((free ℤ).obj T.toCondensed))
-      (freeSectionOverNinfOfNullSequence_infty T u hu)
-    rw [Equiv.apply_symm_apply] at hX
-    have hY := congrArg (freeHomEquivPoints T Zdisc)
-      (zdiscSectionOverNinfOfEventuallyFreeProjZero_infty T u hu φ)
-    rw [Equiv.apply_symm_apply] at hY
-    rw [hX]
-    simpa using hY.symm
+    change ((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op x =
+      (0 : ((free ℤ).obj T.toCondensed).obj.obj ⟨T⟩)
+    apply LightCondAb.freeSection_map_eq_of_pointwise_measure_eq T T
+    intro t
+    rw [LightCondAb.freeToTopologicalFree_app_map_section_of_iso_symm]
+    rw [LightCondAb.topologicalFreeCondensed_section_map_apply]
+    rw [LightCondAb.topologicalFreeSectionOfBoundedFiniteProj_apply]
+    simp [topologicalTailMeasure]
+    rfl
 
 /-- The section of `ℤ[T]` over `(ℕ∪∞) × T` whose finite slices are the tail endomorphisms and
 whose `∞` slice is zero. -/
 noncomputable def infiniteTailElement (T : LightProfinite) [Infinite T] :
     ((free ℤ).obj T.toCondensed).obj.obj
       ⟨((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)⟩ :=
-  freeSectionOverNinfOfNullSequence T (freeTailEndomorphism T)
-    (freeTailEndomorphism_eventually_freeProj_zero T)
+  (exists_infiniteTailElement_direct T).choose
 
 /-- The numerator of the tail map, built from its section over `(ℕ∪∞) × T`. -/
 noncomputable def infiniteTailNumerator (T : LightProfinite) [Infinite T] :
@@ -1996,10 +2084,8 @@ lemma infiniteTailElement_finite (T : LightProfinite) [Infinite T] (n : ℕ) :
     (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map (finiteTensorPoint T n).op
         (infiniteTailElement T)) =
-      freeTailEndomorphism T n := by
-  dsimp [infiniteTailElement]
-  exact freeSectionOverNinfOfNullSequence_finite T (freeTailEndomorphism T)
-    (freeTailEndomorphism_eventually_freeProj_zero T) n
+      freeTailEndomorphism T n :=
+  ((exists_infiniteTailElement_direct T).choose_spec).1 n
 
 /-- Finite slices of the tail numerator are the prescribed tail endomorphisms. -/
 lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
@@ -2012,10 +2098,8 @@ lemma infiniteTailNumerator_slice (T : LightProfinite) [Infinite T] (n : ℕ) :
 lemma infiniteTailElement_infty (T : LightProfinite) [Infinite T] :
     (freeHomEquivPoints T ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map (inftyTensorPoint T).op
-        (infiniteTailElement T)) = 0 := by
-  dsimp [infiniteTailElement]
-  exact freeSectionOverNinfOfNullSequence_infty T (freeTailEndomorphism T)
-    (freeTailEndomorphism_eventually_freeProj_zero T)
+        (infiniteTailElement T)) = 0 :=
+  ((exists_infiniteTailElement_direct T).choose_spec).2
 
 /-- The `∞` slice of the tail numerator is zero. -/
 lemma infiniteTailNumerator_infty (T : LightProfinite) [Infinite T] :
@@ -2149,6 +2233,107 @@ noncomputable def finiteDifferenceValue (T : LightProfinite) :
       freePointMap T (LightProfinite.projSection T (m + 1) a) -
         freePointMap T (LightProfinite.projSection T m (T.transitionMap m a))
 
+/-- The finite signed measure underlying one finite-stage difference. -/
+noncomputable def finiteDifferenceMeasure (T : LightProfinite) :
+    (m : ℕ) → T.component m → LightCondAb.topologicalFree T
+  | 0, a => Finsupp.single (LightProfinite.projSection T 0 a) (1 : ℤ)
+  | m + 1, a =>
+      Finsupp.single (LightProfinite.projSection T (m + 1) a) (1 : ℤ) -
+        Finsupp.single (LightProfinite.projSection T m (T.transitionMap m a)) (1 : ℤ)
+
+lemma finiteDifferenceMeasure_totalVariation_le_two (T : LightProfinite)
+    (m : ℕ) (a : T.component m) :
+    LightProfinite.FreeImage.totalVariation (finiteDifferenceMeasure T m a) ≤ (2 : ℤ) := by
+  classical
+  cases m with
+  | zero => exact totalVariation_single_one_le_two (LightProfinite.projSection T 0 a)
+  | succ m =>
+      exact totalVariation_single_sub_single_le_two
+        (LightProfinite.projSection T (m + 1) a)
+        (LightProfinite.projSection T m (T.transitionMap m a))
+
+/-- A positive-stage finite-difference measure vanishes after projection to every strictly earlier
+finite quotient. -/
+lemma finiteDifferenceMeasure_proj_zero (T : LightProfinite) {k m : ℕ} (h : k < m)
+    (a : T.component m) :
+    (LightCondAb.topologicalFreeMap (T.proj k)).hom (finiteDifferenceMeasure T m a) = 0 := by
+  cases m with
+  | zero => omega
+  | succ m =>
+      have hle : k ≤ m := by omega
+      dsimp [finiteDifferenceMeasure]
+      let μ₁ : LightCondAb.topologicalFree T :=
+        Finsupp.single (LightProfinite.projSection T (m + 1) a) (1 : ℤ)
+      let μ₂ : LightCondAb.topologicalFree T :=
+        Finsupp.single (LightProfinite.projSection T m (T.transitionMap m a)) (1 : ℤ)
+      change (LightCondAb.topologicalFreeMap (T.proj k)).hom (μ₁ - μ₂) = 0
+      rw [((LightCondAb.topologicalFreeMap (T.proj k)).hom).map_sub]
+      dsimp [μ₁, μ₂]
+      rw [LightCondAb.topologicalFreeMap_single]
+      rw [LightCondAb.topologicalFreeMap_single]
+      change Finsupp.single (T.proj k (LightProfinite.projSection T (m + 1) a)) (1 : ℤ) -
+          Finsupp.single (T.proj k (LightProfinite.projSection T m (T.transitionMap m a))) (1 : ℤ) = 0
+      have h₁ : T.proj k (LightProfinite.projSection T (m + 1) a) =
+          T.transitionMapLE (show k ≤ m + 1 by omega) a := by
+        have hmap := congrArg (fun f : T.component (m + 1) ⟶ T.component k => f a)
+          (LightProfinite.projSection_proj_le T (show k ≤ m + 1 by omega))
+        simpa using hmap
+      have h₂ : T.proj k (LightProfinite.projSection T m (T.transitionMap m a)) =
+          T.transitionMapLE hle (T.transitionMap m a) := by
+        have hmap := congrArg
+          (fun f : T.component m ⟶ T.component k => f (T.transitionMap m a))
+          (LightProfinite.projSection_proj_le T hle)
+        simpa using hmap
+      have htrans : T.transitionMap m ≫ T.transitionMapLE hle =
+          T.transitionMapLE (show k ≤ m + 1 by omega) := by
+        change T.diagram.map ⟨homOfLE (Nat.le_succ m)⟩ ≫ T.diagram.map ⟨homOfLE hle⟩ =
+          T.diagram.map ⟨homOfLE (show k ≤ m + 1 by omega)⟩
+        rw [← T.diagram.map_comp]
+        congr 1
+      have hpts : T.proj k (LightProfinite.projSection T (m + 1) a) =
+          T.proj k (LightProfinite.projSection T m (T.transitionMap m a)) := by
+        rw [h₁, h₂]
+        change T.transitionMapLE (show k ≤ m + 1 by omega) a =
+          (T.transitionMap m ≫ T.transitionMapLE hle) a
+        rw [htrans]
+      rw [hpts]
+      simp
+
+lemma finiteDifferenceValue_topologicalFree_apply
+    (T : LightProfinite) (m : ℕ) (a : T.component m) :
+    (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+        (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)
+          (finiteDifferenceValue T m a))) PUnit.unit =
+      finiteDifferenceMeasure T m a := by
+  cases m with
+  | zero =>
+      dsimp [finiteDifferenceValue, finiteDifferenceMeasure, freePointMap]
+      exact freeMap_topologicalFree_apply (pointMap T (LightProfinite.projSection T 0 a)) PUnit.unit
+  | succ m =>
+      dsimp [finiteDifferenceValue, finiteDifferenceMeasure, freePointMap]
+      rw [freeHomEquivPoints_sub]
+      let pt : LightProfinite := LightProfinite.of PUnit.{1}
+      let asec := freeHomEquivPoints pt ((free ℤ).obj T.toCondensed)
+        ((free ℤ).map (lightProfiniteToLightCondSet.map
+          (pointMap T (LightProfinite.projSection T (m + 1) a))))
+      let bsec := freeHomEquivPoints pt ((free ℤ).obj T.toCondensed)
+        ((free ℤ).map (lightProfiniteToLightCondSet.map
+          (pointMap T (LightProfinite.projSection T m (T.transitionMap m a)))))
+      have hmap : (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ (asec - bsec) =
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ asec -
+            (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ bsec := by
+        exact ((LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩).hom.map_sub asec bsec
+      change (show C(↑pt.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ (asec - bsec)) PUnit.unit = _
+      rw [hmap]
+      change (show C(↑pt.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ asec) PUnit.unit -
+        (show C(↑pt.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+          (LightCondAb.freeToTopologicalFree T).hom.app ⟨pt⟩ bsec) PUnit.unit = _
+      rw [freeMap_topologicalFree_apply, freeMap_topologicalFree_apply]
+      rfl
+
 /-- A positive-stage finite difference vanishes after projection to every strictly earlier finite
 quotient. -/
 lemma finiteDifferenceValue_comp_freeProj_zero (T : LightProfinite) {k m : ℕ} (h : k < m)
@@ -2218,78 +2403,123 @@ lemma infinitePToFreeFiniteValue_eventually_freeProj_zero (T : LightProfinite) [
   exact finiteDifferenceValue_comp_freeProj_zero T (by omega)
     ((nullFiniteDifferenceEnumeration T).seq n).2
 
-/-- A null sequence of point-valued sections of `ℤ[T]` gives a section over `ℕ∪∞` with value
-zero at `∞`.  This is reduced to the corresponding null-sequence bridge for endomorphisms by
-choosing one point of `T` and splitting the map `ℤ[T] → ℤ[*]`. -/
-lemma exists_freeElementOverNinf_of_eventually_freeProj_zero
-    (T : LightProfinite) [Nonempty T]
-    (u : ℕ → ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⟶
-      (free ℤ).obj T.toCondensed))
-    (hu : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, u n ≫ freeProj T k = 0) :
+/-- The finite signed measure underlying the `n`th value of the map `P ℤ ⟶ ℤ[T]`. -/
+noncomputable def infinitePToFreeMeasure (T : LightProfinite) [Infinite T] (n : ℕ) :
+    LightCondAb.topologicalFree T :=
+  finiteDifferenceMeasure T ((nullFiniteDifferenceEnumeration T).seq n).1
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+lemma infinitePToFreeMeasure_totalVariation_le_two (T : LightProfinite) [Infinite T] (n : ℕ) :
+    LightProfinite.FreeImage.totalVariation (infinitePToFreeMeasure T n) ≤ (2 : ℤ) :=
+  finiteDifferenceMeasure_totalVariation_le_two T ((nullFiniteDifferenceEnumeration T).seq n).1
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+lemma infinitePToFreeMeasure_eventually_proj_zero (T : LightProfinite) [Infinite T] (k : ℕ) :
+    ∀ᶠ n : ℕ in Filter.atTop,
+      (LightCondAb.topologicalFreeMap (T.proj k)).hom (infinitePToFreeMeasure T n) = 0 := by
+  filter_upwards [(nullFiniteDifferenceEnumeration T).stage_eventually_ge (k + 1)] with n hn
+  exact finiteDifferenceMeasure_proj_zero T (by omega)
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+lemma infinitePToFreeMeasure_finiteProj_continuous (T : LightProfinite) [Infinite T] (k : ℕ) :
+    Continuous fun x : (ℕ∪{∞} : LightProfinite) =>
+      (LightCondAb.topologicalFreeMap (T.proj k)).hom
+        (match x with
+        | ∞ => (0 : LightCondAb.topologicalFree T)
+        | OnePoint.some n => infinitePToFreeMeasure T n) := by
+  let f : ℕ → LightCondAb.topologicalFree (T.component k) := fun n =>
+    (LightCondAb.topologicalFreeMap (T.proj k)).hom (infinitePToFreeMeasure T n)
+  have hf : ∀ᶠ n : ℕ in Filter.atTop, f n = 0 := infinitePToFreeMeasure_eventually_proj_zero T k
+  have hcont := continuous_ninf_of_eventually_eq_zero f hf
+  convert hcont using 1
+  ext x
+  cases x using OnePoint.rec with
+  | infty => simp
+  | coe n => simp [f]
+
+lemma infinitePToFreeFiniteValue_topologicalFree_apply
+    (T : LightProfinite) [Infinite T] (n : ℕ) :
+    (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+      (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+        (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)
+          (infinitePToFreeFiniteValue T n))) PUnit.unit =
+      infinitePToFreeMeasure T n := by
+  dsimp [infinitePToFreeFiniteValue, infinitePToFreeMeasure]
+  exact finiteDifferenceValue_topologicalFree_apply T ((nullFiniteDifferenceEnumeration T).seq n).1
+    ((nullFiniteDifferenceEnumeration T).seq n).2
+
+/-- Direct bounded construction of the section over `ℕ∪∞` whose finite values are
+`infinitePToFreeFiniteValue` and whose value at `∞` is zero. -/
+lemma exists_infinitePToFreeElement_direct (T : LightProfinite) [Infinite T] :
     ∃ x : ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩,
       (∀ n : ℕ,
         (freeHomEquivPoints (LightProfinite.of PUnit.{1})
           ((free ℤ).obj T.toCondensed)).symm
-          (((free ℤ).obj T.toCondensed).obj.map (natPoint n).op x) = u n) ∧
+          (((free ℤ).obj T.toCondensed).obj.map (natPoint n).op x) =
+            infinitePToFreeFiniteValue T n) ∧
       (freeHomEquivPoints (LightProfinite.of PUnit.{1})
         ((free ℤ).obj T.toCondensed)).symm
         (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 := by
-  let t0 : T := Classical.choice inferInstance
-  let q : (free ℤ).obj T.toCondensed ⟶
-      (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed :=
-    (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T)
-  let v : ℕ → ((free ℤ).obj T.toCondensed ⟶ (free ℤ).obj T.toCondensed) := fun n => q ≫ u n
-  have hv : ∀ k : ℕ, ∀ᶠ n : ℕ in Filter.atTop, v n ≫ freeProj T k = 0 := by
-    intro k
-    filter_upwards [hu k] with n hn
-    dsimp [v]
-    rw [Category.assoc, hn]
-    simp
-  let X := freeSectionOverNinfOfNullSequence T v hv
-  let x : ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩ :=
-    ((free ℤ).obj T.toCondensed).obj.map (ninfPointSection T t0).op X
+  let X : LightProfinite := (ℕ∪{∞} : LightProfinite)
+  let a : X → LightCondAb.topologicalFree T := fun x =>
+    match x with
+    | ∞ => 0
+    | OnePoint.some n => infinitePToFreeMeasure T n
+  let s : (LightCondAb.topologicalFreeCondensed T).obj.obj ⟨X⟩ :=
+    LightCondAb.topologicalFreeSectionOfBoundedFiniteProj T X a 2 (by
+      intro x
+      cases x using OnePoint.rec with
+      | infty =>
+          change LightProfinite.FreeImage.totalVariation (0 : T →₀ ℤ) ≤ (2 : ℤ)
+          simp [LightProfinite.FreeImage.totalVariation]
+      | coe n => exact infinitePToFreeMeasure_totalVariation_le_two T n) (by
+      intro k
+      change Continuous fun x : (ℕ∪{∞} : LightProfinite) =>
+        (LightCondAb.topologicalFreeMap (T.proj k)).hom (a x)
+      convert infinitePToFreeMeasure_finiteProj_continuous T k using 1
+      ext y
+      cases y using OnePoint.rec <;> rfl)
+  let x : ((free ℤ).obj T.toCondensed).obj.obj ⟨X⟩ :=
+    (LightCondAb.freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s
   refine ⟨x, ?_, ?_⟩
   · intro n
-    dsimp [x]
-    rw [← Functor.map_comp_apply (((free ℤ).obj T.toCondensed).obj)
-      (ninfPointSection T t0).op (natPoint n).op X]
-    change (freeHomEquivPoints (LightProfinite.of PUnit.{1})
-        ((free ℤ).obj T.toCondensed)).symm
-        (((free ℤ).obj T.toCondensed).obj.map ((natPoint n ≫ ninfPointSection T t0).op) X) =
-      u n
-    rw [natPoint_comp_ninfPointSection]
-    rw [← freeHomEquivPoints_symm_map]
-    rw [Functor.map_comp]
-    rw [Functor.map_comp]
-    change freePointMap T t0 ≫
-        (((free ℤ).map (lightProfiniteToLightCondSet.map (finiteTensorPoint T n))) ≫
-          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
-            ((free ℤ).obj T.toCondensed)).symm X) = u n
-    rw [freeHomEquivPoints_symm_map]
-    rw [freeSectionOverNinfOfNullSequence_finite]
-    dsimp [v, q]
-    change (freePointMap T t0 ≫ (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T)) ≫
-      u n = u n
-    rw [freePointMap_comp_toPointMap]
-    change (𝟙 ((free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed)) ≫ u n = u n
-    simp
-  · dsimp [x]
-    rw [← Functor.map_comp_apply (((free ℤ).obj T.toCondensed).obj)
-      (ninfPointSection T t0).op ι.op X]
-    change (freeHomEquivPoints (LightProfinite.of PUnit.{1})
-        ((free ℤ).obj T.toCondensed)).symm
-        (((free ℤ).obj T.toCondensed).obj.map ((ι ≫ ninfPointSection T t0).op) X) = 0
-    rw [iota_comp_ninfPointSection]
-    rw [← freeHomEquivPoints_symm_map]
-    rw [Functor.map_comp]
-    rw [Functor.map_comp]
-    change freePointMap T t0 ≫
-        (((free ℤ).map (lightProfiniteToLightCondSet.map (inftyTensorPoint T))) ≫
-          (freeHomEquivPoints ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite)
-            ((free ℤ).obj T.toCondensed)).symm X) = 0
-    rw [freeHomEquivPoints_symm_map]
-    rw [freeSectionOverNinfOfNullSequence_infty]
-    simp
+    apply (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+      ((free ℤ).obj T.toCondensed)).injective
+    rw [Equiv.apply_symm_apply]
+    apply LightCondAb.freeSection_map_eq_of_pointwise_measure_eq T (LightProfinite.of PUnit.{1})
+    intro pt
+    change (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+          (((free ℤ).obj T.toCondensed).obj.map (natPoint n).op x)) pt =
+      (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+          (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)
+            (infinitePToFreeFiniteValue T n))) pt
+    rw [LightCondAb.freeToTopologicalFree_app_map_section_of_iso_symm]
+    rw [LightCondAb.topologicalFreeCondensed_section_map_point]
+    rw [LightCondAb.topologicalFreeSectionOfBoundedFiniteProj_apply]
+    cases pt
+    rw [infinitePToFreeFiniteValue_topologicalFree_apply]
+    rfl
+  · apply (freeHomEquivPoints (LightProfinite.of PUnit.{1})
+      ((free ℤ).obj T.toCondensed)).injective
+    rw [Equiv.apply_symm_apply]
+    change ((free ℤ).obj T.toCondensed).obj.map ι.op x =
+      (0 : ((free ℤ).obj T.toCondensed).obj.obj ⟨LightProfinite.of PUnit.{1}⟩)
+    apply LightCondAb.freeSection_map_eq_of_pointwise_measure_eq T (LightProfinite.of PUnit.{1})
+    intro pt
+    change (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+          (((free ℤ).obj T.toCondensed).obj.map ι.op x)) pt =
+      (show C(↑(LightProfinite.of PUnit.{1}).toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
+        (LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit.{1}⟩
+          (0 : ((free ℤ).obj T.toCondensed).obj.obj ⟨LightProfinite.of PUnit.{1}⟩)) pt
+    rw [LightCondAb.freeToTopologicalFree_app_map_section_of_iso_symm]
+    rw [LightCondAb.topologicalFreeCondensed_section_map_point]
+    rw [LightCondAb.topologicalFreeSectionOfBoundedFiniteProj_apply]
+    cases pt
+    simp [a]
+    rfl
 
 /-- The finite values `infinitePToFreeFiniteValue` form a null sequence, hence give a section over
 `ℕ∪∞` with value zero at `∞`. -/
@@ -2303,14 +2533,13 @@ lemma exists_infinitePToFreeElement (T : LightProfinite) [Infinite T] :
       (freeHomEquivPoints (LightProfinite.of PUnit.{1})
         ((free ℤ).obj T.toCondensed)).symm
         (((free ℤ).obj T.toCondensed).obj.map ι.op x) = 0 :=
-  exists_freeElementOverNinf_of_eventually_freeProj_zero T (infinitePToFreeFiniteValue T)
-    (infinitePToFreeFiniteValue_eventually_freeProj_zero T)
+  exists_infinitePToFreeElement_direct T
 
 /-- The section of `ℤ[T]` over `ℕ∪∞` whose finite values enumerate the successive finite-stage
 differences and whose `∞` value is zero. -/
 noncomputable def infinitePToFreeElement (T : LightProfinite) [Infinite T] :
     ((free ℤ).obj T.toCondensed).obj.obj ⟨(ℕ∪{∞} : LightProfinite)⟩ :=
-  (exists_infinitePToFreeElement T).choose
+  (exists_infinitePToFreeElement_direct T).choose
 
 /-- Restricting `infinitePToFreeElement` to the finite point `n` gives the prescribed finite
 value. -/
@@ -2318,13 +2547,13 @@ lemma infinitePToFreeElement_finite (T : LightProfinite) [Infinite T] (n : ℕ) 
     (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map (natPoint n).op (infinitePToFreeElement T)) =
         infinitePToFreeFiniteValue T n :=
-  ((exists_infinitePToFreeElement T).choose_spec).1 n
+  ((exists_infinitePToFreeElement_direct T).choose_spec).1 n
 
 /-- Restricting `infinitePToFreeElement` to `∞` gives zero. -/
 lemma infinitePToFreeElement_infty (T : LightProfinite) [Infinite T] :
     (freeHomEquivPoints (LightProfinite.of PUnit.{1}) ((free ℤ).obj T.toCondensed)).symm
       (((free ℤ).obj T.toCondensed).obj.map ι.op (infinitePToFreeElement T)) = 0 :=
-  ((exists_infinitePToFreeElement T).choose_spec).2
+  ((exists_infinitePToFreeElement_direct T).choose_spec).2
 
 /-- The numerator of the map from the sequence object to the free object on `T`. -/
 noncomputable def infinitePToFreeNumerator (T : LightProfinite) [Infinite T] :
