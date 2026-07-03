@@ -1122,6 +1122,55 @@ lemma freePresheaf_equalizerSieve_mem_of_finite_closed_cover
   haveI : EffectiveEpiFamily V π := effectiveEpiFamily_of_jointly_surjective V π hsurj
   exact freePresheaf_equalizerSieve_mem_of_effectiveEpiFamily x y V π hπ
 
+/-- Pulling back a presheaf equalizer sieve restricts the two sections along the same arrow. -/
+lemma _root_.CategoryTheory.Presheaf.equalizerSieve_pullback_eq
+    {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ}
+    {U V : LightProfinite.{0}} (π : V ⟶ U)
+    (x y : F.obj ⟨U⟩) :
+    (CategoryTheory.Presheaf.equalizerSieve x y).pullback π =
+      CategoryTheory.Presheaf.equalizerSieve (F.map π.op x) (F.map π.op y) := by
+  ext W f
+  simp [CategoryTheory.Presheaf.equalizerSieve]
+
+/-- If the equalizer sieve is covering locally on every member of a finite closed cover, then it is
+covering on the original space.  This is the transitivity form of the closed-cover reduction. -/
+lemma presheaf_equalizerSieve_mem_of_finite_closed_cover_locally
+    {α : Type} [Finite α]
+    {F : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ}
+    {U : LightProfinite.{0}}
+    (x y : F.obj ⟨U⟩)
+    (C : α → Set U) (hC : ∀ i, IsClosed (C i))
+    (hcover : ∀ u : U, ∃ i, u ∈ C i)
+    (hlocal : ∀ i,
+      CategoryTheory.Presheaf.equalizerSieve
+        (F.map (closedSubLightProfiniteι (C i) (hC i)).op x)
+        (F.map (closedSubLightProfiniteι (C i) (hC i)).op y) ∈
+          (coherentTopology LightProfinite)
+            (closedSubLightProfinite (C i) (hC i))) :
+    CategoryTheory.Presheaf.equalizerSieve x y ∈
+      (coherentTopology LightProfinite) U := by
+  let V : α → LightProfinite := fun i => closedSubLightProfinite (C i) (hC i)
+  let π : (i : α) → V i ⟶ U := fun i => closedSubLightProfiniteι (C i) (hC i)
+  have hsurj : ∀ u : U, ∃ i, ∃ v : V i, π i v = u := by
+    intro u
+    obtain ⟨i, hu⟩ := hcover u
+    refine ⟨i, ⟨u, hu⟩, ?_⟩
+    exact closedSubLightProfiniteι_apply (C i) (hC i) ⟨u, hu⟩
+  haveI : EffectiveEpiFamily V π := effectiveEpiFamily_of_jointly_surjective V π hsurj
+  let S₀ : Sieve U := Sieve.ofArrows V π
+  have hS₀ : S₀ ∈ (coherentTopology LightProfinite) U := by
+    apply CategoryTheory.coherentTopology.mem_sieves_of_hasEffectiveEpiFamily
+    exact ⟨α, inferInstance, V, π, inferInstance, fun i => Sieve.ofArrows_mk V π i⟩
+  refine (coherentTopology LightProfinite).transitive hS₀
+    (CategoryTheory.Presheaf.equalizerSieve x y) ?_
+  intro Y f hf
+  obtain ⟨i, g, rfl⟩ := (Sieve.mem_ofArrows_iff V π f).mp hf
+  have hπ : (CategoryTheory.Presheaf.equalizerSieve x y).pullback (π i) ∈
+      (coherentTopology LightProfinite) (V i) := by
+    simpa [S₀, V, π, CategoryTheory.Presheaf.equalizerSieve_pullback_eq] using hlocal i
+  simpa [Sieve.pullback_comp] using
+    ((coherentTopology LightProfinite).pullback_stable g hπ)
+
 /-- Equality-pattern loci cut out by finitely many equalities between maps to a light profinite
 space are closed.  The second TFC3 round uses these as closed members of a coherent cover; the
 remaining coefficient extraction happens after restricting the free presheaf to these loci. -/
