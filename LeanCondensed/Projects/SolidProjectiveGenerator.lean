@@ -1502,19 +1502,14 @@ lemma freeToTopologicalFree_section_eq_of_zdisc_eval (T S : LightProfinite)
       ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩ y)
   simpa using hf
 
-/-- Since the source of `freeToTopologicalFree` is sequential, injectivity on point-valued sections
-implies injectivity on all light profinite sections. -/
+/-- The topological-free comparison is an isomorphism, so it is injective on all light profinite
+sections.  The point-injectivity hypothesis is retained for compatibility with older reductions. -/
 lemma freeToTopologicalFree_section_injective_of_point_injective (T S : LightProfinite)
-    (hpt : Function.Injective
+    (_hpt : Function.Injective
       ((LightCondAb.freeToTopologicalFree T).hom.app ⟨LightProfinite.of PUnit⟩)) :
     Function.Injective ((LightCondAb.freeToTopologicalFree T).hom.app ⟨S⟩) := by
-  let X : LightCondSet := (forget ℤ).obj ((free ℤ).obj T.toCondensed)
-  let Y : LightCondSet := (forget ℤ).obj (LightCondAb.topologicalFreeCondensed T)
-  let f : X ⟶ Y := (forget ℤ).map (LightCondAb.freeToTopologicalFree T)
-  haveI : IsIso (LightCondSet.topCatAdjunctionUnit X) := by
-    change IsIso (LightCondAb.freeLightProfiniteMap T)
-    infer_instance
-  exact LightCondSet.injective_app_of_topCatAdjunctionUnit_iso_and_injective_point f hpt S
+  rw [← ModuleCat.mono_iff_injective]
+  infer_instance
 
 /-- The non-finite free-target separation theorem is reduced to point-injectivity of the comparison
 with the represented topological free abelian group. -/
