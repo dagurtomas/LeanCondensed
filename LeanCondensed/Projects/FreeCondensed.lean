@@ -1314,6 +1314,76 @@ lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_sub_eq_zero
       exact Finsupp.mapDomain_sub
     _ = 0 := by simp [hpoint]
 
+/-- Indices for the one-step collision cover: support maps distinct from the chosen `g₀`. -/
+def freePresheaf_collisionCoverIndex
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    (g₀ : U ⟶ S) : Type :=
+  {g : S.toCondensed.obj.obj ⟨U⟩ // g ∈ c.support ∧ (show U ⟶ S from g) ≠ g₀}
+
+instance freePresheaf_collisionCoverIndex_finite
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    (g₀ : U ⟶ S) :
+    Finite (freePresheaf_collisionCoverIndex S U c g₀) := by
+  classical
+  let collisionSet : Set (S.toCondensed.obj.obj ⟨U⟩) :=
+    {g | g ∈ c.support ∧ (show U ⟶ S from g) ≠ g₀}
+  have hfinite : collisionSet.Finite := by
+    refine Set.Finite.ofFinset
+      (c.support.filter fun g => (show U ⟶ S from g) ≠ g₀) ?_
+    intro g
+    simp [collisionSet]
+  change Finite collisionSet
+  exact hfinite.to_subtype
+
+/-- The closed equality locus for a collision-cover index. -/
+noncomputable def freePresheaf_collisionCoverSet
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    (g₀ : U ⟶ S) :
+    freePresheaf_collisionCoverIndex S U c g₀ → Set U :=
+  fun g => {u | (show U ⟶ S from g.1) u = g₀ u}
+
+lemma freePresheaf_collisionCover_isClosed
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    (g₀ : U ⟶ S) :
+    ∀ i, IsClosed (freePresheaf_collisionCoverSet S U c g₀ i) := by
+  intro i
+  exact isClosed_eq (show U ⟶ S from i.1).hom.hom.continuous g₀.hom.hom.continuous
+
+lemma freePresheaf_collisionCover_covers_of_pointwise_zero
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    {g₀ : U ⟶ S} (hg₀ : g₀ ∈ c.support)
+    (hzero : ∀ u : U,
+      Finsupp.mapDomain (fun g : U ⟶ S => g u) c = 0) :
+    ∀ u : U, ∃ i, u ∈ freePresheaf_collisionCoverSet S U c g₀ i := by
+  classical
+  intro u
+  obtain ⟨g, hg, hne, heq⟩ :=
+    finsupp_exists_ne_mem_support_apply_eq_of_mapDomain_eq_zero c hg₀
+      (fun g : U ⟶ S => g u) (hzero u)
+  exact ⟨⟨g, hg, hne⟩, heq⟩
+
+lemma freePresheaf_collisionCover_restrict_card_lt
+    (S U : LightProfinite.{0}) (c : (freePresheaf S).obj ⟨U⟩)
+    {g₀ : U ⟶ S} (hg₀ : g₀ ∈ c.support)
+    (i : freePresheaf_collisionCoverIndex S U c g₀) :
+    let C := freePresheaf_collisionCoverSet S U c g₀ i
+    let hC := freePresheaf_collisionCover_isClosed S U c g₀ i
+    (((freePresheaf S).map (closedSubLightProfiniteι C hC).op c).support.card <
+      c.support.card) := by
+  classical
+  dsimp only
+  apply freePresheaf_restrict_support_card_lt_of_eq_on_pair S
+    (closedSubLightProfiniteι (freePresheaf_collisionCoverSet S U c g₀ i)
+      (freePresheaf_collisionCover_isClosed S U c g₀ i)) c i.2.1 hg₀ i.2.2
+  ext x
+  change (show U ⟶ S from i.1)
+      (closedSubLightProfiniteι (freePresheaf_collisionCoverSet S U c g₀ i)
+        (freePresheaf_collisionCover_isClosed S U c g₀ i) x) =
+    g₀ (closedSubLightProfiniteι (freePresheaf_collisionCoverSet S U c g₀ i)
+        (freePresheaf_collisionCover_isClosed S U c g₀ i) x)
+  rw [closedSubLightProfiniteι_apply]
+  exact (x : freePresheaf_collisionCoverSet S U c g₀ i).2
+
 /-- For a finite target, the presheaf comparison is locally injective.  The covering pieces are the
 closed loci on which every support map of the two sections is constant. -/
 instance freePresheafToTopologicalFreePresheaf_isLocallyInjective_of_finite
