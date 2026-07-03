@@ -14,6 +14,7 @@ import Mathlib.Data.Finsupp.Basic
 import Mathlib.Topology.Category.LightProfinite.AsLimit
 import Mathlib.Topology.Category.Sequential
 import Mathlib.Topology.Category.TopCat.Limits.Basic
+import Mathlib.Topology.ContinuousMap.Bounded.Normed
 import Mathlib.Topology.LocallyConstant.Basic
 import Mathlib.Tactic.FunProp
 import Mathlib.Tactic.Positivity
@@ -22,7 +23,7 @@ import Mathlib.Tactic.Ring
 noncomputable section
 
 open CategoryTheory LightCondensed LightCondSet LightCondAb Limits
-open scoped BigOperators
+open scoped BigOperators BoundedContinuousFunction
 
 namespace Sequential
 
@@ -1778,6 +1779,58 @@ lemma discreteIntTopModuleCondensedIso_sections (T : LightProfinite.{0})
   rw [Iso.hom_inv_id]
   rfl
 
+/-- The real line as a topological `ℤ`-module. -/
+abbrev realTopModule : TopModuleCat.{0} ℤ :=
+  TopModuleCat.of ℤ ℝ
+
+/-- The continuous homomorphism from the topological free abelian group induced by a continuous
+map from the generators to a topological `ℤ`-module. -/
+noncomputable def topologicalFreeEvalTopModule
+    (M : TopModuleCat.{0} ℤ)
+    (f : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).obj M) :
+    topologicalFree S ⟶ M :=
+  ((TopModuleCat.freeAdj ℤ).homEquiv S.toTop M).symm f
+
+@[simp]
+lemma topologicalFreeEvalTopModule_single
+    (M : TopModuleCat.{0} ℤ)
+    (f : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).obj M) (s : S) :
+    ((topologicalFreeEvalTopModule S M f).hom (Finsupp.single s (1 : ℤ)) : M) =
+      (show M from f s) := by
+  change (((TopModuleCat.freeAdj ℤ).homEquiv S.toTop M
+    (topologicalFreeEvalTopModule S M f)) s) = f s
+  simp [topologicalFreeEvalTopModule]
+
+/-- The universal extension computes by the usual finite sum against the generators. -/
+lemma topologicalFreeEvalTopModule_apply
+    (M : TopModuleCat.{0} ℤ)
+    (f : S.toTop ⟶ (forget₂ (TopModuleCat ℤ) TopCat).obj M)
+    (μ : topologicalFree S) :
+    ((topologicalFreeEvalTopModule S M f).hom μ : M) =
+      ((show S →₀ ℤ from μ).sum (fun s n => n • (show M from f s)) : M) := by
+  let L : (topologicalFree S) →ₗ[ℤ] M := (topologicalFreeEvalTopModule S M f).hom.toLinearMap
+  let R : (topologicalFree S) →ₗ[ℤ] M :=
+    Finsupp.linearCombination ℤ fun s : S => (show M from f s)
+  have hLR : L = R := by
+    refine Finsupp.lhom_ext' fun s => LinearMap.ext_ring ?_
+    simp [L, R]
+    convert topologicalFreeEvalTopModule_single S M f s
+    · rfl
+    · exact @MulAction.one_smul ℤ M _
+        ((Module.toDistribMulAction : DistribMulAction ℤ M).toMulAction) (show M from f s)
+  calc
+    ((topologicalFreeEvalTopModule S M f).hom μ : M) = R μ := by
+      change L μ = R μ
+      rw [hLR]
+    _ = ((show S →₀ ℤ from μ).sum (fun s n => n • (show M from f s)) : M) := by
+      change (Finsupp.linearCombination ℤ (fun s : S => (show M from f s))
+        (show S →₀ ℤ from μ)) = _
+      rw [Finsupp.linearCombination_apply]
+      simp only [Finsupp.sum]
+      refine Finset.sum_congr rfl ?_
+      intro s _
+      exact Int.cast_smul_eq_zsmul ℤ ((show S →₀ ℤ from μ) s) (show M from f s)
+
 /-- The continuous linear map out of the topological free abelian group induced by a locally
 constant integer-valued function on `S`. -/
 noncomputable def topologicalFreeEval (f : LocallyConstant S ℤ) :
@@ -1889,6 +1942,121 @@ instance topologicalFree_t2Space : T2Space (topologicalFree S) := by
     intro η hηU hηV
     apply hf
     exact hηU.symm.trans hηV
+
+/-- The real continuous linear functional on bounded continuous functions induced by a finitely
+supported integer measure. -/
+noncomputable def finsuppRealEvalCLM (μ : S →₀ ℤ) :
+    (S →ᵇ ℝ) →L[ℝ] ℝ :=
+  μ.sum fun s n => (n : ℝ) • BoundedContinuousFunction.evalCLM ℝ s
+
+@[simp]
+lemma finsuppRealEvalCLM_apply (μ : S →₀ ℤ) (f : S →ᵇ ℝ) :
+    finsuppRealEvalCLM S μ f = μ.sum (fun s n => (n : ℝ) * f s) := by
+  simp only [finsuppRealEvalCLM, Finsupp.sum]
+  change ((∑ x ∈ μ.support, (μ x : ℝ) • BoundedContinuousFunction.evalCLM ℝ x :
+      (S →ᵇ ℝ) →L[ℝ] ℝ) : (S →ᵇ ℝ) → ℝ) f =
+    ∑ x ∈ μ.support, (μ x : ℝ) * f x
+  simp
+
+lemma finsuppRealEvalCLM_bound (μ : S →₀ ℤ) (f : S →ᵇ ℝ) :
+    ‖finsuppRealEvalCLM S μ f‖ ≤
+      (LightProfinite.FreeImage.totalVariation μ : ℝ) * ‖f‖ := by
+  rw [finsuppRealEvalCLM_apply]
+  rw [Real.norm_eq_abs]
+  simp only [Finsupp.sum]
+  calc
+    |∑ x ∈ μ.support, (μ x : ℝ) * f x| ≤
+        ∑ x ∈ μ.support, |(μ x : ℝ) * f x| := by
+      exact Finset.abs_sum_le_sum_abs (s := μ.support) (f := fun x => (μ x : ℝ) * f x)
+    _ = ∑ x ∈ μ.support, |(μ x : ℝ)| * ‖f x‖ := by
+      refine Finset.sum_congr rfl ?_
+      intro x _
+      rw [abs_mul, Real.norm_eq_abs]
+    _ ≤ ∑ x ∈ μ.support, |(μ x : ℝ)| * ‖f‖ := by
+      refine Finset.sum_le_sum ?_
+      intro x _
+      exact mul_le_mul_of_nonneg_left (BoundedContinuousFunction.norm_coe_le_norm f x)
+        (abs_nonneg _)
+    _ = (LightProfinite.FreeImage.totalVariation μ : ℝ) * ‖f‖ := by
+      rw [LightProfinite.FreeImage.totalVariation, Finsupp.sum]
+      simp_rw [Int.cast_sum, Int.cast_abs]
+      rw [Finset.sum_mul]
+
+lemma norm_finsuppRealEvalCLM_le (μ : S →₀ ℤ) :
+    ‖finsuppRealEvalCLM S μ‖ ≤ (LightProfinite.FreeImage.totalVariation μ : ℝ) := by
+  exact ContinuousLinearMap.opNorm_le_bound _
+    (by exact_mod_cast LightProfinite.FreeImage.totalVariation_nonneg μ)
+    (finsuppRealEvalCLM_bound S μ)
+
+lemma exists_finsuppRealEvalCLM_sign (μ : S →₀ ℤ) :
+    ∃ f : S →ᵇ ℝ, ‖f‖ ≤ 1 ∧
+      finsuppRealEvalCLM S μ f = (LightProfinite.FreeImage.totalVariation μ : ℝ) := by
+  classical
+  obtain ⟨n, hn⟩ := LightProfinite.exists_proj_injective_on_finset_points S μ.support
+  haveI : Finite (S.diagram.obj ⟨n⟩) := by
+    change Finite (FintypeCat.toLightProfinite.obj (S.fintypeDiagram.obj ⟨n⟩))
+    infer_instance
+  haveI : DiscreteTopology (S.diagram.obj ⟨n⟩) := Finite.instDiscreteTopology
+  let qC : C(S, S.diagram.obj ⟨n⟩) := (S.proj n).hom.hom
+  let q : S → S.diagram.obj ⟨n⟩ := qC
+  let μq : (S.diagram.obj ⟨n⟩) →₀ ℤ := Finsupp.mapDomain q μ
+  let g : S.diagram.obj ⟨n⟩ → ℝ :=
+    fun x => if 0 < μq x then 1 else if μq x < 0 then -1 else 0
+  let gLC : LocallyConstant (S.diagram.obj ⟨n⟩) ℝ :=
+    ⟨g, IsLocallyConstant.of_discrete g⟩
+  let fLC : LocallyConstant S ℝ := gLC.comap qC
+  let f : S →ᵇ ℝ := BoundedContinuousFunction.mkOfCompact fLC.toContinuousMap
+  have hμq (s : S) (hs : s ∈ μ.support) : μq (q s) = μ s := by
+    exact Finsupp.mapDomain_apply' (↑μ.support : Set S) μ (by intro x hx; exact hx) hn hs
+  have hf_apply (s : S) : f s = g (q s) := rfl
+  have hf_support (s : S) (hs : s ∈ μ.support) :
+      f s = (if 0 < μ s then (1 : ℝ) else (-1 : ℝ)) := by
+    have hne : μ s ≠ 0 := Finsupp.mem_support_iff.mp hs
+    by_cases hpos : 0 < μ s
+    · have hqpos : 0 < μq (q s) := by simpa [hμq s hs] using hpos
+      simp [hf_apply, g, hqpos, hpos]
+    · have hneg : μ s < 0 := lt_of_le_of_ne (not_lt.mp hpos) hne
+      have hqnot : ¬ 0 < μq (q s) := by simpa [hμq s hs] using hpos
+      have hqneg : μq (q s) < 0 := by simpa [hμq s hs] using hneg
+      simp [hf_apply, g, hqnot, hqneg, hpos]
+  have hf_norm : ‖f‖ ≤ 1 := by
+    apply (BoundedContinuousFunction.norm_le zero_le_one).2
+    intro s
+    rw [hf_apply]
+    by_cases hpos : 0 < μq (q s)
+    · simp [g, hpos]
+    · by_cases hneg : μq (q s) < 0
+      · simp [g, hpos, hneg]
+      · simp [g, hpos, hneg]
+  refine ⟨f, hf_norm, ?_⟩
+  rw [finsuppRealEvalCLM_apply, LightProfinite.FreeImage.totalVariation]
+  simp only [Finsupp.sum]
+  rw [Int.cast_sum]
+  refine Finset.sum_congr rfl ?_
+  intro s hs
+  rw [hf_support s hs]
+  by_cases hpos : 0 < μ s
+  · have hnonneg : 0 ≤ μ s := le_of_lt hpos
+    simp [hpos, abs_of_nonneg hnonneg]
+  · have hne : μ s ≠ 0 := Finsupp.mem_support_iff.mp hs
+    have hneg : μ s < 0 := lt_of_le_of_ne (not_lt.mp hpos) hne
+    have hnonpos : μ s ≤ 0 := le_of_lt hneg
+    simp [hpos, abs_of_nonpos hnonpos]
+
+lemma totalVariation_le_norm_finsuppRealEvalCLM (μ : S →₀ ℤ) :
+    (LightProfinite.FreeImage.totalVariation μ : ℝ) ≤ ‖finsuppRealEvalCLM S μ‖ := by
+  obtain ⟨f, hf_norm, hf_eval⟩ := exists_finsuppRealEvalCLM_sign S μ
+  have h_eval_norm : ‖finsuppRealEvalCLM S μ f‖ =
+      (LightProfinite.FreeImage.totalVariation μ : ℝ) := by
+    rw [hf_eval, Real.norm_of_nonneg]
+    exact_mod_cast LightProfinite.FreeImage.totalVariation_nonneg μ
+  rw [← h_eval_norm]
+  simpa using (finsuppRealEvalCLM S μ).le_opNorm_of_le hf_norm
+
+lemma norm_finsuppRealEvalCLM (μ : S →₀ ℤ) :
+    ‖finsuppRealEvalCLM S μ‖ = (LightProfinite.FreeImage.totalVariation μ : ℝ) := by
+  exact le_antisymm (norm_finsuppRealEvalCLM_le S μ)
+    (totalVariation_le_norm_finsuppRealEvalCLM S μ)
 
 /-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
 lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
