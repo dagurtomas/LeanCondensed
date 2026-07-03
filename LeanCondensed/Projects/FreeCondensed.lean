@@ -1280,6 +1280,40 @@ lemma finsupp_mapDomain_support_card_lt_of_pair_eq
     exact Nat.lt_of_le_of_ne hle hnecard
   exact lt_of_le_of_lt hcard_support hcard_image_lt
 
+lemma freePresheaf_map_sub
+    (S : LightProfinite.{0}) {U V : LightProfinite.{0}} (π : V ⟶ U)
+    (a b : (freePresheaf S).obj ⟨U⟩) :
+    (freePresheaf S).map π.op (a - b) =
+      (freePresheaf S).map π.op a - (freePresheaf S).map π.op b := by
+  exact ((freePresheaf S).map π.op).hom.map_sub a b
+
+lemma freePresheaf_restrict_support_card_lt_of_eq_on_pair
+    (S : LightProfinite.{0}) {U V : LightProfinite.{0}} (π : V ⟶ U)
+    (c : (freePresheaf S).obj ⟨U⟩)
+    {g h : U ⟶ S} (hg : g ∈ c.support) (hh : h ∈ c.support)
+    (hne : g ≠ h) (heq : π ≫ g = π ≫ h) :
+    (((freePresheaf S).map π.op c).support.card < c.support.card) := by
+  classical
+  change (Finsupp.mapDomain (fun g : U ⟶ S => π ≫ g) c).support.card < c.support.card
+  exact finsupp_mapDomain_support_card_lt_of_pair_eq (fun g : U ⟶ S => π ≫ g) c hg hh hne heq
+
+lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_sub_eq_zero
+    (S U : LightProfinite.{0}) {a b : (freePresheaf S).obj ⟨U⟩}
+    (h : (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ a =
+      (freePresheafToTopologicalFreePresheaf S).app ⟨U⟩ b)
+    (u : U) :
+    Finsupp.mapDomain (fun g : U ⟶ S => g u) (a - b) = 0 := by
+  classical
+  let f : S.toCondensed.obj.obj ⟨U⟩ → S :=
+    fun g => ((show U ⟶ S from g) u)
+  change Finsupp.mapDomain f (a - b) = 0
+  have hpoint : Finsupp.mapDomain f a = Finsupp.mapDomain f b := by
+    simpa [f] using freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq S U h u
+  calc
+    Finsupp.mapDomain f (a - b) = Finsupp.mapDomain f a - Finsupp.mapDomain f b := by
+      exact Finsupp.mapDomain_sub
+    _ = 0 := by simp [hpoint]
+
 /-- For a finite target, the presheaf comparison is locally injective.  The covering pieces are the
 closed loci on which every support map of the two sections is constant. -/
 instance freePresheafToTopologicalFreePresheaf_isLocallyInjective_of_finite
