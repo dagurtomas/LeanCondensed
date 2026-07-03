@@ -1232,6 +1232,54 @@ lemma finsupp_mapDomain_eq_of_eq_of_injOn_support_union {α β : Type*} [Decidab
       exact hxb ((Finsupp.mem_support_iff).mpr hne)
     simp [hax, hbx]
 
+/-- If a finitely supported integer combination vanishes after `mapDomain`, then every support
+point collides under the domain map with another support point. -/
+lemma finsupp_exists_ne_mem_support_apply_eq_of_mapDomain_eq_zero
+    {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (c : α →₀ ℤ) {x : α} (hx : x ∈ c.support)
+    (f : α → β) (hzero : Finsupp.mapDomain f c = 0) :
+    ∃ y, y ∈ c.support ∧ y ≠ x ∧ f y = f x := by
+  by_contra hnone
+  have hsum : (Finsupp.mapDomain f c) (f x) = c x := by
+    rw [Finsupp.mapDomain_apply_eq_sum]
+    refine Finset.sum_eq_single x ?_ ?_
+    · intro y hy hyx
+      rw [Finset.mem_filter] at hy
+      exact (hnone ⟨y, hy.1, hyx, hy.2⟩).elim
+    · intro hxnot
+      exact (hxnot (by
+        rw [Finset.mem_filter]
+        exact ⟨hx, rfl⟩)).elim
+  have hzero_apply : (Finsupp.mapDomain f c) (f x) = 0 := by
+    rw [hzero]
+    rfl
+  rw [hsum] at hzero_apply
+  exact (Finsupp.mem_support_iff.mp hx) hzero_apply
+
+/-- If two distinct support points collide under the domain map, then the support of the
+`mapDomain` result has strictly smaller cardinality.  This only uses the upper bound by the image
+of the original support, so cancellations after `mapDomain` are allowed. -/
+lemma finsupp_mapDomain_support_card_lt_of_pair_eq
+    {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (f : α → β) (c : α →₀ ℤ)
+    {x y : α} (hx : x ∈ c.support) (hy : y ∈ c.support)
+    (hne : x ≠ y) (hxy : f x = f y) :
+    (Finsupp.mapDomain f c).support.card < c.support.card := by
+  have hsubset : (Finsupp.mapDomain f c).support ⊆ c.support.image f := by
+    exact Finsupp.mapDomain_support
+  have hcard_support : (Finsupp.mapDomain f c).support.card ≤ (c.support.image f).card :=
+    Finset.card_le_card hsubset
+  have hnotinj : ¬ Set.InjOn f (c.support : Set α) := by
+    intro hinj
+    exact hne (hinj (by exact Finset.mem_coe.mpr hx) (by exact Finset.mem_coe.mpr hy) hxy)
+  have hcard_image_lt : (c.support.image f).card < c.support.card := by
+    have hle : (c.support.image f).card ≤ c.support.card := Finset.card_image_le
+    have hnecard : (c.support.image f).card ≠ c.support.card := by
+      intro heq
+      exact hnotinj ((Finset.card_image_iff (s := c.support) (f := f)).mp heq)
+    exact Nat.lt_of_le_of_ne hle hnecard
+  exact lt_of_le_of_lt hcard_support hcard_image_lt
+
 /-- For a finite target, the presheaf comparison is locally injective.  The covering pieces are the
 closed loci on which every support map of the two sections is constant. -/
 instance freePresheafToTopologicalFreePresheaf_isLocallyInjective_of_finite
