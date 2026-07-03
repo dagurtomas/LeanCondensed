@@ -1760,6 +1760,77 @@ noncomputable def freeTensorFamilyMap (X : LightProfinite.{0}) (B C : LightCondA
       rw [← hto]
       simpa [Category.assoc] using (hnat φ.unop (toPointMap S.unop ≫ x) m).symm }
 
+set_option maxHeartbeats 800000
+set_option synthInstance.maxHeartbeats 400000
+set_option backward.isDefEq.respectTransparency false
+
+/-- The presheaf-level unit vector determined by a point of the free variable. -/
+noncomputable def freeTensorPointUnit (X : LightProfinite.{0})
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    𝟙_ (LightProfiniteᵒᵖ ⥤ ModuleCat ℤ) ⟶ X.toCondensed.obj ⋙ ModuleCat.free ℤ where
+  app S := ModuleCat.ofHom {
+    toFun := fun r => Finsupp.single (toPointMap S.unop ≫ x) r
+    map_add' := by
+      intro a b
+      ext f
+      by_cases h : f = toPointMap S.unop ≫ x <;> simp [h]
+    map_smul' := by
+      intro a r
+      ext f
+      by_cases h : f = toPointMap S.unop ≫ x <;> simp [h] }
+  naturality := by
+    intro S T φ
+    rw [show φ = φ.unop.op by rfl]
+    apply ModuleCat.hom_ext
+    apply LinearMap.ext
+    intro r
+    change Finsupp.single (toPointMap T.unop ≫ x) r =
+      Finsupp.lmapDomain ℤ ℤ (X.toCondensed.obj.map φ.unop.op)
+        (Finsupp.single (toPointMap S.unop ≫ x) r)
+    ext f
+    rw [Finsupp.lmapDomain_apply]
+    rw [Finsupp.mapDomain_single]
+    have hto : φ.unop ≫ toPointMap S.unop = toPointMap T.unop := by ext t
+    rw [← hto]
+    rfl
+
+/-- The point-unit map is the presheaf-level form of the free point/unit isomorphism. -/
+lemma freeTensorPointUnit_eq (X : LightProfinite.{0})
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    freeTensorPointUnit X x =
+      Functor.LaxMonoidal.ε
+        ((Functor.whiskeringRight LightProfiniteᵒᵖ (Type 0) (ModuleCat ℤ)).obj (ModuleCat.free ℤ)) ≫
+      𝟙 (𝟙_ (LightProfiniteᵒᵖ ⥤ Type) ⋙ ModuleCat.free ℤ) ≫
+      Functor.whiskerRight (Functor.LaxMonoidal.ε lightProfiniteToLightCondSet).hom
+        (ModuleCat.free ℤ) ≫
+      Functor.whiskerRight (lightProfiniteToLightCondSet.map x).hom (ModuleCat.free ℤ) := by
+  ext S
+  change Finsupp.single (toPointMap S.unop ≫ x) (1 : ℤ) =
+    (ConcreteCategory.hom ((ModuleCat.free ℤ).map ((lightProfiniteToLightCondSet.map x).hom.app S)))
+      ((ConcreteCategory.hom ((ModuleCat.free ℤ).map
+        ((Functor.LaxMonoidal.ε lightProfiniteToLightCondSet).hom.app S)))
+        ((ConcreteCategory.hom (Functor.LaxMonoidal.ε (ModuleCat.free ℤ))) 1))
+  rw [ModuleCat.free_ε_one]
+  rw [ModuleCat.free_map_apply]
+  rw [ModuleCat.free_map_apply]
+  rfl
+
+/-- Sheafifying the point-unit map gives the chosen map out of the tensor unit. -/
+lemma freeTensorPointUnit_sheafify (X : LightProfinite.{0})
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    Functor.LaxMonoidal.ε L ≫ L.map (freeTensorPointUnit X x) =
+      freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x) := by
+  intro L
+  rw [freeTensorPointUnit_eq]
+  dsimp [freePointIsoUnit, LightCondensed.free, CategoryTheory.Sheaf.composeAndSheafify]
+  simp only [Iso.trans_inv, Iso.symm_inv, Functor.Monoidal.εIso_hom,
+    Functor.LaxMonoidal.comp_ε, ObjectProperty.ι_obj,
+    CartesianMonoidalCategory.fullSubcategory_tensorUnit_obj, ObjectProperty.ι_ε,
+    Functor.comp_map, Functor.whiskeringRight_obj_map, Functor.whiskerRight_id',
+    Category.assoc, Functor.mapIso_hom, ObjectProperty.ι_map]
+  rw [Functor.map_comp, Functor.map_comp, Functor.map_comp]
+
 /-- The presheaf-level pure tensor map determined by a point of the left free variable. -/
 noncomputable def freeTensorPresheafPoint (X : LightProfinite.{0}) (B : LightCondAb)
     (x : LightProfinite.of PUnit.{1} ⟶ X) :
@@ -1779,6 +1850,178 @@ noncomputable def freeTensorPresheafPoint (X : LightProfinite.{0}) (B : LightCon
     rw [Finsupp.lmapDomain_apply]
     rw [Finsupp.mapDomain_single]
     congr 1
+
+/-- The pure tensor map is obtained from the point-unit map and the left unitor. -/
+lemma freeTensorPresheafPoint_eq (X : LightProfinite.{0}) (B : LightCondAb)
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    freeTensorPresheafPoint X B x =
+      (λ_ B.obj).inv ≫ (freeTensorPointUnit X x ▷ B.obj) := by
+  ext S m
+  rfl
+
+/-- The point slice is compatible with the monoidal structure on sheafification. -/
+lemma freeTensorPresheafPoint_sheafify_comp (X : LightProfinite.{0}) (B : LightCondAb)
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+    let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+    CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+      (((λ_ (L.obj G)).inv ≫
+        (freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)) ▷ L.obj G ≫
+        (Functor.Monoidal.μIso L F G).hom).hom) =
+      freeTensorPresheafPoint X B x ≫
+        CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) := by
+  intro L F G
+  have hunit := freeTensorPointUnit_sheafify X x
+  dsimp only at hunit
+  rw [← hunit]
+  have hsheaf :
+      (λ_ (L.obj G)).inv ≫
+          (Functor.LaxMonoidal.ε L ≫ L.map (freeTensorPointUnit X x)) ▷ L.obj G ≫
+          (Functor.Monoidal.μIso L F G).hom =
+        L.map (freeTensorPresheafPoint X B x) := by
+    rw [freeTensorPresheafPoint_eq]
+    simp only [comp_whiskerRight, Category.assoc, Functor.Monoidal.μIso_hom]
+    slice_lhs 3 4 => rw [Functor.LaxMonoidal.μ_natural_left L (freeTensorPointUnit X x) G]
+    slice_lhs 1 3 => rw [Functor.LaxMonoidal.left_unitality_inv L G]
+    rw [← Functor.map_comp]
+  rw [hsheaf]
+  rw [← CategoryTheory.toSheafify_naturality]
+
+/-- Evaluating the defining presheaf-level tensor map at a point gives the corresponding
+sectionwise family map. -/
+lemma freeTensorPresheafPoint_desc (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m))
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    freeTensorPresheafPoint X B x ≫ freeTensorPresheafDescLin X B C b hnat =
+      (freeTensorFamilyMap X B C b hnat x).hom := by
+  ext S m
+  letI hC : @SMulCommClass ℤ ℤ (↑(C.obj.obj S))
+      (C.obj.obj S).isModule.toDistribMulAction.toSMul
+      (C.obj.obj S).isModule.toDistribMulAction.toSMul :=
+    intModuleCatModuleSMulComm (C.obj.obj S)
+  letI : Module ℤ (B.obj.obj S →ₗ[ℤ] C.obj.obj S) :=
+    @LinearMap.module ℤ ℤ ℤ (B.obj.obj S) (C.obj.obj S) _ _ _ _ _ _
+      (RingHom.id ℤ) _ _ hC
+  change (TensorProduct.lift
+      ((Finsupp.lift (B.obj.obj S →ₗ[ℤ] C.obj.obj S) ℤ (X.toCondensed.obj.obj S)) fun f =>
+        b S.unop (freeTensorSectionHom X S f)))
+      ((Finsupp.single (toPointMap S.unop ≫ x) (1 : ℤ)) ⊗ₜ[ℤ] m) =
+    b S.unop (toPointMap S.unop ≫ x) m
+  rw [TensorProduct.lift.tmul]
+  rw [Finsupp.lift_apply]
+  rw [Finsupp.sum_single_index]
+  · simp [freeTensorSectionHom]
+  · apply LinearMap.ext
+    intro y
+    rw [LinearMap.smul_apply]
+    let mod : Module ℤ (C.obj.obj S) := (C.obj.obj S).isModule
+    change mod.toDistribMulAction.smul 0
+        ((b S.unop (freeTensorSectionHom X S (toPointMap S.unop ≫ x))) y) = 0
+    exact mod.zero_smul ((b S.unop (freeTensorSectionHom X S (toPointMap S.unop ≫ x))) y)
+
+/-- For a sheaf, the inverse to the sheafification counit is the sheafification unit. -/
+lemma sheafification_counit_inv_hom (B : LightCondAb) :
+    let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+    let cB : L.obj B.obj ⟶ B :=
+      (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+    (inv cB).hom = CategoryTheory.toSheafify (coherentTopology LightProfinite) B.obj := by
+  intro L cB
+  haveI : IsIso cB := by
+    dsimp [cB, L]
+    exact isIso_sheafificationAdjunction_counit B
+  apply (cancel_mono cB.hom).1
+  change (inv cB ≫ cB).hom =
+    CategoryTheory.toSheafify (coherentTopology LightProfinite) B.obj ≫ cB.hom
+  rw [IsIso.inv_hom_id]
+  dsimp [cB]
+  rw [CategoryTheory.sheafificationAdjunction_counit_app_val]
+  rw [CategoryTheory.toSheafify_sheafifyLift]
+
+/-- The sheaf-level free tensor constructor has the expected point slices. -/
+lemma freeTensorDescLin_point (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X)
+      (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m))
+    (x : LightProfinite.of PUnit.{1} ⟶ X) :
+    (λ_ B).inv ≫
+      (freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)) ▷ B ≫
+      freeTensorDescLin X B C b hnat =
+    freeTensorFamilyMap X B C b hnat x := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let α : F ⊗ G ⟶ C.obj := freeTensorPresheafDescLin X B C b hnat
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let cC : L.obj C.obj ⟶ C :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+  haveI : IsIso cB := by
+    dsimp [cB, G, L]
+    exact isIso_sheafificationAdjunction_counit B
+  haveI : IsIso cC := by
+    dsimp [cC, L]
+    exact isIso_sheafificationAdjunction_counit C
+  let p : 𝟙_ LightCondAb ⟶ L.obj F :=
+    freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)
+  have hmove :
+      (λ_ B).inv ≫ p ▷ B ≫ (L.obj F ◁ inv cB) =
+        inv cB ≫ (λ_ (L.obj G)).inv ≫ p ▷ L.obj G := by
+    calc
+      (λ_ B).inv ≫ p ▷ B ≫ (L.obj F ◁ inv cB)
+          = (λ_ B).inv ≫ (𝟙_ LightCondAb ◁ inv cB) ≫ p ▷ L.obj G := by
+              rw [MonoidalCategory.whisker_exchange p (inv cB)]
+      _ = inv cB ≫ (λ_ (L.obj G)).inv ≫ p ▷ L.obj G := by
+              rw [← MonoidalCategory.leftUnitor_inv_naturality_assoc (inv cB)]
+  calc
+    (λ_ B).inv ≫
+        (freePointIsoUnit.inv ≫ (free ℤ).map (lightProfiniteToLightCondSet.map x)) ▷ B ≫
+        freeTensorDescLin X B C b hnat
+        = inv cB ≫ ((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+            (Functor.Monoidal.μIso L F G).hom) ≫ L.map α ≫ cC := by
+            dsimp [freeTensorDescLin]
+            change (λ_ B).inv ≫ p ▷ B ≫
+                ((L.obj F ◁ inv cB) ≫ (Functor.Monoidal.μIso L F G).hom ≫
+                  L.map α ≫ cC) =
+              inv cB ≫ ((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+                (Functor.Monoidal.μIso L F G).hom) ≫ L.map α ≫ cC
+            slice_lhs 1 3 => rw [hmove]
+            simp [Category.assoc]
+    _ = freeTensorFamilyMap X B C b hnat x := by
+            apply Sheaf.hom_ext
+            change (inv cB).hom ≫
+                (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+                  (Functor.Monoidal.μIso L F G).hom).hom) ≫
+                ((L.map α ≫ cC).hom) =
+              (freeTensorFamilyMap X B C b hnat x).hom
+            have hcinv := sheafification_counit_inv_hom B
+            dsimp only at hcinv
+            rw [hcinv]
+            have hcompat := freeTensorPresheafPoint_sheafify_comp X B x
+            dsimp only at hcompat
+            change CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+                (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+                  (Functor.Monoidal.μIso L F G).hom).hom) =
+              freeTensorPresheafPoint X B x ≫
+                CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) at hcompat
+            change CategoryTheory.toSheafify (coherentTopology LightProfinite) G ≫
+                (((λ_ (L.obj G)).inv ≫ p ▷ L.obj G ≫
+                  (Functor.Monoidal.μIso L F G).hom).hom) ≫
+                ((L.map α ≫ cC).hom) =
+              (freeTensorFamilyMap X B C b hnat x).hom
+            rw [← Category.assoc]
+            rw [hcompat]
+            rw [Category.assoc]
+            have hfac := freeTensorDescLin_sheafify_fac X B C b hnat
+            dsimp only at hfac
+            change CategoryTheory.toSheafify (coherentTopology LightProfinite) (F ⊗ G) ≫
+                ((L.map α ≫ cC).hom) = α at hfac
+            rw [hfac]
+            exact freeTensorPresheafPoint_desc X B C b hnat x
 
 /-- The `Zdisc`-valued map out of `ℤ[T]` induced by a locally constant integer-valued
 function on `T`. -/
@@ -2500,6 +2743,88 @@ lemma pTensorDesc_slice (M N : LightCondAb)
   rw [comp_whiskerRight]
   simp only [Category.assoc]
   rw [pTensorDesc_comp_proj]
+
+/-- The bounded-tail family at the finite point `n` is the `n`th tail projection. -/
+lemma boundedTailFamilyMap_natPoint (n : ℕ) :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+      boundedTailFamilyLinear (by
+        intro S T g f m
+        exact boundedTailFamilyLinear_naturality g f m) (natPoint n) =
+    boundedTailProjection n := by
+  ext S x
+  change boundedTailFamilyLinear S.unop (toPointMap S.unop ≫ natPoint n) x =
+    (boundedTailProjection n).hom.app S x
+  apply BoundedIntSeqSection.ext_apply
+  intro k s
+  dsimp [boundedTailFamilyLinear, boundedTailProjection, boundedTailProjectionSection]
+  change boundedTailFamilyCoord k ((toPointMap S.unop ≫ natPoint n) s) * x.val k s =
+    (if n ≤ k then x.val k else 0) s
+  change boundedTailFamilyCoord k (n : ℕ∪{∞}) * x.val k s = _
+  rw [boundedTailFamilyCoord_finite]
+  by_cases h : n ≤ k <;> simp [h]
+
+/-- Finite slices of the bounded-tail numerator are the tail projections. -/
+lemma boundedTailNumerator_slice (n : ℕ) :
+    numeratorSlice boundedIntSequences boundedIntSequences n boundedTailNumerator =
+      boundedTailProjection n := by
+  dsimp [numeratorSlice, freeNatBasis, boundedTailNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedTailFamilyMap_natPoint n
+
+/-- The bounded-tail family at `∞` is zero. -/
+lemma boundedTailFamilyMap_infty :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+      boundedTailFamilyLinear (by
+        intro S T g f m
+        exact boundedTailFamilyLinear_naturality g f m) ι =
+    0 := by
+  ext S x
+  change boundedTailFamilyLinear S.unop (toPointMap S.unop ≫ ι) x =
+    (0 : boundedIntSequences ⟶ boundedIntSequences).hom.app S x
+  apply BoundedIntSeqSection.ext_apply
+  intro k s
+  change boundedTailFamilyCoord k ((toPointMap S.unop ≫ ι) s) * x.val k s = 0
+  change boundedTailFamilyCoord k (∞ : ℕ∪{∞}) * x.val k s = 0
+  rw [boundedTailFamilyCoord_infty]
+  simp
+
+/-- The bounded-tail numerator has zero `∞` slice. -/
+lemma boundedTailNumerator_infty :
+    inftySlice boundedIntSequences boundedIntSequences boundedTailNumerator = 0 := by
+  dsimp [inftySlice, freeInftyBasis, P_map, boundedTailNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedTailFamilyMap_infty
+
+/-- The bounded-tail numerator kills the basepoint summand and therefore descends to `P`. -/
+lemma boundedTailNumerator_kills :
+    (P_map ℤ ▷ boundedIntSequences) ≫ boundedTailNumerator = 0 :=
+  numerator_kills_of_inftySlice_zero boundedIntSequences boundedIntSequences
+    boundedTailNumerator boundedTailNumerator_infty
+
+/-- The bounded-tail map descended from the bounded-tail numerator. -/
+noncomputable def boundedTailMap :
+    P ℤ ⊗ boundedIntSequences ⟶ boundedIntSequences :=
+  pTensorDesc boundedIntSequences boundedIntSequences boundedTailNumerator
+    boundedTailNumerator_kills
+
+/-- Finite slices of the descended bounded-tail map are the tail projections. -/
+lemma boundedTailMap_slice (n : ℕ) :
+    ((λ_ boundedIntSequences).inv ≫ pBasis n ▷ boundedIntSequences) ≫ boundedTailMap =
+      boundedTailProjection n := by
+  dsimp [boundedTailMap]
+  rw [pTensorDesc_slice]
+  exact boundedTailNumerator_slice n
+
+/-- The zeroth bounded-tail section. -/
+noncomputable def boundedTailSection :
+    boundedIntSequences ⟶ P ℤ ⊗ boundedIntSequences :=
+  (λ_ boundedIntSequences).inv ≫ pBasis 0 ▷ boundedIntSequences
+
+/-- The bounded-tail section splits the bounded-tail map. -/
+lemma boundedTailSection_fac :
+    boundedTailSection ≫ boundedTailMap = 𝟙 boundedIntSequences := by
+  rw [boundedTailSection, boundedTailMap_slice]
+  exact boundedTailProjection_zero
 
 -- The free tensor isomorphism is natural in the left variable.
 set_option backward.isDefEq.respectTransparency false in
