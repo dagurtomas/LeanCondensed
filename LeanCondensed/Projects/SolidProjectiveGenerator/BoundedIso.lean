@@ -1,6 +1,6 @@
 module
 
-public import LeanCondensed.Projects.SolidProjectiveGenerator.BoundedRetract
+public import LeanCondensed.Projects.SolidProjectiveGenerator.ZdiscSeparation
 @[expose] public section
 
 noncomputable section
@@ -230,6 +230,25 @@ lemma free_constInfty_comp_P_proj (T : LightProfinite) :
             (fun q => (lightProfiniteToLightCondSet ⋙ free ℤ).map (toPointMap T) ≫ q) hzero
     _ = 0 := by simp
 
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+lemma freeTensorHomPresheafComposite_comp (X : LightProfinite.{0}) (B C D : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C) (h : C ⟶ D) :
+    freeTensorHomPresheafComposite X B D (g ≫ h) =
+      freeTensorHomPresheafComposite X B C g ≫ h.hom := by
+  dsimp [freeTensorHomPresheafComposite]
+  simp [Category.assoc]
+
+lemma freeTensorHomEval_comp (X : LightProfinite.{0}) (B C D : LightCondAb)
+    (g : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C) (h : C ⟶ D)
+    (S : LightProfinite.{0}) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B D (g ≫ h) S f r m =
+      h.hom.app ⟨S⟩ (freeTensorHomEval X B C g S f r m) := by
+  dsimp [freeTensorHomEval]
+  rw [freeTensorHomPresheafComposite_comp]
+  rfl
+
 set_option backward.isDefEq.respectTransparency false in
 @[reassoc]
 lemma freeTensorIsoInt_hom_naturality_right {A S' S : LightProfinite} (φ : S' ⟶ S) :
@@ -247,15 +266,23 @@ lemma freeTensorIsoInt_hom_naturality_right {A S' S : LightProfinite} (φ : S' �
   rw [Functor.LaxMonoidal.μ_natural_right lightProfiniteToLightCondSet]
   simp [MonoidalCategory.id_tensorHom]
 
+/-- The free-valued lift of the free-free tail numerator induced by the truncation map. -/
+noncomputable def pTailFreeFreeLift :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗
+      ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⟶
+        (free ℤ).obj (ℕ∪{∞}).toCondensed :=
+  (IntProof.freeTensorIsoInt (ℕ∪{∞} : LightProfinite) (ℕ∪{∞} : LightProfinite)).hom ≫
+    (free ℤ).map (lightProfiniteToLightCondSet.map pTailTruncMap)
+
 /-- The free-free numerator induced by the truncation map. -/
 noncomputable def pTailFreeFree :
     ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⟶ P ℤ :=
-  (IntProof.freeTensorIsoInt (ℕ∪{∞} : LightProfinite) (ℕ∪{∞} : LightProfinite)).hom ≫
-    (free ℤ).map (lightProfiniteToLightCondSet.map pTailTruncMap) ≫ P_proj ℤ
+  pTailFreeFreeLift ≫ P_proj ℤ
 
 lemma pTailFreeFree_kills_right :
     (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ P_map ℤ) ≫ pTailFreeFree = 0 := by
-  dsimp [pTailFreeFree, P_map]
+  dsimp [pTailFreeFree, pTailFreeFreeLift, P_map]
+  simp only [Category.assoc]
   rw [freeTensorIsoInt_hom_naturality_right_assoc (φ := ι)]
   slice_lhs 2 3 => rw [← Functor.map_comp]
   simp only [MonoidalCategory.id_tensorHom]
@@ -266,7 +293,8 @@ lemma pTailFreeFree_kills_right :
 
 lemma pTailFreeFree_kills_left :
     (P_map ℤ ▷ ((free ℤ).obj (ℕ∪{∞}).toCondensed)) ≫ pTailFreeFree = 0 := by
-  dsimp [pTailFreeFree, P_map]
+  dsimp [pTailFreeFree, pTailFreeFreeLift, P_map]
+  simp only [Category.assoc]
   rw [freeTensorIsoInt_hom_naturality_left_assoc (φ := ι)]
   slice_lhs 2 3 => rw [← Functor.map_comp]
   simp only [MonoidalCategory.tensorHom_id]
@@ -348,6 +376,15 @@ noncomputable def pTailProjectionNumerator (n : ℕ) :
     (free ℤ).obj (ℕ∪{∞}).toCondensed ⟶ P ℤ :=
   (free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap n)) ≫ P_proj ℤ
 
+lemma pTailFreeFreeLift_slice (n : ℕ) :
+    numeratorSlice ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+      ((free ℤ).obj (ℕ∪{∞}).toCondensed) n pTailFreeFreeLift =
+      (free ℤ).map (lightProfiniteToLightCondSet.map (pTailProjectionPointMap n)) := by
+  dsimp [numeratorSlice, pTailFreeFreeLift, pTailProjectionPointMap]
+  rw [freeTensorIsoInt_hom_finiteTensorPoint_assoc]
+  rw [← Functor.map_comp]
+  rfl
+
 lemma pTailProjectionNumerator_kills (n : ℕ) :
     P_map ℤ ≫ pTailProjectionNumerator n = 0 := by
   dsimp [pTailProjectionNumerator, P_map]
@@ -389,9 +426,10 @@ lemma pTailProjection_zero : pTailProjection 0 = 𝟙 (P ℤ) := by
 lemma pTailFreeFree_slice (n : ℕ) :
     numeratorSlice ((free ℤ).obj (ℕ∪{∞}).toCondensed) (P ℤ) n pTailFreeFree =
       pTailProjectionNumerator n := by
-  dsimp [numeratorSlice, pTailFreeFree, pTailProjectionNumerator, pTailProjectionPointMap]
+  dsimp [numeratorSlice, pTailFreeFree, pTailFreeFreeLift, pTailProjectionNumerator, pTailProjectionPointMap]
+  simp only [Category.assoc]
   rw [freeTensorIsoInt_hom_finiteTensorPoint_assoc]
-  simp [Category.assoc]
+  simp
 
 lemma pTailNumerator_slice (n : ℕ) :
     numeratorSlice (P ℤ) (P ℤ) n pTailNumerator = pTailProjection n := by
@@ -438,6 +476,169 @@ noncomputable def pDifferenceMap : P ℤ ⊗ P ℤ ⟶ P ℤ :=
 
 lemma pDifferenceMap_def :
     pDifferenceMap = (oneMinusShift ℤ ▷ P ℤ) ≫ pTailMap := rfl
+
+@[reassoc]
+lemma numeratorSlice_whiskerRight (M M' N : LightCondAb) (n : ℕ)
+    (h : M' ⟶ M)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) :
+    numeratorSlice M' N n ((((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ h) ≫ f) =
+      h ≫ numeratorSlice M N n f := by
+  dsimp [numeratorSlice]
+  rw [leftUnitor_inv_naturality_assoc h]
+  slice_lhs 2 3 => rw [← whisker_exchange]
+  simp [Category.assoc]
+
+@[reassoc]
+lemma inftySlice_whiskerRight (M M' N : LightCondAb)
+    (h : M' ⟶ M)
+    (f : ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ M ⟶ N) :
+    inftySlice M' N ((((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ h) ≫ f) =
+      h ≫ inftySlice M N f := by
+  dsimp [inftySlice]
+  rw [leftUnitor_inv_naturality_assoc h]
+  slice_lhs 2 3 => rw [← whisker_exchange]
+  simp [Category.assoc]
+
+/-- The free section lifting the bounded diagonal-difference family before quotienting by
+`δ_∞`. -/
+noncomputable def boundedDifferenceFreeSection {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.obj ⟨S⟩ :=
+  (LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).symm.hom.hom.app ⟨S⟩
+    (boundedDifferenceTopologicalSection f x)
+
+lemma boundedDifferenceFreeSection_add {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x y : BoundedIntSeqSection S) :
+    boundedDifferenceFreeSection f (x + y) =
+      boundedDifferenceFreeSection f x + boundedDifferenceFreeSection f y := by
+  dsimp [boundedDifferenceFreeSection]
+  rw [boundedDifferenceTopologicalSection_add]
+  exact ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom.map_add _ _
+
+lemma boundedDifferenceFreeSection_zsmul {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (a : ℤ) (x : BoundedIntSeqSection S) :
+    boundedDifferenceFreeSection f (a • x) = a • boundedDifferenceFreeSection f x := by
+  dsimp [boundedDifferenceFreeSection]
+  rw [boundedDifferenceTopologicalSection_zsmul]
+  exact map_zsmul
+    (((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩).hom) a _
+
+lemma boundedDifferenceFreeSection_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.map g.op (boundedDifferenceFreeSection f x) =
+      boundedDifferenceFreeSection (g ≫ f) (boundedIntSeqSectionComap g x) := by
+  dsimp [boundedDifferenceFreeSection]
+  rw [← LightCondMod.hom_naturality_apply ℤ
+    (LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv g.op]
+  rw [boundedDifferenceTopologicalSection_naturality]
+
+/-- The free-valued sectionwise linear family lifting `boundedDifferenceFamilyLinear`. -/
+noncomputable def boundedDifferenceFreeFamilyLinear (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) :
+    boundedIntSequences.obj.obj ⟨S⟩ →ₗ[ℤ]
+      ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.obj ⟨S⟩ where
+  toFun x := boundedDifferenceFreeSection f (show BoundedIntSeqSection S from x)
+  map_add' := by
+    intro x y
+    exact boundedDifferenceFreeSection_add f (show BoundedIntSeqSection S from x)
+      (show BoundedIntSeqSection S from y)
+  map_smul' := by
+    intro a x
+    have hx : (show BoundedIntSeqSection S from a • x) =
+        a • (show BoundedIntSeqSection S from x) := by
+      apply BoundedIntSeqSection.ext_apply
+      intro n s
+      rfl
+    convert boundedDifferenceFreeSection_zsmul f a (show BoundedIntSeqSection S from x) using 1
+    · exact congrArg (boundedDifferenceFreeSection f) hx
+    · simpa [RingHom.id_apply] using
+        (Int.cast_smul_eq_zsmul (R := ℤ) a
+          (boundedDifferenceFreeSection f (show BoundedIntSeqSection S from x)))
+
+lemma boundedDifferenceFreeFamilyLinear_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : boundedIntSequences.obj.obj ⟨S⟩) :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.map g.op
+        (boundedDifferenceFreeFamilyLinear S f m) =
+      boundedDifferenceFreeFamilyLinear T (g ≫ f) (boundedIntSequences.obj.map g.op m) := by
+  exact boundedDifferenceFreeSection_naturality g f (show BoundedIntSeqSection S from m)
+
+lemma boundedDifferenceFreeFamilyLinear_naturality' :
+    ∀ {S T : LightProfinite} (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+      (m : boundedIntSequences.obj.obj ⟨S⟩),
+      ((free ℤ).obj (ℕ∪{∞}).toCondensed).obj.map g.op
+          (boundedDifferenceFreeFamilyLinear S f m) =
+        boundedDifferenceFreeFamilyLinear T (g ≫ f) (boundedIntSequences.obj.map g.op m) := by
+  intro S T g f m
+  exact boundedDifferenceFreeFamilyLinear_naturality g f m
+
+/-- The free-valued numerator lifting the bounded diagonal-difference numerator. -/
+noncomputable def boundedDifferenceFreeNumerator :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ boundedIntSequences ⟶
+      (free ℤ).obj (ℕ∪{∞}).toCondensed :=
+  freeTensorDescLin (ℕ∪{∞} : LightProfinite) boundedIntSequences
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+    boundedDifferenceFreeFamilyLinear boundedDifferenceFreeFamilyLinear_naturality'
+
+lemma boundedDifferenceFreeNumerator_slice (n : ℕ) :
+    numeratorSlice boundedIntSequences ((free ℤ).obj (ℕ∪{∞}).toCondensed) n
+      boundedDifferenceFreeNumerator =
+      freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences
+        ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+        boundedDifferenceFreeFamilyLinear boundedDifferenceFreeFamilyLinear_naturality'
+        (natPoint n) := by
+  dsimp [numeratorSlice, freeNatBasis, boundedDifferenceFreeNumerator]
+  rw [freeTensorDescLin_point]
+
+lemma boundedDifferenceFreeFamilyMap_infty :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences
+      ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+      boundedDifferenceFreeFamilyLinear boundedDifferenceFreeFamilyLinear_naturality' ι =
+    0 := by
+  ext S x
+  change boundedDifferenceFreeFamilyLinear S.unop (toPointMap S.unop ≫ ι) x =
+    (0 : boundedIntSequences ⟶ (free ℤ).obj (ℕ∪{∞}).toCondensed).hom.app S x
+  dsimp [boundedDifferenceFreeFamilyLinear, boundedDifferenceFreeSection]
+  have htop : boundedDifferenceTopologicalSection (toPointMap S.unop ≫ ι)
+      (show BoundedIntSeqSection S.unop from x) = 0 := by
+    apply ContinuousMap.ext
+    intro s
+    change boundedDifferenceMeasure (toPointMap S.unop ≫ ι)
+        (show BoundedIntSeqSection S.unop from x) s = 0
+    dsimp [boundedDifferenceMeasure, boundedDifferenceCoeff]
+    have hf : (ConcreteCategory.hom (toPointMap S.unop ≫ ι)) s =
+        (∞ : ℕ∪{∞}) := rfl
+    rw [hf]
+    rw [topologicalFreeDiracDiff_self]
+    change (0 : ℤ) • (0 : LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite)) = 0
+    exact zero_smul ℤ (0 : LightCondAb.topologicalFree (ℕ∪{∞} : LightProfinite))
+  rw [htop]
+  simp
+
+lemma boundedDifferenceFreeNumerator_infty :
+    inftySlice boundedIntSequences ((free ℤ).obj (ℕ∪{∞}).toCondensed)
+      boundedDifferenceFreeNumerator = 0 := by
+  dsimp [inftySlice, freeInftyBasis, P_map, boundedDifferenceFreeNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedDifferenceFreeFamilyMap_infty
+
+lemma boundedDifferenceFreeNumerator_comp_P_proj :
+    boundedDifferenceFreeNumerator ≫ P_proj ℤ = boundedDifferenceNumerator := by
+  apply freeTensorHom_ext
+  intro S f r m
+  rw [freeTensorHomEval_comp]
+  dsimp [boundedDifferenceFreeNumerator, boundedDifferenceNumerator]
+  rw [freeTensorHomEval_desc]
+  rw [freeTensorHomEval_desc]
+  dsimp [boundedDifferenceFreeFamilyLinear, boundedDifferenceFamilyLinear,
+    boundedDifferenceFreeSection, boundedDifferencePSection]
+  change (P_proj ℤ).hom.app ⟨S⟩
+      (r • ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩
+        (boundedDifferenceTopologicalSection f (show BoundedIntSeqSection S from m)))) =
+    r • (P_proj ℤ).hom.app ⟨S⟩
+      ((LightCondAb.freeTopologicalFreeIso (ℕ∪{∞} : LightProfinite)).inv.hom.app ⟨S⟩
+        (boundedDifferenceTopologicalSection f (show BoundedIntSeqSection S from m)))
+  exact map_zsmul ((P_proj ℤ).hom.app ⟨S⟩).hom r _
 
 lemma basisMap_boundedTailSection :
     basisMap ≫ boundedTailSection = pTailSection ≫ (P ℤ ◁ basisMap) := by
