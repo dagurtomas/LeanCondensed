@@ -2577,6 +2577,50 @@ noncomputable def topologicalFreeSectionOfBoundedFiniteProj
   (⟨a, topologicalFree_continuous_of_bounded_of_finiteProj T X a N hN hproj⟩ :
     C(↑X.toTop, ↑(topologicalFree T).toModuleCat))
 
+/-- The bounded finite-projection section is represented by the continuous map it was built from. -/
+@[simp]
+lemma topologicalFreeSectionOfBoundedFiniteProj_underlying
+    (T X : LightProfinite.{0}) (a : X → topologicalFree T) (N : ℕ)
+    (hN : ∀ x : X, LightProfinite.FreeImage.totalVariation (a x) ≤ (N : ℤ))
+    (hproj : ∀ k : ℕ,
+      Continuous fun x : X => (topologicalFreeMap (T.proj k)).hom (a x)) :
+    (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from
+      topologicalFreeSectionOfBoundedFiniteProj T X a N hN hproj) =
+      (⟨a, topologicalFree_continuous_of_bounded_of_finiteProj T X a N hN hproj⟩ :
+        C(↑X.toTop, ↑(topologicalFree T).toModuleCat)) :=
+  rfl
+
+/-- Pointwise form of `topologicalFreeSectionOfBoundedFiniteProj_underlying`. -/
+@[simp]
+lemma topologicalFreeSectionOfBoundedFiniteProj_apply
+    (T X : LightProfinite.{0}) (a : X → topologicalFree T) (N : ℕ)
+    (hN : ∀ x : X, LightProfinite.FreeImage.totalVariation (a x) ≤ (N : ℤ))
+    (hproj : ∀ k : ℕ,
+      Continuous fun x : X => (topologicalFreeMap (T.proj k)).hom (a x)) (x : X) :
+    (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from
+      topologicalFreeSectionOfBoundedFiniteProj T X a N hN hproj) x = a x :=
+  rfl
+
+/-- Restriction of a represented topological-free section is composition with the source map. -/
+@[simp]
+lemma topologicalFreeCondensed_section_map_apply
+    (T X Y : LightProfinite.{0}) (s : (topologicalFreeCondensed T).obj.obj ⟨X⟩)
+    (f : Y ⟶ X) (y : Y) :
+    (show C(↑Y.toTop, ↑(topologicalFree T).toModuleCat) from
+      (topologicalFreeCondensed T).obj.map f.op s) y =
+      (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from s) (f y) :=
+  rfl
+
+/-- Restricting a represented topological-free section to a point evaluates its underlying map. -/
+@[simp]
+lemma topologicalFreeCondensed_section_map_point
+    (T X : LightProfinite.{0}) (s : (topologicalFreeCondensed T).obj.obj ⟨X⟩)
+    (f : LightProfinite.of PUnit ⟶ X) (pt : LightProfinite.of PUnit) :
+    (show C(↑(LightProfinite.of PUnit).toTop, ↑(topologicalFree T).toModuleCat) from
+      (topologicalFreeCondensed T).obj.map f.op s) pt =
+      (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from s) (f pt) :=
+  rfl
+
 lemma freePresheafToTopologicalFreePresheaf_imageSieve_mem
     (S U : LightProfinite.{0})
     (a : (topologicalFreePresheaf S).obj ⟨U⟩) :
@@ -2841,6 +2885,72 @@ noncomputable def freeTopologicalFreeIso (S : LightProfinite.{0}) :
 lemma freeTopologicalFreeIso_hom (S : LightProfinite.{0}) :
     (freeTopologicalFreeIso S).hom = freeToTopologicalFree S := by
   rfl
+
+/-- Applying the comparison to a section transported back along `freeTopologicalFreeIso.symm`
+recovers the original represented topological-free section. -/
+@[simp]
+lemma freeToTopologicalFree_app_section_of_iso_symm
+    (T X : LightProfinite.{0}) (s : (topologicalFreeCondensed T).obj.obj ⟨X⟩) :
+    (freeToTopologicalFree T).hom.app ⟨X⟩
+      ((freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s) = s := by
+  change ((freeTopologicalFreeIso T).hom.hom.app ⟨X⟩)
+      ((freeTopologicalFreeIso T).inv.hom.app ⟨X⟩ s) = s
+  change ((freeTopologicalFreeIso T).inv ≫ (freeTopologicalFreeIso T).hom).hom.app ⟨X⟩ s = s
+  simp
+
+/-- Restrictions of a free section pulled back from the represented topological-free sheaf are
+identified by applying the free/topological-free comparison. -/
+@[simp]
+lemma freeToTopologicalFree_app_map_section_of_iso_symm
+    (T X Y : LightProfinite.{0}) (s : (topologicalFreeCondensed T).obj.obj ⟨X⟩)
+    (f : Y ⟶ X) :
+    (freeToTopologicalFree T).hom.app ⟨Y⟩
+      (((free ℤ).obj T.toCondensed).obj.map f.op
+        ((freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s)) =
+      (topologicalFreeCondensed T).obj.map f.op s := by
+  have hX := freeToTopologicalFree_app_section_of_iso_symm T X s
+  have hn := ConcreteCategory.congr_hom ((freeToTopologicalFree T).hom.naturality f.op)
+    ((freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s)
+  change (freeToTopologicalFree T).hom.app ⟨Y⟩
+      (((free ℤ).obj T.toCondensed).obj.map f.op
+        ((freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s)) =
+    (topologicalFreeCondensed T).obj.map f.op
+      ((freeToTopologicalFree T).hom.app ⟨X⟩
+        ((freeTopologicalFreeIso T).symm.hom.hom.app ⟨X⟩ s)) at hn
+  rw [hX] at hn
+  exact hn
+
+/-- The free/topological-free comparison is injective on sections over every light profinite. -/
+lemma freeToTopologicalFree_app_injective
+    (T X : LightProfinite.{0}) :
+    Function.Injective ((freeToTopologicalFree T).hom.app ⟨X⟩) := by
+  rw [← ModuleCat.mono_iff_injective]
+  infer_instance
+
+/-- A free section is determined by its image in the represented topological-free sheaf. -/
+lemma freeSection_eq_of_freeToTopologicalFree_eq
+    (T X : LightProfinite.{0})
+    {u v : ((free ℤ).obj T.toCondensed).obj.obj ⟨X⟩}
+    (h : (freeToTopologicalFree T).hom.app ⟨X⟩ u =
+      (freeToTopologicalFree T).hom.app ⟨X⟩ v) :
+    u = v :=
+  freeToTopologicalFree_app_injective T X h
+
+/-- Convenience form for comparing free sections by comparing the resulting measures pointwise
+after applying the free/topological-free comparison. -/
+lemma freeSection_map_eq_of_pointwise_measure_eq
+    (T X : LightProfinite.{0})
+    {u v : ((free ℤ).obj T.toCondensed).obj.obj ⟨X⟩}
+    (h : ∀ x : X,
+      (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from
+        (freeToTopologicalFree T).hom.app ⟨X⟩ u) x =
+      (show C(↑X.toTop, ↑(topologicalFree T).toModuleCat) from
+        (freeToTopologicalFree T).hom.app ⟨X⟩ v) x) :
+    u = v := by
+  apply freeSection_eq_of_freeToTopologicalFree_eq T X
+  apply ContinuousMap.ext
+  intro x
+  exact h x
 
 abbrev freeLightProfiniteMap : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ⟶
     sequentialToLightCondSet.obj (lightCondSetToSequential.obj
