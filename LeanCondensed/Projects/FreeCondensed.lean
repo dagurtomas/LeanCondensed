@@ -2140,6 +2140,197 @@ lemma topologicalFree_totalVariation_bounded_of_continuous
     lt_of_le_of_lt hN_le_phi h_large
   exact (not_lt_of_ge h_bound) hN_lt
 
+/-- The finite set of signed tuple shapes of length at most `N`.  The Boolean value fixes the
+negative sign convention: `true` means coefficient `-1`, and `false` means coefficient `1`. -/
+def signedTupleIndex (N : ℕ) : Type :=
+  Σ m : Fin (N + 1), (Fin m.1 → Bool)
+
+instance signedTupleIndex_finite (N : ℕ) : Finite (signedTupleIndex N) := by
+  unfold signedTupleIndex
+  infer_instance
+
+/-- The light profinite parameter space of tuples with the fixed length of a signed tuple index. -/
+noncomputable def signedTupleSpace
+    (S : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N) : LightProfinite.{0} :=
+  LightProfinite.of (Fin i.1.1 → S)
+
+/-- The `j`th coordinate projection from a signed tuple parameter space. -/
+noncomputable def signedTupleProj
+    (S : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N) (j : Fin i.1.1) :
+    signedTupleSpace S i ⟶ S :=
+  CompHausLike.ofHom _ ⟨fun x => x j, by
+    change Continuous (fun x : Fin i.1.1 → S => x j)
+    exact continuous_apply j⟩
+
+@[simp]
+lemma signedTupleProj_apply
+    (S : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N) (j : Fin i.1.1)
+    (x : signedTupleSpace S i) : signedTupleProj S i j x = x j := rfl
+
+/-- Negation as a continuous endomorphism of the free topological abelian group. -/
+noncomputable def topologicalFreeNeg (S : LightProfinite.{0}) :
+    topologicalFree S ⟶ topologicalFree S :=
+  ConcreteCategory.ofHom (C := TopModuleCat ℤ)
+    (-(ContinuousLinearMap.id ℤ (↑(topologicalFree S).toModuleCat)))
+
+/-- The finite signed-sum map attached to a signed tuple index. -/
+noncomputable def signedTupleMap
+    (S : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N) :
+    C(↑(signedTupleSpace S i).toTop, ↑(topologicalFree S).toModuleCat) := by
+  refine ⟨fun x => ∑ j : Fin i.1.1,
+        Finsupp.single (x j) (if i.2 j then (-1 : ℤ) else (1 : ℤ)), ?_⟩
+  apply continuous_finsetSum
+  intro j _
+  by_cases h : i.2 j
+  · simp only [h, if_true]
+    rw [show (fun x : signedTupleSpace S i =>
+        (Finsupp.single (x j) (-1 : ℤ) : ↑(topologicalFree S).toModuleCat)) =
+        fun x => (topologicalFreeNeg S).hom ((topologicalFreeDirac S).hom (x j)) by
+      funext x
+      change Finsupp.single (x j) (-1 : ℤ) = -Finsupp.single (x j) (1 : ℤ)
+      simp]
+    exact (topologicalFreeNeg S).hom.continuous.comp
+      ((topologicalFreeDirac S).hom.continuous.comp (by
+        change Continuous (fun x : Fin i.1.1 → S => x j)
+        exact continuous_apply j))
+  · simp only [h]
+    exact (topologicalFreeDirac S).hom.continuous.comp (by
+      change Continuous (fun x : Fin i.1.1 → S => x j)
+      exact continuous_apply j)
+
+lemma signedTupleMap_apply
+    (S : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N)
+    (x : signedTupleSpace S i) :
+    signedTupleMap S i x =
+      ∑ j : Fin i.1.1,
+        Finsupp.single (x j) (if i.2 j then (-1 : ℤ) else (1 : ℤ)) := rfl
+
+lemma int_signed_natAbs_sum (n : ℤ) :
+    (∑ _ : Fin n.natAbs, (if n < 0 then (-1 : ℤ) else 1)) = n := by
+  by_cases hneg : n < 0
+  · simp only [hneg, if_true]
+    rw [Finset.sum_const]
+    simp only [Finset.card_fin, nsmul_eq_mul, mul_neg, mul_one]
+    have hn : n = - (n.natAbs : ℤ) := by
+      rcases Int.natAbs_eq n with h | h
+      · have : 0 ≤ n := by rw [h]; exact Int.natCast_nonneg _
+        exact (not_lt_of_ge this hneg).elim
+      · exact h
+    exact hn.symm
+  · simp only [hneg, if_false]
+    rw [Finset.sum_const]
+    simp only [Finset.card_fin, nsmul_eq_mul, mul_one]
+    exact Int.natAbs_of_nonneg (le_of_not_gt hneg)
+
+lemma signedSigma_sum_eq (S : Type*) (μ : S →₀ ℤ) :
+    (∑ a : (Σ s : {s // s ∈ μ.support}, Fin ((μ s.1).natAbs)),
+      Finsupp.single (a.1.1 : S) (if μ a.1.1 < 0 then (-1 : ℤ) else 1)) = μ := by
+  classical
+  ext t
+  rw [Finset.sum_apply' t]
+  rw [Fintype.sum_sigma]
+  by_cases ht : t ∈ μ.support
+  · rw [Finset.sum_eq_single ⟨t, ht⟩]
+    · simp [int_signed_natAbs_sum]
+    · intro s _ hne
+      have hst : (s : S) ≠ t := by
+        intro h
+        apply hne
+        ext
+        exact h
+      simp [Finsupp.single_eq_of_ne (Ne.symm hst)]
+    · intro hnot
+      exact (hnot (Finset.mem_univ _)).elim
+  · have hμt : μ t = 0 := by
+      simpa [Finsupp.mem_support_iff] using ht
+    rw [hμt]
+    refine Finset.sum_eq_zero ?_
+    intro s _
+    simp [Finsupp.single_eq_of_ne (by
+      intro hts
+      have htmem : t ∈ μ.support := by
+        rw [hts]
+        exact s.2
+      exact ht htmem : t ≠ (s : S))]
+
+lemma signedSigma_card_eq_totalVariation (S : Type*) (μ : S →₀ ℤ) :
+    (Fintype.card (Σ s : {s // s ∈ μ.support}, Fin ((μ s.1).natAbs)) : ℤ) =
+      LightProfinite.FreeImage.totalVariation μ := by
+  classical
+  rw [LightProfinite.FreeImage.totalVariation, Finsupp.sum]
+  rw [Fintype.card_sigma]
+  simp only [Fintype.card_fin]
+  rw [Nat.cast_sum]
+  change (∑ x : (μ.support : Set S), ((μ (x : S)).natAbs : ℤ)) = ∑ a ∈ μ.support, |μ a|
+  rw [Finset.sum_finset_coe (fun s : S => ((μ s).natAbs : ℤ)) μ.support]
+  refine Finset.sum_congr rfl ?_
+  intro s _
+  exact (Int.abs_eq_natAbs (μ s)).symm
+
+/-- Every finitely supported integer measure with total variation at most `N` is a fixed-sign
+signed tuple sum of length at most `N`; repeated coordinates encode coefficients of larger
+absolute value. -/
+lemma exists_signedTuple_of_totalVariation_le
+    (S : LightProfinite.{0}) {N : ℕ} (μ : S →₀ ℤ)
+    (hμ : LightProfinite.FreeImage.totalVariation μ ≤ (N : ℤ)) :
+    ∃ i : signedTupleIndex N, ∃ x : signedTupleSpace S i,
+      signedTupleMap S i x = μ := by
+  classical
+  let α := Σ s : {s // s ∈ μ.support}, Fin ((μ s.1).natAbs)
+  let m := Fintype.card α
+  have hmTV : (m : ℤ) = LightProfinite.FreeImage.totalVariation μ := by
+    dsimp [m, α]
+    exact signedSigma_card_eq_totalVariation S μ
+  have hmN_int : (m : ℤ) ≤ (N : ℤ) := by
+    rw [hmTV]
+    exact hμ
+  have hmN : m ≤ N := by exact_mod_cast hmN_int
+  let e : Fin m ≃ α := (Fintype.equivFin α).symm
+  let i : signedTupleIndex N := ⟨⟨m, Nat.lt_succ_of_le hmN⟩,
+    fun j => decide (μ ((e j).1.1) < 0)⟩
+  let x : signedTupleSpace S i := fun j => (e j).1.1
+  refine ⟨i, x, ?_⟩
+  rw [signedTupleMap_apply]
+  change (∑ j : Fin m,
+      Finsupp.single ((e j).1.1 : S)
+        (if decide (μ ((e j).1.1) < 0) then (-1 : ℤ) else 1)) = μ
+  simp only [decide_eq_true_eq]
+  rw [Equiv.sum_comp e (fun a : α =>
+    Finsupp.single (a.1.1 : S) (if μ a.1.1 < 0 then (-1 : ℤ) else 1))]
+  exact signedSigma_sum_eq S μ
+
+/-- The free-presheaf section represented by a signed tuple of maps. -/
+noncomputable def freePresheaf_signedTupleSection
+    (S V : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N)
+    (τ : V ⟶ signedTupleSpace S i) :
+    (freePresheaf S).obj ⟨V⟩ :=
+  ∑ j : Fin i.1.1,
+    Finsupp.single (τ ≫ signedTupleProj S i j) (if i.2 j then (-1 : ℤ) else 1)
+
+lemma freePresheafToTopologicalFreePresheaf_signedTupleSection
+    (S V : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N)
+    (τ : V ⟶ signedTupleSpace S i) :
+    (freePresheafToTopologicalFreePresheaf S).app ⟨V⟩
+      (freePresheaf_signedTupleSection S V i τ) =
+    (show C(↑V.toTop, ↑(topologicalFree S).toModuleCat) from
+      (signedTupleMap S i).comp τ.hom.hom) := by
+  apply ContinuousMap.ext
+  intro v
+  rw [freePresheafToTopologicalFreePresheaf_apply]
+  change Finsupp.mapDomain
+      (fun g : S.toCondensed.obj.obj ⟨V⟩ => ((show V ⟶ S from g) v))
+      (freePresheaf_signedTupleSection S V i τ) = signedTupleMap S i (τ v)
+  rw [signedTupleMap_apply]
+  rw [freePresheaf_signedTupleSection]
+  change (Finsupp.mapDomain.addMonoidHom
+      (fun g : S.toCondensed.obj.obj ⟨V⟩ => ((show V ⟶ S from g) v)))
+      (∑ j : Fin i.1.1,
+        Finsupp.single (τ ≫ signedTupleProj S i j) (if i.2 j then (-1 : ℤ) else 1)) =
+    ∑ j : Fin i.1.1,
+      Finsupp.single ((ConcreteCategory.hom τ) v j) (if i.2 j then (-1 : ℤ) else 1)
+  rw [map_sum]
+  simp [Finsupp.mapDomain_single]
+
 /-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
 lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
     (g : LocallyConstant T ℤ) :
