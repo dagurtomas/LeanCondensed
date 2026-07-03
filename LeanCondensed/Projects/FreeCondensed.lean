@@ -5,6 +5,7 @@ import Mathlib.CategoryTheory.Limits.ConcreteCategory.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
 import Mathlib.CategoryTheory.Sites.Coherent.CoherentTopology
 import Mathlib.CategoryTheory.Sites.LocallyInjective
+import Mathlib.CategoryTheory.Sites.LocallySurjective
 import Mathlib.Condensed.Discrete.Module
 import Mathlib.Condensed.Light.Explicit
 import Mathlib.Condensed.Light.Functors
@@ -1100,6 +1101,35 @@ lemma freePresheaf_equalizerSieve_mem_of_effectiveEpiFamily
   apply CategoryTheory.coherentTopology.mem_sieves_of_hasEffectiveEpiFamily
   exact ⟨α, inferInstance, V, π, inferInstance, fun a => by
     simpa [CategoryTheory.Presheaf.equalizerSieve] using hπ a⟩
+
+/-- A finite effective-epi family with local preimages gives a coherent covering of the image
+sieve. -/
+lemma presheaf_imageSieve_mem_of_effectiveEpiFamily
+    {α : Type} [Finite α]
+    {F G : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U : LightProfinite.{0}}
+    (φ : F ⟶ G) (s : G.obj ⟨U⟩)
+    (V : α → LightProfinite.{0}) (π : (i : α) → V i ⟶ U)
+    [EffectiveEpiFamily V π]
+    (hπ : ∀ i, ∃ t : F.obj ⟨V i⟩,
+      φ.app ⟨V i⟩ t = G.map (π i).op s) :
+    CategoryTheory.Presheaf.imageSieve φ s ∈ (coherentTopology LightProfinite) U := by
+  apply CategoryTheory.coherentTopology.mem_sieves_of_hasEffectiveEpiFamily
+  exact ⟨α, inferInstance, V, π, inferInstance, fun i => by
+    simpa [CategoryTheory.Presheaf.imageSieve] using hπ i⟩
+
+/-- A finite jointly-surjective family with local preimages gives a coherent covering of the image
+sieve. -/
+lemma presheaf_imageSieve_mem_of_finite_jointly_surjective
+    {α : Type} [Finite α]
+    {F G : LightProfiniteᵒᵖ ⥤ ModuleCat.{0} ℤ} {U : LightProfinite.{0}}
+    (φ : F ⟶ G) (s : G.obj ⟨U⟩)
+    (V : α → LightProfinite.{0}) (π : (i : α) → V i ⟶ U)
+    (hsurj : ∀ u : U, ∃ i, ∃ v : V i, π i v = u)
+    (hπ : ∀ i, ∃ t : F.obj ⟨V i⟩,
+      φ.app ⟨V i⟩ t = G.map (π i).op s) :
+    CategoryTheory.Presheaf.imageSieve φ s ∈ (coherentTopology LightProfinite) U := by
+  haveI : EffectiveEpiFamily V π := effectiveEpiFamily_of_jointly_surjective V π hsurj
+  exact presheaf_imageSieve_mem_of_effectiveEpiFamily φ s V π hπ
 
 /-- A finite closed cover whose inclusions lie in an equalizer sieve gives a coherent covering of
 that sieve.  This packages the closed-cover replacement for the tempting but invalid clopen
