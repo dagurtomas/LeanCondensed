@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Category.ModuleCat.Topology.Basic
+import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 import Mathlib.CategoryTheory.Adjunction.Reflective
 import Mathlib.CategoryTheory.FintypeCat
 import Mathlib.CategoryTheory.Limits.ConcreteCategory.Basic
@@ -2057,6 +2058,87 @@ lemma norm_finsuppRealEvalCLM (μ : S →₀ ℤ) :
     ‖finsuppRealEvalCLM S μ‖ = (LightProfinite.FreeImage.totalVariation μ : ℝ) := by
   exact le_antisymm (norm_finsuppRealEvalCLM_le S μ)
     (totalVariation_le_norm_finsuppRealEvalCLM S μ)
+
+/-- The universal continuous evaluation at a bounded real-valued function agrees with the
+corresponding continuous linear functional on bounded continuous functions. -/
+lemma topologicalFreeEvalTopModule_real_apply_eq_finsuppRealEvalCLM
+    (μ : topologicalFree S) (f : S →ᵇ ℝ) :
+    ((topologicalFreeEvalTopModule S realTopModule (TopCat.ofHom f.toContinuousMap)).hom μ : ℝ) =
+      finsuppRealEvalCLM S (show S →₀ ℤ from μ) f := by
+  rw [topologicalFreeEvalTopModule_apply, finsuppRealEvalCLM_apply]
+  simp [realTopModule]
+
+/-- A convergent sequence in the topological free abelian group has eventually bounded total
+variation. -/
+lemma topologicalFree_tendsto_totalVariation_bddAbove
+    {μ : ℕ → topologicalFree S} {μ₀ : topologicalFree S}
+    (hμ : Filter.Tendsto μ Filter.atTop (nhds μ₀)) :
+    ∃ N : ℕ, ∀ᶠ n in Filter.atTop,
+      LightProfinite.FreeImage.totalVariation (μ n) ≤ (N : ℤ) := by
+  classical
+  let T : ℕ → (S →ᵇ ℝ) →L[ℝ] ℝ := fun n => finsuppRealEvalCLM S (μ n)
+  have h_pointwise : ∀ f : S →ᵇ ℝ, ∃ C : ℝ, ∀ n : ℕ, ‖T n f‖ ≤ C := by
+    intro f
+    let e : topologicalFree S ⟶ realTopModule :=
+      topologicalFreeEvalTopModule S realTopModule (TopCat.ofHom f.toContinuousMap)
+    have he_tendsto : Filter.Tendsto (fun n : ℕ => (e.hom (μ n) : ℝ)) Filter.atTop
+        (nhds (e.hom μ₀ : ℝ)) := by
+      exact (e.hom.continuous.tendsto μ₀).comp hμ
+    have hT_tendsto : Filter.Tendsto (fun n : ℕ => T n f) Filter.atTop
+        (nhds (finsuppRealEvalCLM S (show S →₀ ℤ from μ₀) f)) := by
+      rw [← topologicalFreeEvalTopModule_real_apply_eq_finsuppRealEvalCLM S μ₀ f]
+      change Filter.Tendsto
+        (fun n : ℕ => finsuppRealEvalCLM S (show S →₀ ℤ from μ n) f) Filter.atTop
+        (nhds ((topologicalFreeEvalTopModule S realTopModule
+          (TopCat.ofHom f.toContinuousMap)).hom μ₀ : ℝ))
+      refine he_tendsto.congr ?_
+      intro n
+      exact topologicalFreeEvalTopModule_real_apply_eq_finsuppRealEvalCLM S (μ n) f
+    have hnorm : Filter.Tendsto (fun n : ℕ => ‖T n f‖) Filter.atTop
+        (nhds ‖finsuppRealEvalCLM S (show S →₀ ℤ from μ₀) f‖) :=
+      tendsto_norm.comp hT_tendsto
+    rcases hnorm.bddAbove_range with ⟨C, hC⟩
+    exact ⟨C, fun n => hC ⟨n, rfl⟩⟩
+  obtain ⟨C, hC⟩ := banach_steinhaus (g := T) h_pointwise
+  obtain ⟨N, hN⟩ := exists_nat_ge C
+  refine ⟨N, Filter.Eventually.of_forall ?_⟩
+  intro n
+  have hTV_real : (LightProfinite.FreeImage.totalVariation (μ n) : ℝ) ≤ (N : ℝ) := by
+    rw [← norm_finsuppRealEvalCLM S (show S →₀ ℤ from μ n)]
+    exact (hC n).trans hN
+  exact_mod_cast hTV_real
+
+/-- The total variation of a continuous family of finitely supported measures over a light
+profinite source is uniformly bounded. -/
+lemma topologicalFree_totalVariation_bounded_of_continuous
+    (U : LightProfinite.{0}) (a : (topologicalFreePresheaf S).obj ⟨U⟩) :
+    ∃ N : ℕ, ∀ u : U,
+      LightProfinite.FreeImage.totalVariation
+        ((show C(↑U.toTop, ↑(topologicalFree S).toModuleCat) from a) u) ≤ (N : ℤ) := by
+  classical
+  by_contra h
+  push Not at h
+  choose u hu using h
+  obtain ⟨u₀, φ, hφ_mono, hφ_tendsto⟩ := CompactSpace.tendsto_subseq u
+  let aC : C(↑U.toTop, ↑(topologicalFree S).toModuleCat) := a
+  have ha_tendsto : Filter.Tendsto (fun n : ℕ => aC (u (φ n))) Filter.atTop (nhds (aC u₀)) := by
+    exact (aC.continuous.tendsto u₀).comp hφ_tendsto
+  obtain ⟨N, hN⟩ := topologicalFree_tendsto_totalVariation_bddAbove S ha_tendsto
+  rcases (Filter.eventually_atTop.1 hN) with ⟨n₀, hn₀⟩
+  let n := max n₀ N
+  have hn_ge_n₀ : n₀ ≤ n := le_max_left _ _
+  have hn_ge_N : N ≤ n := le_max_right _ _
+  have h_bound : LightProfinite.FreeImage.totalVariation (aC (u (φ n))) ≤ (N : ℤ) :=
+    hn₀ n hn_ge_n₀
+  have hn_le_phi : n ≤ φ n := by
+    exact (Nat.le_add_right n (φ 0)).trans (by simpa [zero_add] using hφ_mono.add_le_nat n 0)
+  have hN_le_phi : (N : ℤ) ≤ (φ n : ℤ) := by
+    exact_mod_cast hn_ge_N.trans hn_le_phi
+  have h_large : (φ n : ℤ) < LightProfinite.FreeImage.totalVariation (aC (u (φ n))) :=
+    hu (φ n)
+  have hN_lt : (N : ℤ) < LightProfinite.FreeImage.totalVariation (aC (u (φ n))) :=
+    lt_of_le_of_lt hN_le_phi h_large
+  exact (not_lt_of_ge h_bound) hN_lt
 
 /-- Evaluation on topological free abelian groups is natural in the light profinite source. -/
 lemma topologicalFreeEval_naturality {S T : LightProfinite.{0}} (f : S ⟶ T)
