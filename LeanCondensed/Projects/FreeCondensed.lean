@@ -5,6 +5,7 @@ import Mathlib.CategoryTheory.FintypeCat
 import Mathlib.CategoryTheory.Limits.ConcreteCategory.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Countable
 import Mathlib.CategoryTheory.Sites.Coherent.CoherentTopology
+import Mathlib.CategoryTheory.Sites.LocallyBijective
 import Mathlib.CategoryTheory.Sites.LocallyInjective
 import Mathlib.CategoryTheory.Sites.LocallySurjective
 import Mathlib.Condensed.Discrete.Module
@@ -2662,6 +2663,65 @@ lemma freeToTopologicalFree_naturality {S T : LightProfinite.{0}} (f : S ⟶ T) 
   dsimp [freeToTopologicalFree]
   simp
   exact topologicalFreeDiracSection_naturality f
+
+/-- The represented topological-free sheaf is isomorphic to its sheafification. -/
+private noncomputable def topologicalFreeCondensedSheafifyIso (S : LightProfinite.{0}) :
+    topologicalFreeCondensed S ≅
+      (CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).obj
+        (topologicalFreePresheaf S) where
+  hom := CategoryTheory.ObjectProperty.homMk ((CategoryTheory.isoSheafify
+    (coherentTopology LightProfinite) (topologicalFreeCondensed S).property).hom)
+  inv := CategoryTheory.ObjectProperty.homMk ((CategoryTheory.isoSheafify
+    (coherentTopology LightProfinite) (topologicalFreeCondensed S).property).inv)
+  hom_inv_id := by
+    apply CategoryTheory.Sheaf.hom_ext
+    exact (CategoryTheory.isoSheafify (coherentTopology LightProfinite)
+      (topologicalFreeCondensed S).property).hom_inv_id
+  inv_hom_id := by
+    apply CategoryTheory.Sheaf.hom_ext
+    exact (CategoryTheory.isoSheafify (coherentTopology LightProfinite)
+      (topologicalFreeCondensed S).property).inv_hom_id
+
+/-- The sheafified presheaf comparison is the comparison followed by the inverse sheafification
+identification of the represented target. -/
+private lemma sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafifyIso_inv
+    (S : LightProfinite.{0}) :
+    (((CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).map
+      (freePresheafToTopologicalFreePresheaf S)) ≫
+        (topologicalFreeCondensedSheafifyIso S).inv) =
+      freePresheafComparisonSheafification S := by
+  apply CategoryTheory.Sheaf.hom_ext
+  dsimp [topologicalFreeCondensedSheafifyIso]
+  rw [CategoryTheory.isoSheafify_inv]
+  change CategoryTheory.sheafifyMap (coherentTopology LightProfinite)
+      (freePresheafToTopologicalFreePresheaf S) ≫
+        CategoryTheory.sheafifyLift (coherentTopology LightProfinite)
+          (𝟙 (topologicalFreePresheaf S)) (topologicalFreeCondensed S).property =
+      CategoryTheory.sheafifyLift (coherentTopology LightProfinite)
+        (freePresheafToTopologicalFreePresheaf S) (topologicalFreeCondensed S).property
+  rw [CategoryTheory.sheafifyMap_sheafifyLift]
+  simp
+
+private instance instIsIso_sheafifiedPresheafComparison (S : LightProfinite.{0}) :
+    IsIso (((CategoryTheory.presheafToSheaf (coherentTopology LightProfinite) (ModuleCat.{0} ℤ)).map
+      (freePresheafToTopologicalFreePresheaf S))) := by
+  rw [← CategoryTheory.GrothendieckTopology.W_iff]
+  exact (coherentTopology LightProfinite).W_of_isLocallyBijective
+    (freePresheafToTopologicalFreePresheaf S)
+
+instance instIsIso_freeToTopologicalFree (S : LightProfinite.{0}) :
+    IsIso (freeToTopologicalFree S) := by
+  rw [freeToTopologicalFree_eq_sheafified_presheaf_comparison]
+  rw [← sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafifyIso_inv]
+  exact IsIso.comp_isIso' (instIsIso_sheafifiedPresheafComparison S) (Iso.isIso_inv _)
+
+noncomputable def freeTopologicalFreeIso (S : LightProfinite.{0}) :
+    (free ℤ).obj S.toCondensed ≅ topologicalFreeCondensed S :=
+  asIso (freeToTopologicalFree S)
+
+lemma freeTopologicalFreeIso_hom (S : LightProfinite.{0}) :
+    (freeTopologicalFreeIso S).hom = freeToTopologicalFree S := by
+  rfl
 
 abbrev freeLightProfiniteMap : (forget ℤ).obj ((free ℤ).obj S.toCondensed) ⟶
     sequentialToLightCondSet.obj (lightCondSetToSequential.obj
