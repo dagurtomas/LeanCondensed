@@ -2458,6 +2458,125 @@ lemma signedTuplePullback_jointly_surjective_of_bound
   refine ⟨i, ⟨⟨(u, x), hx.symm⟩, ?_⟩⟩
   rfl
 
+/-- The compact subset of the topological free group parametrized by signed tuples of length at
+most `N`. -/
+def signedTupleBoundedSet (S : LightProfinite.{0}) (N : ℕ) : Set (topologicalFree S) :=
+  ⋃ i : signedTupleIndex N, Set.range (fun x : signedTupleSpace S i => signedTupleMap S i x)
+
+lemma signedTupleBoundedSet_isCompact (S : LightProfinite.{0}) (N : ℕ) :
+    IsCompact (signedTupleBoundedSet S N) := by
+  classical
+  dsimp [signedTupleBoundedSet]
+  exact isCompact_iUnion fun i => by
+    simpa [Set.image_univ] using
+      isCompact_univ.image (show Continuous fun x : signedTupleSpace S i => signedTupleMap S i x from
+        (signedTupleMap S i).continuous)
+
+lemma mem_signedTupleBoundedSet_of_totalVariation_le
+    (S : LightProfinite.{0}) {N : ℕ} (μ : topologicalFree S)
+    (hμ : LightProfinite.FreeImage.totalVariation μ ≤ (N : ℤ)) :
+    μ ∈ signedTupleBoundedSet S N := by
+  classical
+  obtain ⟨i, x, hx⟩ := exists_signedTuple_of_totalVariation_le S
+    (show S →₀ ℤ from μ) hμ
+  rw [signedTupleBoundedSet]
+  exact Set.mem_iUnion.mpr ⟨i, Set.mem_range.mpr ⟨x, hx⟩⟩
+
+/-- Finite quotient projections jointly separate points of the represented topological free group. -/
+lemma topologicalFree_eq_of_forall_proj_eq (S : LightProfinite.{0})
+    {μ ν : topologicalFree S}
+    (h : ∀ k : ℕ,
+      (topologicalFreeMap (S.proj k)).hom μ = (topologicalFreeMap (S.proj k)).hom ν) :
+    μ = ν := by
+  classical
+  let t : Finset S := (show S →₀ ℤ from μ).support ∪ (show S →₀ ℤ from ν).support
+  obtain ⟨k, hk⟩ := LightProfinite.exists_proj_injective_on_finset_points S t
+  apply finsupp_mapDomain_eq_of_eq_of_injOn_support_union
+    (fun s : S => S.proj k s)
+  · exact hk
+  · change Finsupp.mapDomain (fun s : S => S.proj k s) (show S →₀ ℤ from μ) =
+      Finsupp.mapDomain (fun s : S => S.proj k s) (show S →₀ ℤ from ν)
+    have hk' := h k
+    change Finsupp.mapDomain (fun s : S => S.proj k s) (show S →₀ ℤ from μ) =
+      Finsupp.mapDomain (fun s : S => S.proj k s) (show S →₀ ℤ from ν) at hk'
+    exact hk'
+
+/-- A closed-graph criterion for maps into a compact space. -/
+lemma continuous_of_isClosed_graph_of_compact {α β : Type*}
+    [TopologicalSpace α] [TopologicalSpace β] [CompactSpace β]
+    (f : α → β) (hgraph : IsClosed {p : α × β | p.2 = f p.1}) : Continuous f := by
+  rw [continuous_iff_isClosed]
+  intro s hs
+  let A : Set (α × β) := {p : α × β | p.2 = f p.1} ∩ Prod.snd ⁻¹' s
+  have hA : IsClosed A := hgraph.inter (hs.preimage continuous_snd)
+  have hpre : f ⁻¹' s = Prod.fst '' A := by
+    ext x
+    constructor
+    · intro hx
+      exact ⟨(x, f x), ⟨rfl, hx⟩, rfl⟩
+    · rintro ⟨p, hp, rfl⟩
+      change f p.1 ∈ s
+      rw [← hp.1]
+      exact hp.2
+  rw [hpre]
+  exact isClosedMap_fst_of_compactSpace A hA
+
+/-- On a uniformly bounded family of finite signed measures, continuity into the represented
+topological free abelian group is detected by all finite quotient projections. -/
+lemma topologicalFree_continuous_of_bounded_of_finiteProj
+    (T X : LightProfinite.{0}) (a : X → topologicalFree T) (N : ℕ)
+    (hN : ∀ x : X, LightProfinite.FreeImage.totalVariation (a x) ≤ (N : ℤ))
+    (hproj : ∀ k : ℕ,
+      Continuous fun x : X => (topologicalFreeMap (T.proj k)).hom (a x)) :
+    Continuous a := by
+  classical
+  let Kset : Set (topologicalFree T) := signedTupleBoundedSet T N
+  have hKcompact : IsCompact Kset := signedTupleBoundedSet_isCompact T N
+  letI : CompactSpace Kset := isCompact_iff_compactSpace.mp hKcompact
+  let aK : X → Kset := fun x => ⟨a x, mem_signedTupleBoundedSet_of_totalVariation_le T (a x) (hN x)⟩
+  have hgraph : IsClosed {p : X × Kset | p.2 = aK p.1} := by
+    have hgraph_eq : {p : X × Kset | p.2 = aK p.1} =
+        ⋂ k : ℕ, {p : X × Kset |
+          (topologicalFreeMap (T.proj k)).hom (p.2 : topologicalFree T) =
+            (topologicalFreeMap (T.proj k)).hom (a p.1)} := by
+      ext p
+      constructor
+      · intro hp
+        change p.2 = aK p.1 at hp
+        rw [Set.mem_iInter]
+        intro k
+        have hpval : (p.2 : topologicalFree T) = a p.1 := by
+          simpa [aK] using congrArg Subtype.val hp
+        change (topologicalFreeMap (T.proj k)).hom (p.2 : topologicalFree T) =
+          (topologicalFreeMap (T.proj k)).hom (a p.1)
+        rw [hpval]
+      · intro hp
+        apply Subtype.ext
+        apply topologicalFree_eq_of_forall_proj_eq T
+        intro k
+        exact Set.mem_iInter.mp hp k
+    rw [hgraph_eq]
+    refine isClosed_iInter fun k => ?_
+    exact isClosed_eq
+      ((topologicalFreeMap (T.proj k)).hom.continuous.comp
+        (continuous_subtype_val.comp continuous_snd))
+      ((hproj k).comp continuous_fst)
+  have haK : Continuous aK := continuous_of_isClosed_graph_of_compact aK hgraph
+  convert continuous_subtype_val.comp haK using 1
+  ext x
+  rfl
+
+/-- The section of represented topological-free condensed group induced by a bounded family whose
+finite quotient projections are continuous. -/
+noncomputable def topologicalFreeSectionOfBoundedFiniteProj
+    (T X : LightProfinite.{0}) (a : X → topologicalFree T) (N : ℕ)
+    (hN : ∀ x : X, LightProfinite.FreeImage.totalVariation (a x) ≤ (N : ℤ))
+    (hproj : ∀ k : ℕ,
+      Continuous fun x : X => (topologicalFreeMap (T.proj k)).hom (a x)) :
+    (topologicalFreeCondensed T).obj.obj ⟨X⟩ :=
+  (⟨a, topologicalFree_continuous_of_bounded_of_finiteProj T X a N hN hproj⟩ :
+    C(↑X.toTop, ↑(topologicalFree T).toModuleCat))
+
 lemma freePresheafToTopologicalFreePresheaf_imageSieve_mem
     (S U : LightProfinite.{0})
     (a : (topologicalFreePresheaf S).obj ⟨U⟩) :
