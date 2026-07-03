@@ -1194,6 +1194,148 @@ lemma boundedTailProjection_eventually_coord_zero (S : LightProfinite)
   rw [boundedTailProjection_apply_coord]
   simp [show ¬ n ≤ k by omega]
 
+
+/-- The module scalar action of integers on a `ModuleCat ℤ` object commutes with itself. -/
+theorem intModuleCatModuleSMulComm (M : ModuleCat ℤ) :
+    @SMulCommClass ℤ ℤ (↑M) M.isModule.toDistribMulAction.toSMul
+      M.isModule.toDistribMulAction.toSMul := by
+  let d : DistribMulAction ℤ (↑M) := M.isModule.toDistribMulAction
+  refine @SMulCommClass.mk ℤ ℤ (↑M) d.toSMul d.toSMul ?_
+  intro a b x
+  show d.smul a (d.smul b x) = d.smul b (d.smul a x)
+  calc
+    d.smul a (d.smul b x) = d.smul (a * b) x := (d.mul_smul a b x).symm
+    _ = d.smul (b * a) x := by rw [mul_comm]
+    _ = d.smul b (d.smul a x) := d.mul_smul b a x
+
+abbrev freeTensorSectionHom (X : LightProfinite.{0}) (S : LightProfiniteᵒᵖ)
+    (f : X.toCondensed.obj.obj S) : S.unop ⟶ X := f
+
+@[simp]
+lemma freeTensorSectionHom_map (X : LightProfinite.{0}) {S T : LightProfiniteᵒᵖ}
+    (φ : S ⟶ T) (f : X.toCondensed.obj.obj S) :
+    freeTensorSectionHom X T (X.toCondensed.obj.map φ f) = φ.unop ≫ freeTensorSectionHom X S f := rfl
+
+noncomputable def freeTensorPresheafDescLin (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X) (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m)) :
+    (X.toCondensed.obj ⋙ ModuleCat.free ℤ) ⊗ B.obj ⟶ C.obj where
+  app S := by
+    letI hC : @SMulCommClass ℤ ℤ (↑(C.obj.obj S)) (C.obj.obj S).isModule.toDistribMulAction.toSMul (C.obj.obj S).isModule.toDistribMulAction.toSMul := intModuleCatModuleSMulComm (C.obj.obj S)
+    letI : Module ℤ (B.obj.obj S →ₗ[ℤ] C.obj.obj S) :=
+      @LinearMap.module ℤ ℤ ℤ (B.obj.obj S) (C.obj.obj S) _ _ _ _ _ _ (RingHom.id ℤ) _ _ hC
+    let L : ((X.toCondensed.obj ⋙ ModuleCat.free ℤ).obj S) →ₗ[ℤ]
+        (B.obj.obj S →ₗ[ℤ] C.obj.obj S) :=
+      Finsupp.lift (B.obj.obj S →ₗ[ℤ] C.obj.obj S) ℤ (X.toCondensed.obj.obj S)
+        (fun f => b S.unop (freeTensorSectionHom X S f))
+    exact ModuleCat.ofHom (TensorProduct.lift L)
+  naturality := by
+    intro S T φ
+    letI hCS : @SMulCommClass ℤ ℤ (↑(C.obj.obj S)) (C.obj.obj S).isModule.toDistribMulAction.toSMul (C.obj.obj S).isModule.toDistribMulAction.toSMul := intModuleCatModuleSMulComm (C.obj.obj S)
+    letI hCT : @SMulCommClass ℤ ℤ (↑(C.obj.obj T)) (C.obj.obj T).isModule.toDistribMulAction.toSMul (C.obj.obj T).isModule.toDistribMulAction.toSMul := intModuleCatModuleSMulComm (C.obj.obj T)
+    letI : Module ℤ (B.obj.obj S →ₗ[ℤ] C.obj.obj S) :=
+      @LinearMap.module ℤ ℤ ℤ (B.obj.obj S) (C.obj.obj S) _ _ _ _ _ _ (RingHom.id ℤ) _ _ hCS
+    letI : Module ℤ (B.obj.obj T →ₗ[ℤ] C.obj.obj T) :=
+      @LinearMap.module ℤ ℤ ℤ (B.obj.obj T) (C.obj.obj T) _ _ _ _ _ _ (RingHom.id ℤ) _ _ hCT
+    letI : Module ℤ (B.obj.obj S →ₗ[ℤ] C.obj.obj T) :=
+      @LinearMap.module ℤ ℤ ℤ (B.obj.obj S) (C.obj.obj T) _ _ _ _ _ _ (RingHom.id ℤ) _ _ hCT
+    apply ModuleCat.hom_ext
+    apply TensorProduct.ext'
+    intro a m
+    change (TensorProduct.lift
+        ((Finsupp.lift (B.obj.obj T →ₗ[ℤ] C.obj.obj T) ℤ (X.toCondensed.obj.obj T)) fun f =>
+          b T.unop (freeTensorSectionHom X T f)))
+      ((((ModuleCat.free ℤ).map (X.toCondensed.obj.map φ) ⊗ₘ B.obj.map φ) (a ⊗ₜ[ℤ] m))) =
+    (C.obj.map φ)
+      ((((Finsupp.lift (B.obj.obj S →ₗ[ℤ] C.obj.obj S) ℤ (X.toCondensed.obj.obj S)) fun f =>
+          b S.unop (freeTensorSectionHom X S f)) a) m)
+    dsimp [ModuleCat.free] at *
+    let LT : (X.toCondensed.obj.obj T →₀ ℤ) →ₗ[ℤ]
+        (B.obj.obj T →ₗ[ℤ] C.obj.obj T) :=
+      (Finsupp.lift (B.obj.obj T →ₗ[ℤ] C.obj.obj T) ℤ (X.toCondensed.obj.obj T)) fun f =>
+        b T.unop (freeTensorSectionHom X T f)
+    let LS : (X.toCondensed.obj.obj S →₀ ℤ) →ₗ[ℤ]
+        (B.obj.obj S →ₗ[ℤ] C.obj.obj S) :=
+      (Finsupp.lift (B.obj.obj S →ₗ[ℤ] C.obj.obj S) ℤ (X.toCondensed.obj.obj S)) fun f =>
+        b S.unop (freeTensorSectionHom X S f)
+    let freeMap : (X.toCondensed.obj.obj S →₀ ℤ) →ₗ[ℤ]
+        (X.toCondensed.obj.obj T →₀ ℤ) :=
+      Finsupp.lmapDomain ℤ ℤ (X.toCondensed.obj.map φ)
+    let preB : (B.obj.obj T →ₗ[ℤ] C.obj.obj T) →ₗ[ℤ]
+        (B.obj.obj S →ₗ[ℤ] C.obj.obj T) :=
+      LinearMap.lcomp ℤ (C.obj.obj T) (ModuleCat.Hom.hom (B.obj.map φ))
+    let postC : (B.obj.obj S →ₗ[ℤ] C.obj.obj S) →ₗ[ℤ]
+        (B.obj.obj S →ₗ[ℤ] C.obj.obj T) := {
+      toFun := fun l => (ModuleCat.Hom.hom (C.obj.map φ)).comp l
+      map_add' := by
+        intro l₁ l₂
+        ext m
+        simp
+      map_smul' := by
+        intro r l
+        ext m
+        simp }
+    change ((preB.comp (LT.comp freeMap)) a) m = ((postC.comp LS) a) m
+    have hlin : preB.comp (LT.comp freeMap) = postC.comp LS := by
+      apply Finsupp.lhom_ext'
+      intro f
+      apply LinearMap.ext
+      intro r
+      apply LinearMap.ext
+      intro m
+      dsimp [preB, postC, LT, LS, freeMap]
+      rw [Finsupp.mapDomain_single]
+      rw [Finsupp.sum_single_index, Finsupp.sum_single_index]
+      · rw [freeTensorSectionHom_map]
+        rw [show φ = φ.unop.op by rfl]
+        rw [Quiver.Hom.unop_op]
+        rw [LinearMap.smul_apply]
+        rw [LinearMap.smul_apply]
+        rw [(ModuleCat.Hom.hom (C.obj.map φ.unop.op)).map_smul]
+        rw [hnat φ.unop (freeTensorSectionHom X S f) m]
+      · apply LinearMap.ext
+        intro m
+        rw [LinearMap.smul_apply]
+        let mod : Module ℤ (C.obj.obj S) := (C.obj.obj S).isModule
+        change mod.toDistribMulAction.smul 0 ((b S.unop (freeTensorSectionHom X S f)) m) = 0
+        exact mod.zero_smul ((b S.unop (freeTensorSectionHom X S f)) m)
+      · apply LinearMap.ext
+        intro m
+        rw [LinearMap.smul_apply]
+        let mod : Module ℤ (C.obj.obj T) := (C.obj.obj T).isModule
+        change mod.toDistribMulAction.smul 0 ((b T.unop (freeTensorSectionHom X T (X.toCondensed.obj.map φ f))) m) = 0
+        exact mod.zero_smul ((b T.unop (freeTensorSectionHom X T (X.toCondensed.obj.map φ f))) m)
+    rw [hlin]
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+noncomputable def freeTensorDescLin (X : LightProfinite.{0}) (B C : LightCondAb)
+    (b : ∀ S : LightProfinite.{0}, (S ⟶ X) → (B.obj.obj ⟨S⟩ →ₗ[ℤ] C.obj.obj ⟨S⟩))
+    (hnat : ∀ {S T : LightProfinite.{0}} (g : T ⟶ S) (f : S ⟶ X) (m : B.obj.obj ⟨S⟩),
+      C.obj.map g.op (b S f m) = b T (g ≫ f) (B.obj.map g.op m)) :
+    ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  letI : L.Monoidal := inferInstanceAs ((presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)).Monoidal)
+  let F : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let α : F ⊗ G ⟶ C.obj := freeTensorPresheafDescLin X B C b hnat
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let cC : L.obj C.obj ⟶ C :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+  haveI : IsIso cB := by
+    dsimp [cB, G, L]
+    exact isIso_sheafificationAdjunction_counit B
+  haveI : IsIso cC := by
+    dsimp [cC, L]
+    exact isIso_sheafificationAdjunction_counit C
+  let cBinv : B ⟶ L.obj G := inv cB
+  change L.obj F ⊗ B ⟶ C
+  exact (L.obj F ◁ cBinv) ≫
+    (Functor.Monoidal.μIso L F G).hom ≫ L.map α ≫ cC
+
+
 /-- Maps out of a free light condensed abelian group are the corresponding point values. -/
 noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
     ((free ℤ).obj T.toCondensed ⟶ A) ≃ A.obj.obj ⟨T⟩ :=
@@ -1845,6 +1987,100 @@ lemma continuous_ninf_of_eventually_eq_zero
         cases hy'
         rfl
       exact continuousAt_const.congr_of_eventuallyEq h_event
+
+def boundedTailFamilyCoord (k : ℕ) : LocallyConstant (ℕ∪{∞} : LightProfinite) ℤ where
+  toFun x :=
+    match x with
+    | ∞ => 0
+    | OnePoint.some n => if n ≤ k then 1 else 0
+  isLocallyConstant := by
+    apply (IsLocallyConstant.iff_continuous _).mpr
+    apply continuous_ninf_of_eventually_eq_zero
+    exact Filter.eventually_atTop.2 ⟨k + 1, by
+      intro n hn
+      simp [show ¬ n ≤ k by omega]⟩
+
+@[simp]
+lemma boundedTailFamilyCoord_finite (k n : ℕ) :
+    boundedTailFamilyCoord k (n : ℕ∪{∞}) = if n ≤ k then 1 else 0 := rfl
+
+@[simp]
+lemma boundedTailFamilyCoord_infty (k : ℕ) :
+    boundedTailFamilyCoord k (∞ : ℕ∪{∞}) = 0 := rfl
+
+def boundedTailFamilySection {S : LightProfinite} (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (x : BoundedIntSeqSection S) : BoundedIntSeqSection S where
+  val k := (boundedTailFamilyCoord k).comap f.hom.hom * x.val k
+  isBounded := by
+    obtain ⟨N, hN⟩ := x.isBounded
+    refine ⟨N, ?_⟩
+    intro s k
+    change Int.natAbs (boundedTailFamilyCoord k (f s) * x.val k s) ≤ N
+    cases hfs : f s using OnePoint.rec with
+    | infty =>
+        rw [boundedTailFamilyCoord_infty]
+        simp
+    | coe n =>
+        by_cases hn : n ≤ k
+        · simpa [boundedTailFamilyCoord, hn] using hN s k
+        · simp [boundedTailFamilyCoord, hn]
+
+@[simp]
+lemma boundedTailFamilySection_val {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (k : ℕ) (s : S) :
+    (boundedTailFamilySection f x).val k s = boundedTailFamilyCoord k (f s) * x.val k s := rfl
+
+noncomputable def boundedTailFamilyLinear (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) :
+    boundedIntSequences.obj.obj ⟨S⟩ →ₗ[ℤ] boundedIntSequences.obj.obj ⟨S⟩ where
+  toFun x := boundedTailFamilySection f (show BoundedIntSeqSection S from x)
+  map_add' := by
+    intro x y
+    apply BoundedIntSeqSection.ext_apply
+    intro k s
+    change boundedTailFamilyCoord k (f s) * (x + y).val k s =
+      (boundedTailFamilySection f (show BoundedIntSeqSection S from x) +
+        boundedTailFamilySection f (show BoundedIntSeqSection S from y)).val k s
+    rw [BoundedIntSeqSection.val_add]
+    change boundedTailFamilyCoord k (f s) * (x.val k s + y.val k s) =
+      boundedTailFamilyCoord k (f s) * x.val k s + boundedTailFamilyCoord k (f s) * y.val k s
+    ring
+  map_smul' := by
+    intro a x
+    apply BoundedIntSeqSection.ext_apply
+    intro k s
+    change boundedTailFamilyCoord k (f s) * (a • (show BoundedIntSeqSection S from x)).val k s =
+      (a • boundedTailFamilySection f (show BoundedIntSeqSection S from x)).val k s
+    rw [BoundedIntSeqSection.val_zsmul]
+    change boundedTailFamilyCoord k (f s) * (a * x.val k s) =
+      a * (boundedTailFamilyCoord k (f s) * x.val k s)
+    ring
+
+end LightCondensed.Solid.ProjectiveGeneratorProof
+
+namespace LightCondensed.Solid.ProjectiveGeneratorProof
+
+lemma boundedTailFamilyLinear_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : boundedIntSequences.obj.obj ⟨S⟩) :
+    boundedIntSequences.obj.map g.op (boundedTailFamilyLinear S f m) =
+      boundedTailFamilyLinear T (g ≫ f) (boundedIntSequences.obj.map g.op m) := by
+  apply BoundedIntSeqSection.ext_apply
+  intro k t
+  change (boundedIntSeqSectionComap g
+      (boundedTailFamilySection f (show BoundedIntSeqSection S from m))).val k t =
+    (boundedTailFamilySection (g ≫ f)
+      (boundedIntSeqSectionComap g (show BoundedIntSeqSection S from m))).val k t
+  rfl
+
+noncomputable def boundedTailNumerator :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ boundedIntSequences ⟶ boundedIntSequences :=
+  freeTensorDescLin (ℕ∪{∞} : LightProfinite) boundedIntSequences boundedIntSequences
+    boundedTailFamilyLinear (by
+      intro S T g f m
+      exact boundedTailFamilyLinear_naturality g f m)
+
+
 
 /-- The `n`th finite-point generator in the free object on `ℕ∪∞`. -/
 noncomputable def freeNatBasis (n : ℕ) :
