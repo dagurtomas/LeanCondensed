@@ -8,6 +8,7 @@ import LeanCondensed.Projects.FreeCondensed
 import Mathlib.CategoryTheory.Preadditive.Projective.Preserves
 import Mathlib.CategoryTheory.Generator.Basic
 import Mathlib.Condensed.Discrete.Colimit
+import Mathlib.Algebra.Category.ModuleCat.Products
 
 /-!
 # The projective generator of solid abelian groups
@@ -323,6 +324,216 @@ noncomputable abbrev solidP : Solid :=
 /-- The countable product of copies of `ℤ` in `Solid`. -/
 noncomputable abbrev productInt : Solid :=
   solidProjectiveGenerator
+
+/-- The underlying light condensed abelian group of the solid countable product of integers. -/
+noncomputable abbrev productIntLight : LightCondAb :=
+  (isSolid.ι).obj productInt
+
+/-- The underlying light condensed abelian group of the solid countable product is the countable
+product of the discrete integer sheaf. -/
+noncomputable def productIntLightIsoProductZdisc :
+    productIntLight ≅ ∏ᶜ fun _ : ℕ => Zdisc :=
+  PreservesProduct.iso isSolid.ι (fun _ : ℕ => solidInteger)
+
+@[simp]
+lemma productIntLightIsoProductZdisc_hom_π (n : ℕ) :
+    productIntLightIsoProductZdisc.hom ≫ Pi.π (fun _ : ℕ => Zdisc) n =
+      (Pi.π (fun _ : ℕ => solidInteger) n).hom := by
+  change (piComparison isSolid.ι (fun _ : ℕ => solidInteger) ≫
+      Pi.π (fun n : ℕ => (isSolid.ι).obj (solidInteger)) n) =
+    (isSolid.ι).map (Pi.π (fun _ : ℕ => solidInteger) n)
+  rw [piComparison_comp_π]
+
+/-- Sections of an isomorphic pair of light condensed abelian groups are linearly equivalent. -/
+private noncomputable def sectionsLinearEquivOfIso {A B : LightCondAb} (e : A ≅ B)
+    (S : LightProfinite) : A.obj.obj ⟨S⟩ ≃ₗ[ℤ] B.obj.obj ⟨S⟩ := by
+  let a : A.obj.obj ⟨S⟩ ≃+ B.obj.obj ⟨S⟩ := {
+    toFun := fun x => e.hom.hom.app ⟨S⟩ x
+    invFun := fun y => e.inv.hom.app ⟨S⟩ y
+    left_inv := by
+      intro x
+      change (e.hom ≫ e.inv).hom.app ⟨S⟩ x = x
+      rw [e.hom_inv_id]
+      rfl
+    right_inv := by
+      intro y
+      change (e.inv ≫ e.hom).hom.app ⟨S⟩ y = y
+      rw [e.inv_hom_id]
+      rfl
+    map_add' := by
+      intro x y
+      exact (e.hom.hom.app ⟨S⟩).hom.map_add x y }
+  exact a.toIntLinearEquiv
+
+/-- Sections of a countable product of copies of `Zdisc` are countable products of sections. -/
+private noncomputable def productZdiscSectionsEquiv (S : LightProfinite) :
+    (∏ᶜ fun _ : ℕ => Zdisc).obj.obj ⟨S⟩ ≃ₗ[ℤ]
+      (∀ _ : ℕ, Zdisc.obj.obj ⟨S⟩) := by
+  let evS : LightCondAb ⥤ ModuleCat ℤ :=
+    sheafToPresheaf (coherentTopology LightProfinite) (ModuleCat ℤ) ⋙
+      (evaluation LightProfiniteᵒᵖ (ModuleCat ℤ)).obj ⟨S⟩
+  let e := PreservesProduct.iso evS (fun _ : ℕ => Zdisc) ≪≫
+    ModuleCat.piIsoPi (fun _ : ℕ => evS.obj Zdisc)
+  let coord : (∏ᶜ fun _ : ℕ => Zdisc).obj.obj ⟨S⟩ →
+      (∀ _ : ℕ, Zdisc.obj.obj ⟨S⟩) :=
+    fun x n => (Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩ x
+  have hcoord : ∀ x, e.hom x = coord x := by
+    intro x
+    ext n
+    letI : Module ℤ (∀ _ : ℕ, evS.obj Zdisc) :=
+      Pi.module ℕ (fun _ : ℕ => evS.obj Zdisc) ℤ
+    change (((PreservesProduct.iso evS (fun _ : ℕ => Zdisc)).hom ≫
+      (ModuleCat.piIsoPi (fun _ : ℕ => evS.obj Zdisc)).hom) ≫ ModuleCat.ofHom
+        (LinearMap.proj n : (∀ _ : ℕ, evS.obj Zdisc) →ₗ[ℤ] evS.obj Zdisc)).hom x =
+      (Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩ x
+    rw [Category.assoc, ModuleCat.piIsoPi_hom_ker_subtype]
+    change ((PreservesProduct.iso evS (fun _ : ℕ => Zdisc)).hom ≫
+      Pi.π (fun _ : ℕ => evS.obj Zdisc) n).hom x =
+      (Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩ x
+    rw [PreservesProduct.iso_hom, piComparison_comp_π]
+    rfl
+  let a : (∏ᶜ fun _ : ℕ => Zdisc).obj.obj ⟨S⟩ ≃+
+      (∀ _ : ℕ, Zdisc.obj.obj ⟨S⟩) := {
+    toFun := coord
+    invFun := fun y => e.inv y
+    left_inv := by
+      intro x
+      change e.inv (coord x) = x
+      rw [← hcoord x]
+      change (e.hom ≫ e.inv).hom x = x
+      rw [e.hom_inv_id]
+      rfl
+    right_inv := by
+      intro y
+      change coord (e.inv y) = y
+      rw [← hcoord (e.inv y)]
+      change (e.inv ≫ e.hom).hom y = y
+      rw [e.inv_hom_id]
+      rfl
+    map_add' := by
+      intro x y
+      ext n
+      exact ((Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩).hom.map_add x y }
+  exact a.toIntLinearEquiv
+
+@[simp]
+lemma productZdiscSectionsEquiv_apply (S : LightProfinite)
+    (x : (∏ᶜ fun _ : ℕ => Zdisc).obj.obj ⟨S⟩) (n : ℕ) :
+    productZdiscSectionsEquiv S x n =
+      (Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩ x :=
+  rfl
+
+/-- The locally-constant-function description of `Zdisc`-sections as a linear equivalence. -/
+private noncomputable def zdiscSectionsLinearEquiv (S : LightProfinite) :
+    Zdisc.obj.obj ⟨S⟩ ≃ₗ[ℤ] LocallyConstant S ℤ := by
+  let a : Zdisc.obj.obj ⟨S⟩ ≃+ LocallyConstant S ℤ := {
+    toFun := zdiscSectionsEquiv S
+    invFun := (zdiscSectionsEquiv S).symm
+    left_inv := (zdiscSectionsEquiv S).left_inv
+    right_inv := (zdiscSectionsEquiv S).right_inv
+    map_add' := by
+      intro x y
+      dsimp [zdiscSectionsEquiv]
+      simp
+      rfl }
+  exact a.toIntLinearEquiv
+
+/-- Sections of `productIntLight` are countable products of sections of `Zdisc`. -/
+noncomputable def productIntSectionsEquiv (S : LightProfinite) :
+    productIntLight.obj.obj ⟨S⟩ ≃ₗ[ℤ]
+      (∀ _ : ℕ, Zdisc.obj.obj ⟨S⟩) :=
+  (sectionsLinearEquivOfIso productIntLightIsoProductZdisc S).trans
+    (productZdiscSectionsEquiv S)
+
+@[simp]
+lemma productIntSectionsEquiv_apply (S : LightProfinite)
+    (x : productIntLight.obj.obj ⟨S⟩) (n : ℕ) :
+    productIntSectionsEquiv S x n =
+      ((productIntLightIsoProductZdisc.hom ≫
+        Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩) x :=
+  rfl
+
+@[simp]
+lemma productIntSectionsEquiv_symm_apply (S : LightProfinite)
+    (x : ∀ _ : ℕ, Zdisc.obj.obj ⟨S⟩) (n : ℕ) :
+    ((productIntLightIsoProductZdisc.hom ≫
+        Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩)
+      ((productIntSectionsEquiv S).symm x) = x n := by
+  have h := congrFun (LinearEquiv.apply_symm_apply (productIntSectionsEquiv S) x) n
+  rw [productIntSectionsEquiv_apply] at h
+  exact h
+
+/-- The sectionwise locally constant integer-valued function API for `productIntLight`. -/
+noncomputable def productIntLocallyConstantSectionsEquiv (S : LightProfinite) :
+    productIntLight.obj.obj ⟨S⟩ ≃ₗ[ℤ]
+      (∀ _ : ℕ, LocallyConstant S ℤ) := by
+  let a : productIntLight.obj.obj ⟨S⟩ ≃+ (∀ _ : ℕ, LocallyConstant S ℤ) := {
+    toFun := fun x n => zdiscSectionsLinearEquiv S (productIntSectionsEquiv S x n)
+    invFun := fun y => (productIntSectionsEquiv S).symm
+      (fun n => (zdiscSectionsLinearEquiv S).symm (y n))
+    left_inv := by
+      intro x
+      apply (productIntSectionsEquiv S).injective
+      rw [LinearEquiv.apply_symm_apply]
+      ext n
+      simp
+    right_inv := by
+      intro y
+      change (fun n => zdiscSectionsLinearEquiv S
+          (productIntSectionsEquiv S
+            ((productIntSectionsEquiv S).symm
+              (fun n => (zdiscSectionsLinearEquiv S).symm (y n))) n)) = y
+      rw [LinearEquiv.apply_symm_apply]
+      ext n
+      simp
+    map_add' := by
+      intro x y
+      ext n s
+      have h := congrFun ((productIntSectionsEquiv S).map_add x y) n
+      rw [h]
+      change (zdiscSectionsLinearEquiv S
+          (productIntSectionsEquiv S x n + productIntSectionsEquiv S y n)) s =
+        (zdiscSectionsLinearEquiv S (productIntSectionsEquiv S x n) +
+          zdiscSectionsLinearEquiv S (productIntSectionsEquiv S y n)) s
+      rw [map_add] }
+  exact a.toIntLinearEquiv
+
+@[simp]
+lemma productIntLocallyConstantSectionsEquiv_apply (S : LightProfinite)
+    (x : productIntLight.obj.obj ⟨S⟩) (n : ℕ) :
+    productIntLocallyConstantSectionsEquiv S x n =
+      zdiscSectionsEquiv S (productIntSectionsEquiv S x n) := by
+  rfl
+
+@[simp]
+lemma productIntLocallyConstantSectionsEquiv_symm_apply (S : LightProfinite)
+    (x : ∀ _ : ℕ, LocallyConstant S ℤ) (n : ℕ) :
+    zdiscSectionsEquiv S
+      (((productIntLightIsoProductZdisc.hom ≫
+        Pi.π (fun _ : ℕ => Zdisc) n).hom.app ⟨S⟩)
+          ((productIntLocallyConstantSectionsEquiv S).symm x)) = x n := by
+  have h := congrFun
+    (LinearEquiv.apply_symm_apply (productIntLocallyConstantSectionsEquiv S) x) n
+  rw [productIntLocallyConstantSectionsEquiv_apply] at h
+  exact h
+
+lemma productIntSectionsEquiv_map {S S' : LightProfinite} (φ : S' ⟶ S)
+    (x : productIntLight.obj.obj ⟨S⟩) :
+    productIntSectionsEquiv S' (productIntLight.obj.map φ.op x) =
+      fun n : ℕ => Zdisc.obj.map φ.op (productIntSectionsEquiv S x n) := by
+  ext n
+  rw [productIntSectionsEquiv_apply, productIntSectionsEquiv_apply]
+  exact LightCondMod.hom_naturality_apply ℤ
+    (productIntLightIsoProductZdisc.hom ≫ Pi.π (fun _ : ℕ => Zdisc) n) φ.op x
+
+lemma productIntLocallyConstantSectionsEquiv_map {S S' : LightProfinite} (φ : S' ⟶ S)
+    (x : productIntLight.obj.obj ⟨S⟩) :
+    productIntLocallyConstantSectionsEquiv S' (productIntLight.obj.map φ.op x) =
+      fun n : ℕ => (productIntLocallyConstantSectionsEquiv S x n).comap φ.hom.hom := by
+  ext n
+  rw [productIntLocallyConstantSectionsEquiv_apply,
+    productIntLocallyConstantSectionsEquiv_apply]
+  rw [productIntSectionsEquiv_map, zdiscSectionsEquiv_map]
 
 /-- Maps out of a free light condensed abelian group are the corresponding point values. -/
 noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
