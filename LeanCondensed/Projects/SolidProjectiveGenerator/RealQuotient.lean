@@ -168,11 +168,22 @@ lemma boundedIntToBoundedReal_apply_coord (S : LightProfinite)
     BoundedRealSeqSection.subtypeLinearEquiv]
   rfl
 
-/-- Every continuous real-valued function on a light profinite space is within distance `2` of a
+/-- Every real number is within distance `1 / 2` of an integer. -/
+lemma exists_int_abs_sub_le_half (x : ℝ) :
+    ∃ z : ℤ, |x - (z : ℝ)| ≤ (1 / 2 : ℝ) := by
+  let z : ℤ := ⌊x + (1 / 2 : ℝ)⌋
+  refine ⟨z, ?_⟩
+  have hfloor_le : (z : ℝ) ≤ x + (1 / 2 : ℝ) := Int.floor_le _
+  have hlt : x + (1 / 2 : ℝ) < (z : ℝ) + 1 := Int.lt_floor_add_one _
+  have hleft : -(1 / 2 : ℝ) ≤ x - (z : ℝ) := by linarith
+  have hright : x - (z : ℝ) ≤ (1 / 2 : ℝ) := by linarith
+  exact abs_le.mpr ⟨hleft, hright⟩
+
+/-- Every continuous real-valued function on a light profinite space is within distance `1` of a
 locally constant integer-valued function. -/
 lemma exists_locallyConstant_int_approx (S : LightProfinite) (f : C(S, ℝ)) :
-    ∃ g : LocallyConstant S ℤ, ∀ s : S, ‖f s - (g s : ℝ)‖ ≤ (2 : ℝ) := by
-  let R : Set (ℝ × ℝ) := {p | |p.1 - p.2| < (1 : ℝ)}
+    ∃ g : LocallyConstant S ℤ, ∀ s : S, ‖f s - (g s : ℝ)‖ ≤ (1 : ℝ) := by
+  let R : Set (ℝ × ℝ) := {p | |p.1 - p.2| < (1 / 2 : ℝ)}
   have hRopen : IsOpen R := by
     dsimp [R]
     exact isOpen_lt (by fun_prop : Continuous fun p : ℝ × ℝ => |p.1 - p.2|) continuous_const
@@ -187,24 +198,21 @@ lemma exists_locallyConstant_int_approx (S : LightProfinite) (f : C(S, ℝ)) :
     ContinuousMap.exists_finite_approximation_of_mem_nhds_diagonal f hRdiag
   let idxLC : LocallyConstant S (Fin n) :=
     ⟨idx, (IsLocallyConstant.iff_continuous idx).2 hidx_cont⟩
-  let z : Fin n → ℤ := fun i => ⌊hval i⌋
+  let z : Fin n → ℤ := fun i => (exists_int_abs_sub_le_half (hval i)).choose
   let g : LocallyConstant S ℤ := idxLC.map z
   refine ⟨g, ?_⟩
   intro s
-  have hdist : |f s - hval (idx s)| < (1 : ℝ) := happrox s
-  have hfloor_le : (⌊hval (idx s)⌋ : ℝ) ≤ hval (idx s) := Int.floor_le _
-  have hlt : hval (idx s) < (⌊hval (idx s)⌋ : ℝ) + 1 := Int.lt_floor_add_one _
-  have habs_floor : |hval (idx s) - (⌊hval (idx s)⌋ : ℝ)| ≤ (1 : ℝ) := by
-    rw [abs_of_nonneg (sub_nonneg.mpr hfloor_le)]
-    linarith
-  change ‖f s - (⌊hval (idx s)⌋ : ℝ)‖ ≤ (2 : ℝ)
+  have hdist : |f s - hval (idx s)| < (1 / 2 : ℝ) := happrox s
+  have hnear : |hval (idx s) - (z (idx s) : ℝ)| ≤ (1 / 2 : ℝ) :=
+    (exists_int_abs_sub_le_half (hval (idx s))).choose_spec
+  change ‖f s - (z (idx s) : ℝ)‖ ≤ (1 : ℝ)
   rw [Real.norm_eq_abs]
   calc
-    |f s - (⌊hval (idx s)⌋ : ℝ)| =
-        |(f s - hval (idx s)) + (hval (idx s) - (⌊hval (idx s)⌋ : ℝ))| := by ring_nf
-    _ ≤ |f s - hval (idx s)| + |hval (idx s) - (⌊hval (idx s)⌋ : ℝ)| := abs_add_le _ _
-    _ ≤ 1 + 1 := add_le_add hdist.le habs_floor
-    _ = (2 : ℝ) := by norm_num
+    |f s - (z (idx s) : ℝ)| =
+        |(f s - hval (idx s)) + (hval (idx s) - (z (idx s) : ℝ))| := by ring_nf
+    _ ≤ |f s - hval (idx s)| + |hval (idx s) - (z (idx s) : ℝ)| := abs_add_le _ _
+    _ ≤ (1 / 2 : ℝ) + (1 / 2 : ℝ) := add_le_add hdist.le hnear
+    _ = (1 : ℝ) := by norm_num
 
 /-- A chosen coordinatewise locally constant integer approximation to a real sequence. -/
 noncomputable def productRealIntApprox (S : LightProfinite)
@@ -230,11 +238,12 @@ noncomputable def productRealBoundedCorrection (S : LightProfinite)
       locallyConstantIntToRealLinear S
         (productIntLocallyConstantSectionsEquiv S (productRealIntApprox S x) n)
     isBounded := by
-      refine ⟨2, ?_⟩
+      refine ⟨1, ?_⟩
       intro s n
       rw [ContinuousMap.sub_apply]
       rw [locallyConstantIntToRealLinear_apply, productRealIntApprox_apply_coord]
-      exact (exists_locallyConstant_int_approx S (productRealSequencesSectionsEquiv S x n)).choose_spec s })
+      simpa only [Nat.cast_one] using
+        (exists_locallyConstant_int_approx S (productRealSequencesSectionsEquiv S x n)).choose_spec s })
 
 @[simp]
 lemma productRealBoundedCorrection_apply_coord (S : LightProfinite)
@@ -244,6 +253,78 @@ lemma productRealBoundedCorrection_apply_coord (S : LightProfinite)
         locallyConstantIntToRealLinear S
           (productIntLocallyConstantSectionsEquiv S (productRealIntApprox S x) n) :=
   rfl
+
+/-- The coordinatewise cast square from bounded integer sequences to all real sequences commutes. -/
+@[reassoc (attr := simp)]
+lemma boundedIntToBoundedReal_comp_boundedRealToProductReal :
+    boundedIntToBoundedReal ≫ boundedRealToProductReal =
+      boundedToProduct ≫ productIntToProductReal := by
+  ext S x
+  apply (productRealSequencesSectionsEquiv S.unop).injective
+  ext n s
+  change (productRealSequencesSectionsEquiv S.unop
+      ((boundedRealToProductReal.hom.app S) ((boundedIntToBoundedReal.hom.app S) x)) n) s =
+    (productRealSequencesSectionsEquiv S.unop
+      ((productIntToProductReal.hom.app S) ((boundedToProduct.hom.app S) x)) n) s
+  rw [boundedRealToProductReal_apply_coord, boundedIntToBoundedReal_apply_coord,
+    productIntToProductReal_apply_coord, boundedToProduct_apply_coord]
+
+/-- Every real product section is the sum of its chosen integer approximation and the uniformly
+bounded real correction term. -/
+lemma productRealIntApprox_add_correction (S : LightProfinite)
+    (x : productRealSequences.obj.obj ⟨S⟩) :
+    x = (productIntToProductReal.hom.app ⟨S⟩) (productRealIntApprox S x) +
+      (boundedRealToProductReal.hom.app ⟨S⟩) (productRealBoundedCorrection S x) := by
+  apply (productRealSequencesSectionsEquiv S).injective
+  ext n s
+  rw [(productRealSequencesSectionsEquiv S).map_add]
+  change (productRealSequencesSectionsEquiv S x n) s =
+      (productRealSequencesSectionsEquiv S
+          ((productIntToProductReal.hom.app ⟨S⟩) (productRealIntApprox S x)) n) s +
+        (productRealSequencesSectionsEquiv S
+          ((boundedRealToProductReal.hom.app ⟨S⟩) (productRealBoundedCorrection S x)) n) s
+  rw [productIntToProductReal_apply_coord, boundedRealToProductReal_apply_coord,
+    productRealBoundedCorrection_apply_coord]
+  simp
+
+/-- If an integer product section becomes a bounded real section after coordinatewise casting, then
+it already comes from a bounded integer sequence section. -/
+lemma exists_boundedInt_of_productIntToProductReal_eq_boundedReal (S : LightProfinite)
+    (y : productIntLight.obj.obj ⟨S⟩) (b : boundedRealSequences.obj.obj ⟨S⟩)
+    (h : (productIntToProductReal.hom.app ⟨S⟩) y =
+      (boundedRealToProductReal.hom.app ⟨S⟩) b) :
+    ∃ a : boundedIntSequences.obj.obj ⟨S⟩,
+      (boundedToProduct.hom.app ⟨S⟩) a = y ∧
+        (boundedIntToBoundedReal.hom.app ⟨S⟩) a = b := by
+  obtain ⟨N, hN⟩ := (boundedRealSequencesSectionsEquiv S b).2
+  let aSec : BoundedIntSeqSection S := {
+    val := productIntLocallyConstantSectionsEquiv S y
+    isBounded := by
+      refine ⟨N, ?_⟩
+      intro s n
+      have hcoord := congrArg (fun x => productRealSequencesSectionsEquiv S x n) h
+      rw [productIntToProductReal_apply_coord, boundedRealToProductReal_apply_coord] at hcoord
+      have hp := congrArg (fun f : C(S, ℝ) => f s) hcoord
+      have hb : ‖((productIntLocallyConstantSectionsEquiv S y n s : ℤ) : ℝ)‖ ≤ (N : ℝ) := by
+        change ‖(locallyConstantIntToRealLinear S
+          (productIntLocallyConstantSectionsEquiv S y n)) s‖ ≤ (N : ℝ)
+        rw [hp]
+        exact hN s n
+      rw [Real.norm_eq_abs, ← Int.cast_abs, Int.abs_eq_natAbs] at hb
+      exact_mod_cast hb }
+  let a : boundedIntSequences.obj.obj ⟨S⟩ := aSec
+  refine ⟨a, ?_, ?_⟩
+  · apply (productIntLocallyConstantSectionsEquiv S).injective
+    ext n
+    rw [boundedToProduct_apply_coord]
+    rfl
+  · apply BoundedRealSeqSection.ext_apply
+    intro n s
+    have hcoord := congrArg (fun x => productRealSequencesSectionsEquiv S x n) h
+    rw [productIntToProductReal_apply_coord, boundedRealToProductReal_apply_coord] at hcoord
+    have hp := congrArg (fun f : C(S, ℝ) => f s) hcoord
+    change (((aSec.val n s : ℤ) : ℝ)) = (show BoundedRealSeqSection S from b).val n s
+    simpa [aSec, locallyConstantIntToRealLinear_apply] using hp
 
 end ProjectiveGeneratorProof
 end Solid
