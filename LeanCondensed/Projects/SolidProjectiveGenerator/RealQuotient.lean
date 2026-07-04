@@ -2,6 +2,7 @@ module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.RealSequences
 public import Mathlib.Algebra.Homology.CommSq
+public import Mathlib.CategoryTheory.Abelian.CommSq
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Kernels
 public import Mathlib.Topology.ContinuousMap.LocallyConstant
 public import Mathlib.Topology.Separation.DisjointCover
@@ -325,6 +326,202 @@ lemma exists_boundedInt_of_productIntToProductReal_eq_boundedReal (S : LightProf
     have hp := congrArg (fun f : C(S, ℝ) => f s) hcoord
     change (((aSec.val n s : ℤ) : ℝ)) = (show BoundedRealSeqSection S from b).val n s
     simpa [aSec, locallyConstantIntToRealLinear_apply] using hp
+
+/-- The sectionwise lift into bounded integer sequences for a cone over the integer/real cast
+square. -/
+noncomputable def boundedIntPullbackLiftSection {W : LightCondAb}
+    (fst : W ⟶ productIntLight) (snd : W ⟶ boundedRealSequences)
+    (h : fst ≫ productIntToProductReal = snd ≫ boundedRealToProductReal)
+    (S : LightProfinite) (w : W.obj.obj ⟨S⟩) : BoundedIntSeqSection S where
+  val := productIntLocallyConstantSectionsEquiv S ((fst.hom.app ⟨S⟩) w)
+  isBounded := by
+    obtain ⟨N, hN⟩ := (boundedRealSequencesSectionsEquiv S ((snd.hom.app ⟨S⟩) w)).2
+    refine ⟨N, ?_⟩
+    intro s n
+    have happ := congrArg (fun e : W ⟶ productRealSequences => e.hom.app ⟨S⟩ w) h
+    change (productIntToProductReal.hom.app ⟨S⟩ ((fst.hom.app ⟨S⟩) w)) =
+      (boundedRealToProductReal.hom.app ⟨S⟩ ((snd.hom.app ⟨S⟩) w)) at happ
+    have hcoord := congrArg (fun x => productRealSequencesSectionsEquiv S x n) happ
+    rw [productIntToProductReal_apply_coord, boundedRealToProductReal_apply_coord] at hcoord
+    have hp := congrArg (fun f : C(S, ℝ) => f s) hcoord
+    have hb : ‖((productIntLocallyConstantSectionsEquiv S ((fst.hom.app ⟨S⟩) w) n s : ℤ) : ℝ)‖ ≤ (N : ℝ) := by
+      change ‖(locallyConstantIntToRealLinear S
+        (productIntLocallyConstantSectionsEquiv S ((fst.hom.app ⟨S⟩) w) n)) s‖ ≤ (N : ℝ)
+      rw [hp]
+      exact hN s n
+    rw [Real.norm_eq_abs, ← Int.cast_abs, Int.abs_eq_natAbs] at hb
+    exact_mod_cast hb
+
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
+/-- The lift from a cone over the cast square to bounded integer sequences. -/
+noncomputable def boundedIntPullbackLift {W : LightCondAb}
+    (fst : W ⟶ productIntLight) (snd : W ⟶ boundedRealSequences)
+    (h : fst ≫ productIntToProductReal = snd ≫ boundedRealToProductReal) :
+    W ⟶ boundedIntSequences where
+  hom := {
+    app S := ModuleCat.ofHom {
+      toFun := fun w => boundedIntPullbackLiftSection fst snd h S.unop w
+      map_add' := by
+        intro x y
+        apply BoundedIntSeqSection.ext_apply
+        intro n s
+        change (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) (x + y)) n) s =
+          (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) x) n) s +
+            (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) y) n) s
+        rw [map_add, map_add]
+        rfl
+      map_smul' := by
+        intro a x
+        apply BoundedIntSeqSection.ext_apply
+        intro n s
+        dsimp [boundedIntPullbackLiftSection]
+        have hfstp := congrArg
+          (fun y : productIntLight.obj.obj S =>
+            (productIntLocallyConstantSectionsEquiv S.unop y n) s)
+          ((fst.hom.app S).hom.map_smul a x)
+        have hlinp := congrArg (fun f : LocallyConstant S.unop ℤ => f s)
+          (congrFun ((productIntLocallyConstantSectionsEquiv S.unop).map_smul a
+            ((fst.hom.app S) x)) n)
+        exact hfstp.trans hlinp }
+    naturality := by
+      intro S T φ
+      rw [show φ = φ.unop.op by rfl]
+      ext w
+      apply BoundedIntSeqSection.ext_apply
+      intro n t
+      change (productIntLocallyConstantSectionsEquiv T.unop
+          ((fst.hom.app T) (W.obj.map φ w)) n) t =
+        (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) w) n) (φ.unop t)
+      rw [LightCondMod.hom_naturality_apply ℤ fst φ w]
+      change (productIntLocallyConstantSectionsEquiv T.unop
+          (productIntLight.obj.map (φ.unop.op) ((fst.hom.app S) w)) n) t =
+        (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) w) n) (φ.unop t)
+      rw [productIntLocallyConstantSectionsEquiv_map (φ := φ.unop)]
+      rfl }
+
+@[reassoc (attr := simp)]
+lemma boundedIntPullbackLift_fac_left {W : LightCondAb}
+    (fst : W ⟶ productIntLight) (snd : W ⟶ boundedRealSequences)
+    (h : fst ≫ productIntToProductReal = snd ≫ boundedRealToProductReal) :
+    boundedIntPullbackLift fst snd h ≫ boundedToProduct = fst := by
+  ext S w
+  apply (productIntLocallyConstantSectionsEquiv S.unop).injective
+  ext n s
+  change (productIntLocallyConstantSectionsEquiv S.unop
+      ((boundedToProduct.hom.app S) ((boundedIntPullbackLift fst snd h).hom.app S w)) n) s =
+    (productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) w) n) s
+  rw [boundedToProduct_apply_coord]
+  rfl
+
+@[reassoc (attr := simp)]
+lemma boundedIntPullbackLift_fac_right {W : LightCondAb}
+    (fst : W ⟶ productIntLight) (snd : W ⟶ boundedRealSequences)
+    (h : fst ≫ productIntToProductReal = snd ≫ boundedRealToProductReal) :
+    boundedIntPullbackLift fst snd h ≫ boundedIntToBoundedReal = snd := by
+  ext S w
+  apply BoundedRealSeqSection.ext_apply
+  intro n s
+  have happ := congrArg (fun e : W ⟶ productRealSequences => e.hom.app S w) h
+  change (productIntToProductReal.hom.app S ((fst.hom.app S) w)) =
+    (boundedRealToProductReal.hom.app S ((snd.hom.app S) w)) at happ
+  have hcoord := congrArg (fun x => productRealSequencesSectionsEquiv S.unop x n) happ
+  rw [productIntToProductReal_apply_coord, boundedRealToProductReal_apply_coord] at hcoord
+  have hp := congrArg (fun f : C(S.unop, ℝ) => f s) hcoord
+  change (((productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) w) n s : ℤ) : ℝ)) =
+    ((boundedRealSequencesSectionsEquiv S.unop ((snd.hom.app S) w)).1 n) s
+  simpa [boundedIntPullbackLift, boundedIntPullbackLiftSection,
+    locallyConstantIntToRealLinear_apply] using hp
+
+lemma boundedIntPullbackLift_unique {W : LightCondAb}
+    (fst : W ⟶ productIntLight) (snd : W ⟶ boundedRealSequences)
+    (h : fst ≫ productIntToProductReal = snd ≫ boundedRealToProductReal)
+    (m : W ⟶ boundedIntSequences) (hm_left : m ≫ boundedToProduct = fst) :
+    m = boundedIntPullbackLift fst snd h := by
+  ext S w
+  apply BoundedIntSeqSection.ext_apply
+  intro n s
+  have hcoord := congrArg (fun e : W ⟶ productIntLight => e.hom.app S w) hm_left
+  change (boundedToProduct.hom.app S ((m.hom.app S) w)) = (fst.hom.app S w) at hcoord
+  have hn := congrArg (fun x => productIntLocallyConstantSectionsEquiv S.unop x n) hcoord
+  rw [boundedToProduct_apply_coord] at hn
+  change (boundedIntSequencesSectionsEquiv S.unop ((m.hom.app S) w)).val n s =
+    productIntLocallyConstantSectionsEquiv S.unop ((fst.hom.app S) w) n s
+  exact congrArg (fun f : LocallyConstant S.unop ℤ => f s) hn
+
+/-- The square of bounded integer sequences, all integer sequences, bounded real sequences, and all
+real sequences is a pullback. -/
+lemma boundedInt_real_pullback :
+    IsPullback boundedToProduct boundedIntToBoundedReal
+      productIntToProductReal boundedRealToProductReal := by
+  refine IsPullback.mk (CommSq.mk ?_) ⟨?_⟩
+  · exact boundedIntToBoundedReal_comp_boundedRealToProductReal.symm
+  · refine PullbackCone.IsLimit.mk _ (fun s => boundedIntPullbackLift s.fst s.snd s.condition) ?_ ?_ ?_
+    · intro s
+      exact boundedIntPullbackLift_fac_left s.fst s.snd s.condition
+    · intro s
+      exact boundedIntPullbackLift_fac_right s.fst s.snd s.condition
+    · intro s m hm₁ _hm₂
+      exact boundedIntPullbackLift_unique s.fst s.snd s.condition m hm₁
+
+/-- The quotient comparison map induced by the commuting cast square. -/
+noncomputable def productIntQuotientToRealQuotient :
+    cokernel boundedToProduct ⟶ cokernel boundedRealToProductReal :=
+  cokernel.map boundedToProduct boundedRealToProductReal boundedIntToBoundedReal
+    productIntToProductReal boundedIntToBoundedReal_comp_boundedRealToProductReal.symm
+
+@[reassoc (attr := simp)]
+lemma productIntQuotientToRealQuotient_π :
+    cokernel.π boundedToProduct ≫ productIntQuotientToRealQuotient =
+      productIntToProductReal ≫ cokernel.π boundedRealToProductReal := by
+  dsimp [productIntQuotientToRealQuotient]
+  rw [cokernel.π_desc]
+
+lemma epi_productIntToProductReal_cokernelπ :
+    Epi (productIntToProductReal ≫ cokernel.π boundedRealToProductReal) := by
+  rw [LightCondMod.epi_iff_locallySurjective_on_lightProfinite]
+  intro S q
+  have hπepi : Epi (cokernel.π boundedRealToProductReal) := inferInstance
+  have hloc := (LightCondMod.epi_iff_locallySurjective_on_lightProfinite ℤ
+    (cokernel.π boundedRealToProductReal)).mp hπepi
+  obtain ⟨S', φ, hφ, x, hx⟩ := hloc S q
+  refine ⟨S', φ, hφ, productRealIntApprox S' x, ?_⟩
+  have hdecomp := productRealIntApprox_add_correction S' x
+  calc
+    ((productIntToProductReal ≫ cokernel.π boundedRealToProductReal).hom.app ⟨S'⟩)
+        (productRealIntApprox S' x)
+        = (cokernel.π boundedRealToProductReal).hom.app ⟨S'⟩
+          ((productIntToProductReal.hom.app ⟨S'⟩) (productRealIntApprox S' x)) := rfl
+    _ = (cokernel.π boundedRealToProductReal).hom.app ⟨S'⟩ x := by
+      conv_rhs => rw [hdecomp]
+      rw [map_add]
+      have hzero : (cokernel.π boundedRealToProductReal).hom.app ⟨S'⟩
+          ((boundedRealToProductReal.hom.app ⟨S'⟩) (productRealBoundedCorrection S' x)) = 0 := by
+        change ((boundedRealToProductReal ≫ cokernel.π boundedRealToProductReal).hom.app ⟨S'⟩)
+          (productRealBoundedCorrection S' x) = 0
+        rw [cokernel.condition]
+        rfl
+      simp [hzero]
+    _ = (cokernel boundedRealToProductReal).obj.map φ.op q := hx
+
+instance productIntQuotientToRealQuotient_epi : Epi productIntQuotientToRealQuotient := by
+  haveI : Epi (cokernel.π boundedToProduct ≫ productIntQuotientToRealQuotient) := by
+    rw [productIntQuotientToRealQuotient_π]
+    exact epi_productIntToProductReal_cokernelπ
+  exact epi_of_epi (cokernel.π boundedToProduct) productIntQuotientToRealQuotient
+
+instance productIntQuotientToRealQuotient_mono : Mono productIntQuotientToRealQuotient := by
+  dsimp [productIntQuotientToRealQuotient]
+  exact CategoryTheory.Abelian.mono_cokernel_map_of_isPullback boundedInt_real_pullback
+
+instance productIntQuotientToRealQuotient_isIso : IsIso productIntQuotientToRealQuotient :=
+  isIso_of_mono_of_epi productIntQuotientToRealQuotient
+
+/-- The integer quotient by bounded integer sequences agrees with the real quotient by bounded real
+sequences. -/
+noncomputable def productIntQuotientIsoRealQuotient :
+    cokernel boundedToProduct ≅ cokernel boundedRealToProductReal :=
+  asIso productIntQuotientToRealQuotient
 
 end ProjectiveGeneratorProof
 end Solid
