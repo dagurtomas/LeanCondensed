@@ -778,6 +778,161 @@ lemma ext1_precomp_oneMinusShift_tensor_bijective
         (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp α (zero_add 1)) :=
   ExtOne.ext1_precomp_oneMinusShift_tensor_bijective X E
 
+/-- The finite `P`-basis slice of `P ℤ ⊗ X` at `n`. -/
+noncomputable def pBasisTensorSlice (X : LightCondAb) (n : ℕ) : X ⟶ P ℤ ⊗ X :=
+  (λ_ X).inv ≫ pBasis n ▷ X
+
+lemma pBasis_comp_oneMinusShift (n : ℕ) :
+    pBasis n ≫ oneMinusShift ℤ = pBasis n - pBasis (n + 1) := by
+  dsimp [pBasis]
+  calc
+    (freeNatBasis n ≫ P_proj ℤ) ≫ oneMinusShift ℤ
+        = freeNatBasis n ≫ (P_proj ℤ ≫ oneMinusShift ℤ) := by rw [Category.assoc]
+    _ = freeNatBasis n ≫ (oneMinusShift' ℤ ≫ P_proj ℤ) := by rw [P_proj_oneMinusShift]
+    _ = (freeNatBasis n ≫ oneMinusShift' ℤ) ≫ P_proj ℤ := by rw [Category.assoc]
+    _ = (freeNatBasis n - freeNatBasis (n + 1)) ≫ P_proj ℤ := by
+          rw [freeNatBasis_oneMinusShift']
+    _ = freeNatBasis n ≫ P_proj ℤ - freeNatBasis (n + 1) ≫ P_proj ℤ := by
+          rw [Preadditive.sub_comp]
+
+/-- Slicing after precomposition by `(oneMinusShift ℤ) ▷ X` takes the finite difference of
+adjacent finite `P`-slices. -/
+lemma pBasisTensorSlice_comp_oneMinusShift (X : LightCondAb) (n : ℕ) :
+    pBasisTensorSlice X n ≫ ((oneMinusShift ℤ) ▷ X) =
+      pBasisTensorSlice X n - pBasisTensorSlice X (n + 1) := by
+  simpa only [pBasisTensorSlice, comp_whiskerRight, IntProof.sub_whiskerRight,
+    Preadditive.comp_sub, Category.assoc] using
+      congrArg (fun f : 𝟙_ LightCondAb ⟶ P ℤ => (λ_ X).inv ≫ f ▷ X)
+        (pBasis_comp_oneMinusShift n)
+
+/-- The odd map sends the `n`th finite tensor slice to the `(2n+1)`st slice. -/
+lemma pBasisTensorSlice_comp_pOddMap (X : LightCondAb) (n : ℕ) :
+    pBasisTensorSlice X n ≫ (pOddMap ▷ X) = pBasisTensorSlice X (2 * n + 1) := by
+  simpa only [pBasisTensorSlice, comp_whiskerRight, Category.assoc] using
+    congrArg (fun f : 𝟙_ LightCondAb ⟶ P ℤ => (λ_ X).inv ≫ f ▷ X)
+      (pOddMap_pBasis n)
+
+/-- The `F/G` identity after tensoring on the right by `X`. -/
+lemma pSplitMap_tensor_comp_oneMinusShift_tensor (X : LightCondAb) :
+    (pSplitMap ▷ X) ≫ ((oneMinusShift ℤ) ▷ X) =
+      ((oneMinusShift ℤ) ▷ X) ≫ (pOddMap ▷ X) := by
+  simpa only [comp_whiskerRight] using
+    congrArg (fun f => f ▷ X) pSplitMap_comp_oneMinusShift
+
+private lemma ext_mk₀_sub {A B : LightCondAb} (f g : A ⟶ B) :
+    Ext.mk₀ (f - g) = Ext.mk₀ f - Ext.mk₀ g := by
+  simp [sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg]
+
+/-- An abstract dyadic contraction on `X`: an action of `P ℤ` on `X` whose zeroth finite slice is
+`𝟙 X`, and which is invariant under the dyadic split map. -/
+class DyadicContractible (X : LightCondAb) : Type 2 where
+  action : P ℤ ⊗ X ⟶ X
+  firstSlice : pBasisTensorSlice X 0 ≫ action = 𝟙 X
+  split_action : (pSplitMap ▷ X) ≫ action = action
+
+private lemma ext_eq_zero_of_dyadicContractionData_of_precomp_bijective
+    (X : LightCondAb) (E : Solid) (n : ℕ)
+    (action : P ℤ ⊗ X ⟶ X)
+    (firstSlice : pBasisTensorSlice X 0 ≫ action = 𝟙 X)
+    (split_action : (pSplitMap ▷ X) ≫ action = action)
+    (hσ : Function.Bijective
+      (fun α : Ext (P ℤ ⊗ X) ((isSolid.ι).obj E) n =>
+        (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp α (zero_add n)))
+    (α : Ext X ((isSolid.ι).obj E) n) :
+    α = 0 := by
+  let Y := (isSolid.ι).obj E
+  let σ : P ℤ ⊗ X ⟶ P ℤ ⊗ X := (oneMinusShift ℤ) ▷ X
+  let F' : P ℤ ⊗ X ⟶ P ℤ ⊗ X := pSplitMap ▷ X
+  let G' : P ℤ ⊗ X ⟶ P ℤ ⊗ X := pOddMap ▷ X
+  let ι0 : X ⟶ P ℤ ⊗ X := pBasisTensorSlice X 0
+  let ι1 : X ⟶ P ℤ ⊗ X := pBasisTensorSlice X 1
+  rcases hσ.2 ((Ext.mk₀ action).comp α (zero_add n)) with ⟨β, hβ⟩
+  change (Ext.mk₀ σ).comp β (zero_add n) = (Ext.mk₀ action).comp α (zero_add n)
+    at hβ
+  have hFG : F' ≫ σ = σ ≫ G' := by
+    dsimp [F', σ, G']
+    exact pSplitMap_tensor_comp_oneMinusShift_tensor X
+  have hσG :
+      (Ext.mk₀ σ).comp ((Ext.mk₀ G').comp β (zero_add n)) (zero_add n) =
+        (Ext.mk₀ σ).comp β (zero_add n) := by
+    calc
+      (Ext.mk₀ σ).comp ((Ext.mk₀ G').comp β (zero_add n)) (zero_add n)
+          = (Ext.mk₀ (σ ≫ G')).comp β (zero_add n) := by
+            rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ (F' ≫ σ)).comp β (zero_add n) := by rw [← hFG]
+      _ = (Ext.mk₀ F').comp ((Ext.mk₀ σ).comp β (zero_add n)) (zero_add n) := by
+            rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ F').comp ((Ext.mk₀ action).comp α (zero_add n)) (zero_add n) := by
+            rw [hβ]
+      _ = (Ext.mk₀ (F' ≫ action)).comp α (zero_add n) := by
+            rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ action).comp α (zero_add n) := by
+            rw [split_action]
+      _ = (Ext.mk₀ σ).comp β (zero_add n) := by rw [← hβ]
+  have hGβ : (Ext.mk₀ G').comp β (zero_add n) = β := hσ.1 hσG
+  let β0 : Ext X Y n := (Ext.mk₀ ι0).comp β (zero_add n)
+  let β1 : Ext X Y n := (Ext.mk₀ ι1).comp β (zero_add n)
+  have hdiff : β0 - β1 = α := by
+    calc
+      β0 - β1 = (Ext.mk₀ (ι0 - ι1)).comp β (zero_add n) := by
+        dsimp [β0, β1]
+        rw [ext_mk₀_sub]
+        simp [sub_eq_add_neg]
+        rfl
+      _ = (Ext.mk₀ (ι0 ≫ σ)).comp β (zero_add n) := by
+        rw [pBasisTensorSlice_comp_oneMinusShift]
+      _ = (Ext.mk₀ ι0).comp ((Ext.mk₀ σ).comp β (zero_add n)) (zero_add n) := by
+        rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ ι0).comp ((Ext.mk₀ action).comp α (zero_add n)) (zero_add n) := by
+        rw [hβ]
+      _ = (Ext.mk₀ (ι0 ≫ action)).comp α (zero_add n) := by
+        rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ (𝟙 X)).comp α (zero_add n) := by
+        rw [firstSlice]
+      _ = α := by simp
+  have hβ10 : β1 = β0 := by
+    calc
+      β1 = (Ext.mk₀ (ι0 ≫ G')).comp β (zero_add n) := by
+        dsimp [β1, ι0, ι1, G']
+        rw [pBasisTensorSlice_comp_pOddMap]
+      _ = (Ext.mk₀ ι0).comp ((Ext.mk₀ G').comp β (zero_add n)) (zero_add n) := by
+        rw [Ext.mk₀_comp_mk₀_assoc]
+      _ = (Ext.mk₀ ι0).comp β (zero_add n) := by rw [hGβ]
+      _ = β0 := rfl
+  calc
+    α = β0 - β1 := hdiff.symm
+    _ = 0 := by rw [hβ10]; simp
+
+/-- Degree-zero Ext vanishing for dyadically contractible objects against solid targets. -/
+lemma ext0_eq_zero_of_dyadicContractible
+    (X : LightCondAb) [DyadicContractible X]
+    (E : Solid) (α : Ext X ((isSolid.ι).obj E) 0) :
+    α = 0 :=
+  ext_eq_zero_of_dyadicContractionData_of_precomp_bijective X E 0
+    (DyadicContractible.action (X := X))
+    (DyadicContractible.firstSlice (X := X))
+    (DyadicContractible.split_action (X := X))
+    (ext0_precomp_oneMinusShift_tensor_bijective X E) α
+
+/-- Ordinary Hom vanishing for dyadically contractible objects against solid targets. -/
+lemma hom_eq_zero_of_dyadicContractible
+    (X : LightCondAb) [DyadicContractible X]
+    (E : Solid) (f : X ⟶ (isSolid.ι).obj E) :
+    f = 0 := by
+  have h : Ext.mk₀ f = 0 := ext0_eq_zero_of_dyadicContractible X E (Ext.mk₀ f)
+  exact (Ext.mk₀_eq_zero_iff f).1 h
+
+/-- Ext¹ vanishing for dyadically contractible objects against solid targets. -/
+lemma ext1_eq_zero_of_dyadicContractible
+    (X : LightCondAb) [DyadicContractible X]
+    (E : Solid) (α : Ext X ((isSolid.ι).obj E) 1) :
+    α = 0 :=
+  ext_eq_zero_of_dyadicContractionData_of_precomp_bijective X E 1
+    (DyadicContractible.action (X := X))
+    (DyadicContractible.firstSlice (X := X))
+    (DyadicContractible.split_action (X := X))
+    (ext1_precomp_oneMinusShift_tensor_bijective X E) α
+
 end ProjectiveGeneratorProof
 end Solid
 end LightCondensed
