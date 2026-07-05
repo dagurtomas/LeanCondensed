@@ -6,6 +6,7 @@ Authors: Dagur Asgeirsson
 module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
+public import LeanCondensed.Projects.SolidProjectiveGenerator.RealSequences
 public import Mathlib.Algebra.Homology.DerivedCategory.Ext.EnoughInjectives
 public import Mathlib.Algebra.Homology.DerivedCategory.Ext.ExactSequences
 public import Mathlib.CategoryTheory.Abelian.GrothendieckCategory.EnoughInjectives
@@ -932,6 +933,707 @@ lemma ext1_eq_zero_of_dyadicContractible
     (DyadicContractible.firstSlice (X := X))
     (DyadicContractible.split_action (X := X))
     (ext1_precomp_oneMinusShift_tensor_bijective X E) α
+
+/-- The dyadic coefficient as a continuous function on `ℕ∪∞`, with value `0` at `∞`. -/
+def dyadicCoeffNinf : C((ℕ∪{∞} : LightProfinite), ℝ) where
+  toFun x :=
+    match x with
+    | ∞ => 0
+    | OnePoint.some n => dyadicCoeff n
+  continuous_toFun := by
+    rw [OnePoint.continuous_iff_from_nat]
+    simpa using tendsto_dyadicCoeff_atTop_zero
+
+@[simp]
+lemma dyadicCoeffNinf_finite (n : ℕ) :
+    dyadicCoeffNinf (n : ℕ∪{∞}) = dyadicCoeff n := rfl
+
+@[simp]
+lemma dyadicCoeffNinf_infty : dyadicCoeffNinf (∞ : ℕ∪{∞}) = 0 := rfl
+
+lemma dyadicCoeff_nonneg (n : ℕ) : 0 ≤ dyadicCoeff n := by
+  unfold dyadicCoeff
+  positivity
+
+lemma dyadicCoeff_le_one (n : ℕ) : dyadicCoeff n ≤ 1 := by
+  unfold dyadicCoeff
+  exact pow_le_one₀ (by norm_num : 0 ≤ (1 / 2 : ℝ)) (by norm_num : (1 / 2 : ℝ) ≤ 1)
+
+lemma dyadicCoeffNinf_abs_le_one (a : ℕ∪{∞}) : ‖dyadicCoeffNinf a‖ ≤ (1 : ℝ) := by
+  cases a using OnePoint.rec with
+  | infty =>
+      change ‖(0 : ℝ)‖ ≤ (1 : ℝ)
+      norm_num
+  | coe n =>
+      change |dyadicCoeff n| ≤ (1 : ℝ)
+      rw [abs_of_nonneg (dyadicCoeff_nonneg n)]
+      exact dyadicCoeff_le_one n
+
+lemma dyadicCoeffNinf_odd_add_even (a : ℕ∪{∞}) :
+    dyadicCoeffNinf (LightProfinite.oddMap a) +
+        dyadicCoeffNinf (LightProfinite.evenMap a) = dyadicCoeffNinf a := by
+  cases a using OnePoint.rec with
+  | infty =>
+      change (0 : ℝ) + 0 = 0
+      norm_num
+  | coe n =>
+      change dyadicCoeff (2 * n + 1) + dyadicCoeff (2 * n + 2) = dyadicCoeff n
+      exact dyadicCoeff_pair_sum n
+
+/-- Pull the continuous dyadic coefficient back along a map to `ℕ∪∞`. -/
+def dyadicScalarFunction {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) : C(S, ℝ) :=
+  dyadicCoeffNinf.comp f.hom.hom
+
+lemma dyadicScalarFunction_odd_add_even {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (s : S) :
+    dyadicScalarFunction (f ≫ LightProfinite.oddMap) s +
+        dyadicScalarFunction (f ≫ LightProfinite.evenMap) s =
+      dyadicScalarFunction f s := by
+  exact dyadicCoeffNinf_odd_add_even (f s)
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+lemma freeTensorHomPresheafComposite_precomp_left_map
+    (X Y : LightProfinite) (φ : X ⟶ Y)
+    (B C : LightCondAb) (g : ((free ℤ).obj Y.toCondensed) ⊗ B ⟶ C) :
+    freeTensorHomPresheafComposite X B C
+        ((((free ℤ).map (lightProfiniteToLightCondSet.map φ)) ▷ B) ≫ g) =
+      ((Functor.whiskerRight (lightProfiniteToLightCondSet.map φ).hom (ModuleCat.free ℤ)) ▷
+          B.obj) ≫ freeTensorHomPresheafComposite Y B C g := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let FX : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let FY : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := Y.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let G : LightProfiniteᵒᵖ ⥤ ModuleCat ℤ := B.obj
+  let η : FX ⟶ FY := Functor.whiskerRight (lightProfiniteToLightCondSet.map φ).hom
+    (ModuleCat.free ℤ)
+  let cB : L.obj G ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let g' : L.obj FY ⊗ B ⟶ C := g
+  dsimp [freeTensorHomPresheafComposite]
+  change toSheafify (coherentTopology LightProfinite) (FX ⊗ G) ≫
+      (((Functor.Monoidal.μIso L FX G).inv ≫ (L.obj FX ◁ cB) ≫
+        ((L.map η ▷ B) ≫ g')).hom) =
+    (η ▷ G) ≫
+      (toSheafify (coherentTopology LightProfinite) (FY ⊗ G) ≫
+        (((Functor.Monoidal.μIso L FY G).inv ≫ (L.obj FY ◁ cB) ≫ g').hom))
+  slice_rhs 1 3 => rw [CategoryTheory.toSheafify_naturality]
+  simp only [Category.assoc]
+  have hμinv : L.map (η ▷ G) ≫ (Functor.Monoidal.μIso L FY G).inv =
+      (Functor.Monoidal.μIso L FX G).inv ≫ (L.map η ▷ L.obj G) := by
+    apply (cancel_mono (Functor.Monoidal.μIso L FY G).hom).1
+    calc
+      (L.map (η ▷ G) ≫ (Functor.Monoidal.μIso L FY G).inv) ≫
+          (Functor.Monoidal.μIso L FY G).hom
+          = L.map (η ▷ G) := by simp [Category.assoc]
+      _ = (Functor.Monoidal.μIso L FX G).inv ≫
+            ((Functor.Monoidal.μIso L FX G).hom ≫ L.map (η ▷ G)) := by simp
+      _ = (Functor.Monoidal.μIso L FX G).inv ≫
+            ((L.map η ▷ L.obj G) ≫ (Functor.Monoidal.μIso L FY G).hom) := by
+              have hμ := Functor.LaxMonoidal.μ_natural_left L η G
+              change (L.map η ▷ L.obj G) ≫ (Functor.Monoidal.μIso L FY G).hom =
+                (Functor.Monoidal.μIso L FX G).hom ≫ L.map (η ▷ G) at hμ
+              rw [← hμ]
+      _ = ((Functor.Monoidal.μIso L FX G).inv ≫ (L.map η ▷ L.obj G)) ≫
+            (Functor.Monoidal.μIso L FY G).hom := by simp [Category.assoc]
+  have hwhisker : (L.map η ▷ L.obj G) ≫ (L.obj FY ◁ cB) =
+      (L.obj FX ◁ cB) ≫ (L.map η ▷ B) := by
+    rw [whisker_exchange]
+  have hsheaf : L.map (η ▷ G) ≫ (Functor.Monoidal.μIso L FY G).inv ≫
+        (L.obj FY ◁ cB) ≫ g' =
+      (Functor.Monoidal.μIso L FX G).inv ≫ (L.obj FX ◁ cB) ≫
+        ((L.map η ▷ B) ≫ g') := by
+    calc
+      L.map (η ▷ G) ≫ (Functor.Monoidal.μIso L FY G).inv ≫
+          (L.obj FY ◁ cB) ≫ g'
+          = ((Functor.Monoidal.μIso L FX G).inv ≫ (L.map η ▷ L.obj G)) ≫
+              (L.obj FY ◁ cB) ≫ g' := by rw [← Category.assoc, hμinv]
+      _ = (Functor.Monoidal.μIso L FX G).inv ≫
+              ((L.map η ▷ L.obj G) ≫ (L.obj FY ◁ cB)) ≫ g' := by
+            simp [Category.assoc]
+      _ = (Functor.Monoidal.μIso L FX G).inv ≫
+              ((L.obj FX ◁ cB) ≫ (L.map η ▷ B)) ≫ g' := by rw [hwhisker]
+      _ = (Functor.Monoidal.μIso L FX G).inv ≫ (L.obj FX ◁ cB) ≫
+              ((L.map η ▷ B) ≫ g') := by simp [Category.assoc]
+  have hinside :
+      CategoryTheory.sheafifyMap (coherentTopology LightProfinite) (η ▷ G) ≫
+        (((Functor.Monoidal.μIso L FY G).inv ≫ (L.obj FY ◁ cB) ≫ g').hom) =
+      (((Functor.Monoidal.μIso L FX G).inv ≫ (L.obj FX ◁ cB) ≫
+        ((L.map η ▷ B) ≫ g')).hom) := by
+    change (L.map (η ▷ G) ≫ (Functor.Monoidal.μIso L FY G).inv ≫
+        (L.obj FY ◁ cB) ≫ g').hom =
+      ((Functor.Monoidal.μIso L FX G).inv ≫ (L.obj FX ◁ cB) ≫
+        ((L.map η ▷ B) ≫ g')).hom
+    exact congrArg (fun q => q.hom) hsheaf
+  rw [hinside]
+
+set_option maxHeartbeats 800000 in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
+lemma freeTensorHomEval_map_left (X Y : LightProfinite) (φ : X ⟶ Y)
+    (B C : LightCondAb) (g : ((free ℤ).obj Y.toCondensed) ⊗ B ⟶ C)
+    (S : LightProfinite) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B C
+        ((((free ℤ).map (lightProfiniteToLightCondSet.map φ)) ▷ B) ≫ g) S f r m =
+      freeTensorHomEval Y B C g S (f ≫ φ) r m := by
+  dsimp [freeTensorHomEval]
+  rw [freeTensorHomPresheafComposite_precomp_left_map]
+  change (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      (((Functor.whiskerRight (lightProfiniteToLightCondSet.map φ).hom (ModuleCat.free ℤ) ▷
+        B.obj).app ⟨S⟩) ((Finsupp.single f r) ⊗ₜ[ℤ] m)) =
+    (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      ((Finsupp.single (f ≫ φ) r) ⊗ₜ[ℤ] m)
+  change (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      ((((Functor.whiskerRight (lightProfiniteToLightCondSet.map φ).hom (ModuleCat.free ℤ)).app
+        ⟨S⟩) ⊗ₘ (𝟙 (B.obj.obj ⟨S⟩))) ((Finsupp.single f r) ⊗ₜ[ℤ] m)) =
+    (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      ((Finsupp.single (f ≫ φ) r) ⊗ₜ[ℤ] m)
+  change (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      ((TensorProduct.map (Finsupp.lmapDomain ℤ ℤ
+        ((lightProfiniteToLightCondSet.map φ).hom.app ⟨S⟩))
+        (LinearMap.id : B.obj.obj ⟨S⟩ →ₗ[ℤ] B.obj.obj ⟨S⟩))
+          ((Finsupp.single f r) ⊗ₜ[ℤ] m)) =
+    (freeTensorHomPresheafComposite Y B C g).app ⟨S⟩
+      ((Finsupp.single (f ≫ φ) r) ⊗ₜ[ℤ] m)
+  rw [TensorProduct.map_tmul]
+  congr 1
+  rw [Finsupp.lmapDomain_apply]
+  rw [Finsupp.mapDomain_single]
+  rfl
+
+lemma freeTensorHomEval_add (X : LightProfinite) (B C : LightCondAb)
+    (g₁ g₂ : ((free ℤ).obj X.toCondensed) ⊗ B ⟶ C)
+    (S : LightProfinite) (f : S ⟶ X) (r : ℤ) (m : B.obj.obj ⟨S⟩) :
+    freeTensorHomEval X B C (g₁ + g₂) S f r m =
+      freeTensorHomEval X B C g₁ S f r m + freeTensorHomEval X B C g₂ S f r m := by
+  rfl
+
+/-- Tensor finite slices are natural in the right tensor factor. -/
+lemma pBasisTensorSlice_naturality {X Y : LightCondAb} (f : X ⟶ Y) (n : ℕ) :
+    pBasisTensorSlice X n ≫ (P ℤ ◁ f) = f ≫ pBasisTensorSlice Y n := by
+  dsimp [pBasisTensorSlice]
+  rw [leftUnitor_inv_naturality_assoc]
+  slice_lhs 2 3 => rw [← whisker_exchange]
+
+/-- Multiplication by a real scalar on the real-line condensed abelian group. -/
+noncomputable def realCondensedAbScalarEndo (c : ℝ) : realCondensedAb ⟶ realCondensedAb where
+  hom := {
+    app S := ModuleCat.ofHom {
+      toFun := fun x => (ContinuousMap.const S.unop c) * (show C(S.unop, ℝ) from x)
+      map_add' := by
+        intro x y
+        change (ContinuousMap.const S.unop c) *
+            ((show C(S.unop, ℝ) from x) + (show C(S.unop, ℝ) from y)) =
+          (ContinuousMap.const S.unop c) * (show C(S.unop, ℝ) from x) +
+            (ContinuousMap.const S.unop c) * (show C(S.unop, ℝ) from y)
+        ext s
+        simp [mul_add]
+      map_smul' := by
+        intro a x
+        change (ContinuousMap.const S.unop c) * (a • (show C(S.unop, ℝ) from x)) =
+          a • ((ContinuousMap.const S.unop c) * (show C(S.unop, ℝ) from x))
+        ext s
+        simp [zsmul_eq_mul, mul_assoc, mul_comm, mul_left_comm] }
+    naturality := by
+      intro S T φ
+      ext x
+      rfl }
+
+@[simp]
+lemma realCondensedAbScalarEndo_one : realCondensedAbScalarEndo 1 = 𝟙 realCondensedAb := by
+  ext S x
+  change (ContinuousMap.const S.unop 1) * (show C(S.unop, ℝ) from x) =
+    (show C(S.unop, ℝ) from x)
+  ext s
+  simp
+
+lemma realCondensedAbScalarEndo_add (c d : ℝ) :
+    realCondensedAbScalarEndo (c + d) = realCondensedAbScalarEndo c +
+      realCondensedAbScalarEndo d := by
+  ext S x
+  change (ContinuousMap.const S.unop (c + d)) * (show C(S.unop, ℝ) from x) =
+    (ContinuousMap.const S.unop c) * (show C(S.unop, ℝ) from x) +
+      (ContinuousMap.const S.unop d) * (show C(S.unop, ℝ) from x)
+  ext s
+  change (c + d) * ((show C(S.unop, ℝ) from x) s) =
+    c * ((show C(S.unop, ℝ) from x) s) + d * ((show C(S.unop, ℝ) from x) s)
+  ring
+
+noncomputable def realDyadicFamilyLinear (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) :
+    realCondensedAb.obj.obj ⟨S⟩ →ₗ[ℤ] realCondensedAb.obj.obj ⟨S⟩ where
+  toFun x := dyadicScalarFunction f * (show C(S, ℝ) from x)
+  map_add' := by
+    intro x y
+    change dyadicScalarFunction f *
+        ((show C(S, ℝ) from x) + (show C(S, ℝ) from y)) =
+      dyadicScalarFunction f * (show C(S, ℝ) from x) +
+        dyadicScalarFunction f * (show C(S, ℝ) from y)
+    ext s
+    simp [mul_add]
+  map_smul' := by
+    intro a x
+    change dyadicScalarFunction f * (a • (show C(S, ℝ) from x)) =
+      a • (dyadicScalarFunction f * (show C(S, ℝ) from x))
+    ext s
+    simp [zsmul_eq_mul]
+    ring
+
+lemma realDyadicFamilyLinear_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : realCondensedAb.obj.obj ⟨S⟩) :
+    realCondensedAb.obj.map g.op (realDyadicFamilyLinear S f m) =
+      realDyadicFamilyLinear T (g ≫ f) (realCondensedAb.obj.map g.op m) := by
+  change (dyadicScalarFunction f * (show C(S, ℝ) from m)).comp g.hom.hom =
+    dyadicScalarFunction (g ≫ f) * ((show C(S, ℝ) from m).comp g.hom.hom)
+  ext t
+  rfl
+
+lemma realDyadicFamilyLinear_split (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (m : realCondensedAb.obj.obj ⟨S⟩) :
+    realDyadicFamilyLinear S (f ≫ LightProfinite.oddMap) m +
+        realDyadicFamilyLinear S (f ≫ LightProfinite.evenMap) m =
+      realDyadicFamilyLinear S f m := by
+  change dyadicScalarFunction (f ≫ LightProfinite.oddMap) * (show C(S, ℝ) from m) +
+      dyadicScalarFunction (f ≫ LightProfinite.evenMap) * (show C(S, ℝ) from m) =
+    dyadicScalarFunction f * (show C(S, ℝ) from m)
+  ext s
+  change dyadicScalarFunction (f ≫ LightProfinite.oddMap) s * (show C(S, ℝ) from m) s +
+      dyadicScalarFunction (f ≫ LightProfinite.evenMap) s * (show C(S, ℝ) from m) s =
+    dyadicScalarFunction f s * (show C(S, ℝ) from m) s
+  rw [← add_mul]
+  rw [dyadicScalarFunction_odd_add_even]
+
+lemma realDyadicFamilyMap_natPoint (n : ℕ) :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) realCondensedAb realCondensedAb
+      realDyadicFamilyLinear realDyadicFamilyLinear_naturality (natPoint n) =
+    realCondensedAbScalarEndo (dyadicCoeff n) := by
+  ext S x
+  change realDyadicFamilyLinear S.unop (toPointMap S.unop ≫ natPoint n) x =
+    (realCondensedAbScalarEndo (dyadicCoeff n)).hom.app S x
+  change dyadicScalarFunction (toPointMap S.unop ≫ natPoint n) *
+      (show C(S.unop, ℝ) from x) =
+    (ContinuousMap.const S.unop (dyadicCoeff n)) * (show C(S.unop, ℝ) from x)
+  ext s
+  rfl
+
+lemma realDyadicFamilyMap_infty :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) realCondensedAb realCondensedAb
+      realDyadicFamilyLinear realDyadicFamilyLinear_naturality ι = 0 := by
+  ext S x
+  change realDyadicFamilyLinear S.unop (toPointMap S.unop ≫ ι) x =
+    (0 : realCondensedAb ⟶ realCondensedAb).hom.app S x
+  change dyadicScalarFunction (toPointMap S.unop ≫ ι) * (show C(S.unop, ℝ) from x) = 0
+  ext s
+  change (0 : ℝ) * (show C(S.unop, ℝ) from x) s = 0
+  simp
+
+noncomputable def realDyadicNumerator :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ realCondensedAb ⟶ realCondensedAb :=
+  freeTensorDescLin (ℕ∪{∞} : LightProfinite) realCondensedAb realCondensedAb
+    realDyadicFamilyLinear realDyadicFamilyLinear_naturality
+
+lemma realDyadicNumerator_slice (n : ℕ) :
+    numeratorSlice realCondensedAb realCondensedAb n realDyadicNumerator =
+      realCondensedAbScalarEndo (dyadicCoeff n) := by
+  dsimp [numeratorSlice, freeNatBasis, realDyadicNumerator]
+  rw [freeTensorDescLin_point]
+  exact realDyadicFamilyMap_natPoint n
+
+lemma realDyadicNumerator_infty :
+    inftySlice realCondensedAb realCondensedAb realDyadicNumerator = 0 := by
+  dsimp [inftySlice, freeInftyBasis, P_map, realDyadicNumerator]
+  rw [freeTensorDescLin_point]
+  exact realDyadicFamilyMap_infty
+
+lemma realDyadicNumerator_kills :
+    (P_map ℤ ▷ realCondensedAb) ≫ realDyadicNumerator = 0 :=
+  numerator_kills_of_inftySlice_zero realCondensedAb realCondensedAb realDyadicNumerator
+    realDyadicNumerator_infty
+
+lemma realDyadicNumerator_comp_freeSplit :
+    ((freeOddMap + freeEvenMap) ▷ realCondensedAb) ≫ realDyadicNumerator =
+      realDyadicNumerator := by
+  apply freeTensorHom_ext
+  intro S f r m
+  rw [MonoidalPreadditive.add_whiskerRight, Preadditive.add_comp]
+  rw [freeTensorHomEval_add]
+  dsimp [freeOddMap, freeEvenMap, realDyadicNumerator]
+  rw [freeTensorHomEval_map_left, freeTensorHomEval_map_left]
+  rw [freeTensorHomEval_desc, freeTensorHomEval_desc, freeTensorHomEval_desc]
+  rw [← zsmul_add]
+  rw [realDyadicFamilyLinear_split]
+
+/-- The dyadic action on `realCondensedAb`. -/
+noncomputable def realDyadicAction : P ℤ ⊗ realCondensedAb ⟶ realCondensedAb :=
+  pTensorDesc realCondensedAb realCondensedAb realDyadicNumerator realDyadicNumerator_kills
+
+lemma realDyadicAction_slice (n : ℕ) :
+    pBasisTensorSlice realCondensedAb n ≫ realDyadicAction =
+      realCondensedAbScalarEndo (dyadicCoeff n) := by
+  dsimp [realDyadicAction, pBasisTensorSlice]
+  rw [pTensorDesc_slice]
+  exact realDyadicNumerator_slice n
+
+lemma realDyadicAction_split :
+    (pSplitMap ▷ realCondensedAb) ≫ realDyadicAction = realDyadicAction := by
+  haveI : Epi (P_proj ℤ ▷ realCondensedAb) := epi_P_proj_tensor realCondensedAb
+  apply (cancel_epi (P_proj ℤ ▷ realCondensedAb)).1
+  calc
+    (P_proj ℤ ▷ realCondensedAb) ≫ ((pSplitMap ▷ realCondensedAb) ≫ realDyadicAction)
+        = ((P_proj ℤ ≫ pSplitMap) ▷ realCondensedAb) ≫ realDyadicAction := by
+          rw [comp_whiskerRight]
+          simp [Category.assoc]
+    _ = (((freeOddMap + freeEvenMap) ≫ P_proj ℤ) ▷ realCondensedAb) ≫ realDyadicAction := by
+          rw [P_proj_comp_pSplitMap]
+    _ = ((freeOddMap + freeEvenMap) ▷ realCondensedAb) ≫
+          (P_proj ℤ ▷ realCondensedAb) ≫ realDyadicAction := by
+          rw [comp_whiskerRight]
+          simp [Category.assoc]
+    _ = ((freeOddMap + freeEvenMap) ▷ realCondensedAb) ≫ realDyadicNumerator := by
+          dsimp [realDyadicAction]
+          rw [pTensorDesc_comp_proj]
+    _ = realDyadicNumerator := realDyadicNumerator_comp_freeSplit
+    _ = (P_proj ℤ ▷ realCondensedAb) ≫ realDyadicAction := by
+          rw [realDyadicAction, pTensorDesc_comp_proj]
+
+instance realCondensedAb_dyadicContractible : DyadicContractible realCondensedAb where
+  action := realDyadicAction
+  firstSlice := by
+    rw [realDyadicAction_slice, dyadicCoeff_zero, realCondensedAbScalarEndo_one]
+  split_action := realDyadicAction_split
+
+/-- Coordinatewise scalar multiplication on the product of real sequences. -/
+noncomputable def productRealSequencesScalarEndo (c : ℝ) :
+    productRealSequences ⟶ productRealSequences := by
+  dsimp [productRealSequences]
+  exact Pi.lift fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+    realCondensedAbScalarEndo c
+
+@[reassoc]
+lemma productRealSequencesScalarEndo_π (c : ℝ) (j : ℕ) :
+    productRealSequencesScalarEndo c ≫ Pi.π (fun _ : ℕ => realCondensedAb) j =
+      Pi.π (fun _ : ℕ => realCondensedAb) j ≫ realCondensedAbScalarEndo c := by
+  change (Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo c)) ≫ Pi.π (fun _ : ℕ => realCondensedAb) j =
+    Pi.π (fun _ : ℕ => realCondensedAb) j ≫ realCondensedAbScalarEndo c
+  rw [Pi.lift_π]
+
+@[simp]
+lemma productRealSequencesScalarEndo_one :
+    productRealSequencesScalarEndo 1 = 𝟙 productRealSequences := by
+  change (Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo 1)) = 𝟙 (∏ᶜ fun _ : ℕ => realCondensedAb)
+  apply Pi.hom_ext
+  intro j
+  rw [Pi.lift_π, realCondensedAbScalarEndo_one]
+  simp
+
+lemma productRealSequencesScalarEndo_add (c d : ℝ) :
+    productRealSequencesScalarEndo (c + d) = productRealSequencesScalarEndo c +
+      productRealSequencesScalarEndo d := by
+  change (Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo (c + d))) =
+    (Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo c)) +
+    (Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo d))
+  apply Pi.hom_ext
+  intro j
+  rw [Pi.lift_π, Preadditive.add_comp, Pi.lift_π, Pi.lift_π,
+    realCondensedAbScalarEndo_add]
+  simp [Preadditive.comp_add]
+
+/-- The product-real dyadic action, defined coordinatewise from the real-line action. -/
+noncomputable def productRealDyadicAction :
+    P ℤ ⊗ productRealSequences ⟶ productRealSequences := by
+  dsimp [productRealSequences]
+  exact Pi.lift fun j : ℕ => (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫ realDyadicAction
+
+@[reassoc]
+lemma productRealDyadicAction_π (j : ℕ) :
+    productRealDyadicAction ≫ Pi.π (fun _ : ℕ => realCondensedAb) j =
+      (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫ realDyadicAction := by
+  change (Pi.lift (fun j : ℕ => (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫
+      realDyadicAction)) ≫ Pi.π (fun _ : ℕ => realCondensedAb) j =
+    (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫ realDyadicAction
+  rw [Pi.lift_π]
+
+lemma productRealDyadicAction_slice (n : ℕ) :
+    pBasisTensorSlice productRealSequences n ≫ productRealDyadicAction =
+      productRealSequencesScalarEndo (dyadicCoeff n) := by
+  change pBasisTensorSlice (∏ᶜ fun _ : ℕ => realCondensedAb) n ≫
+      (Pi.lift (fun j : ℕ => (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫
+        realDyadicAction)) =
+    Pi.lift (fun j : ℕ => Pi.π (fun _ : ℕ => realCondensedAb) j ≫
+      realCondensedAbScalarEndo (dyadicCoeff n))
+  apply Pi.hom_ext
+  intro j
+  rw [Category.assoc, Pi.lift_π, Pi.lift_π]
+  rw [← Category.assoc, pBasisTensorSlice_naturality]
+  rw [Category.assoc, realDyadicAction_slice]
+
+lemma productRealDyadicAction_split :
+    (pSplitMap ▷ productRealSequences) ≫ productRealDyadicAction = productRealDyadicAction := by
+  change (pSplitMap ▷ (∏ᶜ fun _ : ℕ => realCondensedAb)) ≫
+      (Pi.lift (fun j : ℕ => (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫
+        realDyadicAction)) =
+    Pi.lift (fun j : ℕ => (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫
+      realDyadicAction)
+  apply Pi.hom_ext
+  intro j
+  rw [Category.assoc, Pi.lift_π]
+  calc
+    (pSplitMap ▷ (∏ᶜ fun _ : ℕ => realCondensedAb)) ≫
+        ((P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫ realDyadicAction)
+        = ((P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫
+            (pSplitMap ▷ realCondensedAb)) ≫ realDyadicAction := by
+          rw [← Category.assoc]
+          rw [whisker_exchange]
+    _ = (P ℤ ◁ Pi.π (fun _ : ℕ => realCondensedAb) j) ≫ realDyadicAction := by
+          rw [Category.assoc, realDyadicAction_split]
+
+instance productRealSequences_dyadicContractible : DyadicContractible productRealSequences where
+  action := productRealDyadicAction
+  firstSlice := by
+    rw [productRealDyadicAction_slice, dyadicCoeff_zero, productRealSequencesScalarEndo_one]
+  split_action := productRealDyadicAction_split
+
+noncomputable def boundedRealScalarSection {S : LightProfinite} (c : ℝ)
+    (x : BoundedRealSeqSection S) : BoundedRealSeqSection S where
+  val n := ContinuousMap.const S c * x.val n
+  isBounded := by
+    obtain ⟨N, hN⟩ := x.isBounded
+    obtain ⟨K, hK⟩ := exists_nat_ge (‖c‖ * (N : ℝ))
+    refine ⟨K, ?_⟩
+    intro s n
+    calc
+      ‖(ContinuousMap.const S c * x.val n) s‖ = ‖c‖ * ‖x.val n s‖ := by simp [norm_mul]
+      _ ≤ ‖c‖ * (N : ℝ) := mul_le_mul_of_nonneg_left (hN s n) (norm_nonneg c)
+      _ ≤ (K : ℝ) := hK
+
+/-- Scalar multiplication on bounded real sequences. -/
+noncomputable def boundedRealSequencesScalarEndo (c : ℝ) :
+    boundedRealSequences ⟶ boundedRealSequences where
+  hom := {
+    app S := ModuleCat.ofHom {
+      toFun := fun x => boundedRealScalarSection c (show BoundedRealSeqSection S.unop from x)
+      map_add' := by
+        intro x y
+        apply BoundedRealSeqSection.ext_apply
+        intro n s
+        simp [boundedRealScalarSection, mul_add]
+      map_smul' := by
+        intro a x
+        apply BoundedRealSeqSection.ext_apply
+        intro n s
+        simp [boundedRealScalarSection]
+        ring }
+    naturality := by
+      intro S T φ
+      ext x
+      rfl }
+
+@[simp]
+lemma boundedRealSequencesScalarEndo_one :
+    boundedRealSequencesScalarEndo 1 = 𝟙 boundedRealSequences := by
+  ext S x
+  apply BoundedRealSeqSection.ext_apply
+  intro n s
+  change (1 : ℝ) * (show BoundedRealSeqSection S.unop from x).val n s =
+    (show BoundedRealSeqSection S.unop from x).val n s
+  simp
+
+lemma boundedRealSequencesScalarEndo_add (c d : ℝ) :
+    boundedRealSequencesScalarEndo (c + d) = boundedRealSequencesScalarEndo c +
+      boundedRealSequencesScalarEndo d := by
+  ext S x
+  apply BoundedRealSeqSection.ext_apply
+  intro n s
+  change (c + d) * (show BoundedRealSeqSection S.unop from x).val n s =
+    c * (show BoundedRealSeqSection S.unop from x).val n s +
+      d * (show BoundedRealSeqSection S.unop from x).val n s
+  ring
+
+noncomputable def boundedRealDyadicSection {S : LightProfinite}
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (x : BoundedRealSeqSection S) : BoundedRealSeqSection S where
+  val n := dyadicScalarFunction f * x.val n
+  isBounded := by
+    obtain ⟨N, hN⟩ := x.isBounded
+    refine ⟨N, ?_⟩
+    intro s n
+    calc
+      ‖(dyadicScalarFunction f * x.val n) s‖ =
+          ‖dyadicScalarFunction f s‖ * ‖x.val n s‖ := by simp [norm_mul]
+      _ ≤ 1 * (N : ℝ) := by
+          exact mul_le_mul (dyadicCoeffNinf_abs_le_one (f s)) (hN s n) (norm_nonneg _)
+            (by norm_num)
+      _ = (N : ℝ) := one_mul _
+
+noncomputable def boundedRealDyadicFamilyLinear (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite)) :
+    boundedRealSequences.obj.obj ⟨S⟩ →ₗ[ℤ] boundedRealSequences.obj.obj ⟨S⟩ where
+  toFun x := boundedRealDyadicSection f (show BoundedRealSeqSection S from x)
+  map_add' := by
+    intro x y
+    apply BoundedRealSeqSection.ext_apply
+    intro n s
+    change (dyadicScalarFunction f s) * (((show BoundedRealSeqSection S from x).val n s) +
+        ((show BoundedRealSeqSection S from y).val n s)) =
+      (dyadicScalarFunction f s) * (show BoundedRealSeqSection S from x).val n s +
+        (dyadicScalarFunction f s) * (show BoundedRealSeqSection S from y).val n s
+    ring
+  map_smul' := by
+    intro a x
+    apply BoundedRealSeqSection.ext_apply
+    intro n s
+    change (dyadicScalarFunction f s) * ((a • (show BoundedRealSeqSection S from x)).val n s) =
+      (a • boundedRealDyadicSection f (show BoundedRealSeqSection S from x)).val n s
+    rw [BoundedRealSeqSection.val_zsmul]
+    change (dyadicScalarFunction f s) * ((a • (show BoundedRealSeqSection S from x).val n) s) =
+      (a • (dyadicScalarFunction f * (show BoundedRealSeqSection S from x).val n)) s
+    simp [zsmul_eq_mul]
+    ring
+
+lemma boundedRealDyadicFamilyLinear_naturality {S T : LightProfinite}
+    (g : T ⟶ S) (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : boundedRealSequences.obj.obj ⟨S⟩) :
+    boundedRealSequences.obj.map g.op (boundedRealDyadicFamilyLinear S f m) =
+      boundedRealDyadicFamilyLinear T (g ≫ f) (boundedRealSequences.obj.map g.op m) := by
+  apply BoundedRealSeqSection.ext_apply
+  intro n t
+  rfl
+
+lemma boundedRealDyadicFamilyLinear_split (S : LightProfinite)
+    (f : S ⟶ (ℕ∪{∞} : LightProfinite))
+    (m : boundedRealSequences.obj.obj ⟨S⟩) :
+    boundedRealDyadicFamilyLinear S (f ≫ LightProfinite.oddMap) m +
+        boundedRealDyadicFamilyLinear S (f ≫ LightProfinite.evenMap) m =
+      boundedRealDyadicFamilyLinear S f m := by
+  apply BoundedRealSeqSection.ext_apply
+  intro n s
+  change (dyadicScalarFunction (f ≫ LightProfinite.oddMap) s) *
+        (show BoundedRealSeqSection S from m).val n s +
+      (dyadicScalarFunction (f ≫ LightProfinite.evenMap) s) *
+        (show BoundedRealSeqSection S from m).val n s =
+    (dyadicScalarFunction f s) * (show BoundedRealSeqSection S from m).val n s
+  rw [← add_mul]
+  rw [dyadicScalarFunction_odd_add_even]
+
+lemma boundedRealDyadicFamilyMap_natPoint (n : ℕ) :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedRealSequences boundedRealSequences
+      boundedRealDyadicFamilyLinear boundedRealDyadicFamilyLinear_naturality (natPoint n) =
+    boundedRealSequencesScalarEndo (dyadicCoeff n) := by
+  ext S x
+  apply BoundedRealSeqSection.ext_apply
+  intro k s
+  rfl
+
+lemma boundedRealDyadicFamilyMap_infty :
+    freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedRealSequences boundedRealSequences
+      boundedRealDyadicFamilyLinear boundedRealDyadicFamilyLinear_naturality ι = 0 := by
+  ext S x
+  apply BoundedRealSeqSection.ext_apply
+  intro k s
+  change (0 : ℝ) * (show BoundedRealSeqSection S.unop from x).val k s = 0
+  simp
+
+noncomputable def boundedRealDyadicNumerator :
+    ((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ boundedRealSequences ⟶ boundedRealSequences :=
+  freeTensorDescLin (ℕ∪{∞} : LightProfinite) boundedRealSequences boundedRealSequences
+    boundedRealDyadicFamilyLinear boundedRealDyadicFamilyLinear_naturality
+
+lemma boundedRealDyadicNumerator_slice (n : ℕ) :
+    numeratorSlice boundedRealSequences boundedRealSequences n boundedRealDyadicNumerator =
+      boundedRealSequencesScalarEndo (dyadicCoeff n) := by
+  dsimp [numeratorSlice, freeNatBasis, boundedRealDyadicNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedRealDyadicFamilyMap_natPoint n
+
+lemma boundedRealDyadicNumerator_infty :
+    inftySlice boundedRealSequences boundedRealSequences boundedRealDyadicNumerator = 0 := by
+  dsimp [inftySlice, freeInftyBasis, P_map, boundedRealDyadicNumerator]
+  rw [freeTensorDescLin_point]
+  exact boundedRealDyadicFamilyMap_infty
+
+lemma boundedRealDyadicNumerator_kills :
+    (P_map ℤ ▷ boundedRealSequences) ≫ boundedRealDyadicNumerator = 0 :=
+  numerator_kills_of_inftySlice_zero boundedRealSequences boundedRealSequences
+    boundedRealDyadicNumerator boundedRealDyadicNumerator_infty
+
+lemma boundedRealDyadicNumerator_comp_freeSplit :
+    ((freeOddMap + freeEvenMap) ▷ boundedRealSequences) ≫ boundedRealDyadicNumerator =
+      boundedRealDyadicNumerator := by
+  apply freeTensorHom_ext
+  intro S f r m
+  rw [MonoidalPreadditive.add_whiskerRight, Preadditive.add_comp]
+  rw [freeTensorHomEval_add]
+  dsimp [freeOddMap, freeEvenMap, boundedRealDyadicNumerator]
+  rw [freeTensorHomEval_map_left, freeTensorHomEval_map_left]
+  rw [freeTensorHomEval_desc, freeTensorHomEval_desc, freeTensorHomEval_desc]
+  rw [← zsmul_add]
+  rw [boundedRealDyadicFamilyLinear_split]
+
+/-- The dyadic action on bounded real sequences. -/
+noncomputable def boundedRealDyadicAction :
+    P ℤ ⊗ boundedRealSequences ⟶ boundedRealSequences :=
+  pTensorDesc boundedRealSequences boundedRealSequences boundedRealDyadicNumerator
+    boundedRealDyadicNumerator_kills
+
+lemma boundedRealDyadicAction_slice (n : ℕ) :
+    pBasisTensorSlice boundedRealSequences n ≫ boundedRealDyadicAction =
+      boundedRealSequencesScalarEndo (dyadicCoeff n) := by
+  dsimp [boundedRealDyadicAction, pBasisTensorSlice]
+  rw [pTensorDesc_slice]
+  exact boundedRealDyadicNumerator_slice n
+
+lemma boundedRealDyadicAction_split :
+    (pSplitMap ▷ boundedRealSequences) ≫ boundedRealDyadicAction = boundedRealDyadicAction := by
+  haveI : Epi (P_proj ℤ ▷ boundedRealSequences) := epi_P_proj_tensor boundedRealSequences
+  apply (cancel_epi (P_proj ℤ ▷ boundedRealSequences)).1
+  calc
+    (P_proj ℤ ▷ boundedRealSequences) ≫
+        ((pSplitMap ▷ boundedRealSequences) ≫ boundedRealDyadicAction)
+        = ((P_proj ℤ ≫ pSplitMap) ▷ boundedRealSequences) ≫ boundedRealDyadicAction := by
+          rw [comp_whiskerRight]
+          simp [Category.assoc]
+    _ = (((freeOddMap + freeEvenMap) ≫ P_proj ℤ) ▷ boundedRealSequences) ≫
+          boundedRealDyadicAction := by
+          rw [P_proj_comp_pSplitMap]
+    _ = ((freeOddMap + freeEvenMap) ▷ boundedRealSequences) ≫
+          (P_proj ℤ ▷ boundedRealSequences) ≫ boundedRealDyadicAction := by
+          rw [comp_whiskerRight]
+          simp [Category.assoc]
+    _ = ((freeOddMap + freeEvenMap) ▷ boundedRealSequences) ≫ boundedRealDyadicNumerator := by
+          dsimp [boundedRealDyadicAction]
+          rw [pTensorDesc_comp_proj]
+    _ = boundedRealDyadicNumerator := boundedRealDyadicNumerator_comp_freeSplit
+    _ = (P_proj ℤ ▷ boundedRealSequences) ≫ boundedRealDyadicAction := by
+          rw [boundedRealDyadicAction, pTensorDesc_comp_proj]
+
+instance boundedRealSequences_dyadicContractible : DyadicContractible boundedRealSequences where
+  action := boundedRealDyadicAction
+  firstSlice := by
+    rw [boundedRealDyadicAction_slice, dyadicCoeff_zero, boundedRealSequencesScalarEndo_one]
+  split_action := boundedRealDyadicAction_split
+
+/-- Camargo Theorem 3.2.4(4), recorded as Hom-vanishing for real condensed abelian groups. -/
+lemma hom_realCondensedAb_solid_eq_zero
+    (E : Solid) (f : realCondensedAb ⟶ (isSolid.ι).obj E) : f = 0 :=
+  hom_eq_zero_of_dyadicContractible realCondensedAb E f
+
+lemma instIsZero_solidification_realCondensedAb :
+    IsZero (solidification.obj realCondensedAb) := by
+  rw [IsZero.iff_id_eq_zero]
+  let E : Solid := solidification.obj realCondensedAb
+  have hzero : solidificationAdjunction.homEquiv realCondensedAb E (𝟙 E) = 0 :=
+    hom_realCondensedAb_solid_eq_zero E
+      (solidificationAdjunction.homEquiv realCondensedAb E (𝟙 E))
+  apply (solidificationAdjunction.homEquiv realCondensedAb E).injective
+  rw [hzero]
+  rw [Adjunction.homAddEquiv_zero]
 
 end ProjectiveGeneratorProof
 end Solid
