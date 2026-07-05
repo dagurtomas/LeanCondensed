@@ -6,7 +6,7 @@ Authors: Dagur Asgeirsson
 module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
-public import LeanCondensed.Projects.SolidProjectiveGenerator.RealSequences
+public import LeanCondensed.Projects.SolidProjectiveGenerator.RealQuotient
 public import Mathlib.Algebra.Homology.DerivedCategory.Ext.EnoughInjectives
 public import Mathlib.Algebra.Homology.DerivedCategory.Ext.ExactSequences
 public import Mathlib.CategoryTheory.Abelian.GrothendieckCategory.EnoughInjectives
@@ -15,6 +15,7 @@ public import Mathlib.CategoryTheory.Adjunction.Additive
 public import Mathlib.CategoryTheory.Limits.Constructions.EpiMono
 public import Mathlib.CategoryTheory.Preadditive.Injective.Preserves
 public import Mathlib.CategoryTheory.Sites.LeftExact
+public import Mathlib.CategoryTheory.Sites.LocallyInjective
 public import Mathlib.Condensed.Light.AB
 public import Mathlib.RingTheory.Flat.CategoryTheory
 
@@ -1624,6 +1625,8 @@ lemma hom_realCondensedAb_solid_eq_zero
     (E : Solid) (f : realCondensedAb ⟶ (isSolid.ι).obj E) : f = 0 :=
   hom_eq_zero_of_dyadicContractible realCondensedAb E f
 
+/-- Lean's `IsZero` is not a typeclass, so this declaration cannot be registered as an
+`instance`; keep the downstream-facing `inst...` name from the SPG12d sub-spec. -/
 lemma instIsZero_solidification_realCondensedAb :
     IsZero (solidification.obj realCondensedAb) := by
   rw [IsZero.iff_id_eq_zero]
@@ -1634,6 +1637,122 @@ lemma instIsZero_solidification_realCondensedAb :
   apply (solidificationAdjunction.homEquiv realCondensedAb E).injective
   rw [hzero]
   rw [Adjunction.homAddEquiv_zero]
+
+instance boundedRealToProductReal_mono : Mono boundedRealToProductReal := by
+  apply Sheaf.mono_of_injective
+  intro S x y hxy
+  apply (boundedRealSequencesSectionsEquiv S.unop).injective
+  apply Subtype.ext
+  funext n
+  have hcoord := congrArg (fun z => productRealSequencesSectionsEquiv S.unop z n) hxy
+  change productRealSequencesSectionsEquiv S.unop
+        ((boundedRealToProductReal.hom.app ⟨S.unop⟩) x) n =
+      productRealSequencesSectionsEquiv S.unop
+        ((boundedRealToProductReal.hom.app ⟨S.unop⟩) y) n at hcoord
+  rw [boundedRealToProductReal_apply_coord, boundedRealToProductReal_apply_coord] at hcoord
+  exact hcoord
+
+instance boundedToProduct_mono : Mono boundedToProduct := by
+  apply Sheaf.mono_of_injective
+  intro S x y hxy
+  apply (boundedIntSequencesSectionsEquiv S.unop).injective
+  change (boundedIntSequencesSectionsEquiv S.unop x : BoundedIntSeqSection S.unop) =
+    boundedIntSequencesSectionsEquiv S.unop y
+  apply BoundedIntSeqSection.ext
+  intro n
+  have hcoord := congrArg (fun z => productIntLocallyConstantSectionsEquiv S.unop z n) hxy
+  change productIntLocallyConstantSectionsEquiv S.unop
+        ((boundedToProduct.hom.app ⟨S.unop⟩) x) n =
+      productIntLocallyConstantSectionsEquiv S.unop
+        ((boundedToProduct.hom.app ⟨S.unop⟩) y) n at hcoord
+  rw [boundedToProduct_apply_coord, boundedToProduct_apply_coord] at hcoord
+  exact hcoord
+
+lemma boundedRealToProductReal_shortExact :
+    (ShortComplex.mk boundedRealToProductReal (cokernel.π boundedRealToProductReal)
+      (cokernel.condition boundedRealToProductReal)).ShortExact := by
+  exact ⟨ShortComplex.exact_cokernel boundedRealToProductReal⟩
+
+lemma boundedToProduct_shortExact :
+    (ShortComplex.mk boundedToProduct (cokernel.π boundedToProduct)
+      (cokernel.condition boundedToProduct)).ShortExact := by
+  exact ⟨ShortComplex.exact_cokernel boundedToProduct⟩
+
+lemma hom_cokernel_boundedRealToProductReal_solid_eq_zero
+    (E : Solid) (f : cokernel boundedRealToProductReal ⟶ (isSolid.ι).obj E) :
+    f = 0 := by
+  have h : cokernel.π boundedRealToProductReal ≫ f = 0 :=
+    hom_eq_zero_of_dyadicContractible productRealSequences E
+      (cokernel.π boundedRealToProductReal ≫ f)
+  have h' : cokernel.π boundedRealToProductReal ≫ f =
+      cokernel.π boundedRealToProductReal ≫ 0 := by
+    rw [comp_zero]
+    exact h
+  exact (cancel_epi (cokernel.π boundedRealToProductReal)).1 h'
+
+lemma ext1_cokernel_boundedRealToProductReal_solid_eq_zero
+    (E : Solid) (α : Abelian.Ext (cokernel boundedRealToProductReal)
+      ((isSolid.ι).obj E) 1) :
+    α = 0 := by
+  let S := ShortComplex.mk boundedRealToProductReal (cokernel.π boundedRealToProductReal)
+    (cokernel.condition boundedRealToProductReal)
+  have hS : S.ShortExact := boundedRealToProductReal_shortExact
+  let Y : LightCondAb := (isSolid.ι).obj E
+  have hpre : (Ext.mk₀ (cokernel.π boundedRealToProductReal)).comp α (zero_add 1) = 0 :=
+    ext1_eq_zero_of_dyadicContractible productRealSequences E
+      ((Ext.mk₀ (cokernel.π boundedRealToProductReal)).comp α (zero_add 1))
+  rcases Ext.contravariant_sequence_exact₃ hS Y α hpre (n₀ := 0) (by simp) with ⟨β, hβ⟩
+  have hβzero : β = 0 := ext0_eq_zero_of_dyadicContractible boundedRealSequences E β
+  rw [← hβ, hβzero]
+  simp
+
+private lemma isZero_solidification_of_solid_hom_zero (Q : LightCondAb)
+    (hQ : ∀ E : Solid, ∀ f : Q ⟶ (isSolid.ι).obj E, f = 0) :
+    IsZero (solidification.obj Q) := by
+  rw [IsZero.iff_id_eq_zero]
+  let E : Solid := solidification.obj Q
+  have hzero : solidificationAdjunction.homEquiv Q E (𝟙 E) = 0 :=
+    hQ E (solidificationAdjunction.homEquiv Q E (𝟙 E))
+  apply (solidificationAdjunction.homEquiv Q E).injective
+  rw [hzero]
+  rw [Adjunction.homAddEquiv_zero]
+
+/-- Lean's `IsZero` is not a typeclass; see `instIsZero_solidification_realCondensedAb`. -/
+lemma instIsZero_solidification_cokernel_boundedRealToProductReal :
+    IsZero (solidification.obj (cokernel boundedRealToProductReal)) :=
+  isZero_solidification_of_solid_hom_zero (cokernel boundedRealToProductReal)
+    hom_cokernel_boundedRealToProductReal_solid_eq_zero
+
+lemma hom_cokernel_boundedToProduct_solid_eq_zero
+    (E : Solid) (f : cokernel boundedToProduct ⟶ (isSolid.ι).obj E) :
+    f = 0 := by
+  let e := productIntQuotientIsoRealQuotient
+  have h : e.inv ≫ f = 0 :=
+    hom_cokernel_boundedRealToProductReal_solid_eq_zero E (e.inv ≫ f)
+  calc
+    f = e.hom ≫ (e.inv ≫ f) := by simp [e]
+    _ = 0 := by rw [h, comp_zero]
+
+lemma ext1_cokernel_boundedToProduct_solid_eq_zero
+    (E : Solid) (α : Abelian.Ext (cokernel boundedToProduct)
+      ((isSolid.ι).obj E) 1) :
+    α = 0 := by
+  let e := productIntQuotientIsoRealQuotient
+  let β : Abelian.Ext (cokernel boundedRealToProductReal) ((isSolid.ι).obj E) 1 :=
+    (Ext.mk₀ e.inv).comp α (zero_add 1)
+  have hβ : β = 0 := ext1_cokernel_boundedRealToProductReal_solid_eq_zero E β
+  have hα : (Ext.mk₀ e.hom).comp β (zero_add 1) = α := by
+    dsimp [β]
+    rw [Ext.mk₀_comp_mk₀_assoc]
+    simp [e]
+  rw [← hα, hβ]
+  rw [Ext.comp_zero]
+
+/-- Lean's `IsZero` is not a typeclass; see `instIsZero_solidification_realCondensedAb`. -/
+lemma instIsZero_solidification_cokernel_boundedToProduct :
+    IsZero (solidification.obj (cokernel boundedToProduct)) :=
+  isZero_solidification_of_solid_hom_zero (cokernel boundedToProduct)
+    hom_cokernel_boundedToProduct_solid_eq_zero
 
 end ProjectiveGeneratorProof
 end Solid
