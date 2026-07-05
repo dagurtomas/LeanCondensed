@@ -7,6 +7,10 @@ module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
 public import Mathlib.Algebra.Homology.DerivedCategory.Ext.EnoughInjectives
+public import Mathlib.Algebra.Homology.DerivedCategory.Ext.ExactSequences
+public import Mathlib.CategoryTheory.Abelian.GrothendieckCategory.EnoughInjectives
+public import Mathlib.CategoryTheory.Abelian.Injective.Resolution
+public import Mathlib.CategoryTheory.Adjunction.Additive
 public import Mathlib.CategoryTheory.Limits.Constructions.EpiMono
 public import Mathlib.CategoryTheory.Preadditive.Injective.Preserves
 public import Mathlib.CategoryTheory.Sites.LeftExact
@@ -18,6 +22,7 @@ public import Mathlib.RingTheory.Flat.CategoryTheory
 noncomputable section
 
 open CategoryTheory Limits LightCondensed LightProfinite MonoidalCategory MonoidalClosed OnePoint
+open CategoryTheory.Abelian
 open scoped BigOperators
 
 namespace LightCondensed
@@ -525,6 +530,253 @@ lemma ext0_precomp_oneMinusShift_tensor_bijective
     refine ⟨CategoryTheory.Abelian.Ext.mk₀ f, ?_⟩
     simp only [CategoryTheory.Abelian.Ext.mk₀_comp_mk₀]
     exact congrArg CategoryTheory.Abelian.Ext.mk₀ hf
+
+
+namespace ExtOne
+
+lemma precomp_delta {A B : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) (σ : A ⟶ B) (q : B ⟶ S.X₃) :
+    (Ext.mk₀ σ).comp ((Ext.mk₀ q).comp hS.extClass (zero_add 1)) (zero_add 1) =
+      (Ext.mk₀ (σ ≫ q)).comp hS.extClass (zero_add 1) := by
+  rw [← Ext.comp_assoc_of_second_deg_zero (Ext.mk₀ σ) (Ext.mk₀ q) hS.extClass (zero_add 1)]
+  rw [Ext.mk₀_comp_mk₀]
+
+lemma delta_zero_iff {A : LightCondAb} {S : ShortComplex LightCondAb} (hS : S.ShortExact)
+    (q : A ⟶ S.X₃) :
+    (Ext.mk₀ q).comp hS.extClass (zero_add 1) = 0 ↔
+      ∃ p : A ⟶ S.X₂, p ≫ S.g = q := by
+  constructor
+  · intro hq
+    rcases Ext.covariant_sequence_exact₃ A hS (Ext.mk₀ q) (rfl : 0 + 1 = 1) hq with ⟨x₂, hx₂⟩
+    rcases (Ext.mk₀_bijective A S.X₂).2 x₂ with ⟨p, rfl⟩
+    refine ⟨p, ?_⟩
+    simp only [Ext.mk₀_comp_mk₀] at hx₂
+    exact (Ext.mk₀_bijective A S.X₃).1 hx₂
+  · rintro ⟨p, rfl⟩
+    rw [← Ext.mk₀_comp_mk₀]
+    rw [Ext.comp_assoc_of_second_deg_zero]
+    simp
+
+lemma delta_surjective_of_injective_middle {A : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) [Injective S.X₂] (α : Ext A S.X₁ 1) :
+    ∃ q : A ⟶ S.X₃, (Ext.mk₀ q).comp hS.extClass (zero_add 1) = α := by
+  have hzero : α.comp (Ext.mk₀ S.f) (add_zero 1) = 0 := by
+    haveI : Subsingleton (Ext A S.X₂ 1) := Ext.subsingleton_of_injective A S.X₂ 0
+    exact Subsingleton.elim _ _
+  rcases Ext.covariant_sequence_exact₁ A hS α hzero (rfl : 0 + 1 = 1) with ⟨x₃, hx₃⟩
+  rcases (Ext.mk₀_bijective A S.X₃).2 x₃ with ⟨q, rfl⟩
+  exact ⟨q, hx₃⟩
+
+lemma delta_eq_of_delta_sub_eq_zero {A : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) {q c : A ⟶ S.X₃}
+    (h : (Ext.mk₀ (q - c)).comp hS.extClass (zero_add 1) = 0) :
+    (Ext.mk₀ q).comp hS.extClass (zero_add 1) =
+      (Ext.mk₀ c).comp hS.extClass (zero_add 1) := by
+  have hqc : q = c + (q - c) := by abel
+  rw [hqc, Ext.mk₀_add, Ext.add_comp, h]
+  simp
+
+lemma curry_delta_zero_iff {X : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) (q : P ℤ ⊗ X ⟶ S.X₃) :
+    (Ext.mk₀ (MonoidalClosed.curry q)).comp
+        (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) = 0 ↔
+      (Ext.mk₀ q).comp hS.extClass (zero_add 1) = 0 := by
+  constructor
+  · intro hG
+    rcases (delta_zero_iff (A := X) (hS.map_of_exact (ihom (P ℤ))) (MonoidalClosed.curry q)).1 hG with
+      ⟨pG, hpG⟩
+    refine (delta_zero_iff hS q).2 ⟨MonoidalClosed.uncurry pG, ?_⟩
+    apply MonoidalClosed.curry_injective
+    rw [MonoidalClosed.curry_natural_right]
+    rw [MonoidalClosed.curry_uncurry]
+    change pG ≫ (ihom (P ℤ)).map S.g = MonoidalClosed.curry q at hpG
+    exact hpG
+  · intro hF
+    rcases (delta_zero_iff hS q).1 hF with ⟨p, hp⟩
+    refine (delta_zero_iff (A := X) (hS.map_of_exact (ihom (P ℤ))) (MonoidalClosed.curry q)).2
+      ⟨MonoidalClosed.curry p, ?_⟩
+    change MonoidalClosed.curry p ≫ (ihom (P ℤ)).map S.g = MonoidalClosed.curry q
+    rw [← MonoidalClosed.curry_natural_right]
+    rw [hp]
+
+noncomputable def ihomOneMinusShiftShortComplexHom (S : ShortComplex LightCondAb) :
+    (S.map (ihom (P ℤ))).Hom (S.map (ihom (P ℤ))) :=
+  ShortComplex.Hom.mk
+    ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₁)
+    ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₂)
+    ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃)
+    (by
+      change ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₁) ≫ (ihom (P ℤ)).map S.f =
+        (ihom (P ℤ)).map S.f ≫ ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₂)
+      exact ((MonoidalClosed.pre (oneMinusShift ℤ)).naturality S.f).symm)
+    (by
+      change ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₂) ≫ (ihom (P ℤ)).map S.g =
+        (ihom (P ℤ)).map S.g ≫ ((MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃)
+      exact ((MonoidalClosed.pre (oneMinusShift ℤ)).naturality S.g).symm)
+
+lemma delta_comp_ihomOneMinusShift {X : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) (d : X ⟶ (S.map (ihom (P ℤ))).X₃) :
+    (Ext.mk₀ (d ≫ (ihomOneMinusShiftShortComplexHom S).τ₃)).comp
+        (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) =
+      ((Ext.mk₀ d).comp (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1)).comp
+        (Ext.mk₀ (ihomOneMinusShiftShortComplexHom S).τ₁) (add_zero 1) := by
+  let hGS := hS.map_of_exact (ihom (P ℤ))
+  let φS := ihomOneMinusShiftShortComplexHom S
+  have hnat := ShortComplex.ShortExact.extClass_naturality hGS hGS φS
+  rw [Ext.comp_assoc_of_third_deg_zero]
+  rw [hnat]
+  rw [← Ext.comp_assoc_of_second_deg_zero (Ext.mk₀ d) (Ext.mk₀ φS.τ₃) hGS.extClass (zero_add 1)]
+  rw [Ext.mk₀_comp_mk₀]
+
+lemma delta_zero_of_curry_delta_zero {X : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) {q : P ℤ ⊗ X ⟶ S.X₃}
+    (hG : (Ext.mk₀ (MonoidalClosed.curry q)).comp
+        (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) = 0) :
+    (Ext.mk₀ q).comp hS.extClass (zero_add 1) = 0 :=
+  (curry_delta_zero_iff hS q).1 hG
+
+lemma delta_eq_iff_curry_delta_eq {X : LightCondAb} {S : ShortComplex LightCondAb}
+    (hS : S.ShortExact) (q r : P ℤ ⊗ X ⟶ S.X₃) :
+    (Ext.mk₀ q).comp hS.extClass (zero_add 1) =
+        (Ext.mk₀ r).comp hS.extClass (zero_add 1) ↔
+      (Ext.mk₀ (MonoidalClosed.curry q)).comp
+          (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) =
+        (Ext.mk₀ (MonoidalClosed.curry r)).comp
+          (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) := by
+  constructor
+  · intro h
+    have hzero : (Ext.mk₀ (q - r)).comp hS.extClass (zero_add 1) = 0 := by
+      rw [sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg, Ext.add_comp, Ext.neg_comp, h]
+      simp
+    have hGzero := (curry_delta_zero_iff hS (q - r)).2 hzero
+    have hcurry_sub : MonoidalClosed.curry (q - r) =
+        MonoidalClosed.curry q - MonoidalClosed.curry r := by
+      change (ihom.adjunction (P ℤ)).homEquiv X S.X₃ (q - r) =
+        (ihom.adjunction (P ℤ)).homEquiv X S.X₃ q -
+          (ihom.adjunction (P ℤ)).homEquiv X S.X₃ r
+      exact Adjunction.homAddEquiv_sub (ihom.adjunction (P ℤ)) X S.X₃ q r
+    rw [hcurry_sub, sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg, Ext.add_comp, Ext.neg_comp] at hGzero
+    exact sub_eq_zero.mp (by simpa [sub_eq_add_neg] using hGzero)
+  · intro h
+    have hGzero : (Ext.mk₀ (MonoidalClosed.curry (q - r))).comp
+          (hS.map_of_exact (ihom (P ℤ))).extClass (zero_add 1) = 0 := by
+      have hcurry_sub : MonoidalClosed.curry (q - r) =
+          MonoidalClosed.curry q - MonoidalClosed.curry r := by
+        change (ihom.adjunction (P ℤ)).homEquiv X S.X₃ (q - r) =
+          (ihom.adjunction (P ℤ)).homEquiv X S.X₃ q -
+            (ihom.adjunction (P ℤ)).homEquiv X S.X₃ r
+        exact Adjunction.homAddEquiv_sub (ihom.adjunction (P ℤ)) X S.X₃ q r
+      rw [hcurry_sub, sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg, Ext.add_comp, Ext.neg_comp, h]
+      simp
+    have hzero := (curry_delta_zero_iff hS (q - r)).1 hGzero
+    rw [sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg, Ext.add_comp, Ext.neg_comp] at hzero
+    exact sub_eq_zero.mp (by simpa [sub_eq_add_neg] using hzero)
+
+lemma ext1_precomp_oneMinusShift_tensor_bijective
+    (X : LightCondAb) (E : Solid) :
+    Function.Bijective
+      (fun α : Ext (P ℤ ⊗ X) ((isSolid.ι).obj E) 1 =>
+        (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp α (zero_add 1)) := by
+  let Y : LightCondAb := (isSolid.ι).obj E
+  let φY := (MonoidalClosed.pre (oneMinusShift ℤ)).app Y
+  letI : IsIso φY := E.property
+  let ip := (EnoughInjectives.presentation Y).some
+  let S := ip.shortComplex
+  have hS : S.ShortExact := ip.shortExact_shortComplex
+  haveI : Injective S.X₂ := by
+    dsimp [S, InjectivePresentation.shortComplex]
+    exact ip.injective
+  let hGS := hS.map_of_exact (ihom (P ℤ))
+  haveI : Injective (S.map (ihom (P ℤ))).X₂ := by
+    change Injective ((ihom (P ℤ)).obj S.X₂)
+    exact Functor.PreservesInjectiveObjects.injective_obj (F := ihom (P ℤ)) (X := S.X₂) inferInstance
+  let φS := ihomOneMinusShiftShortComplexHom S
+  have hφY : φS.τ₁ = φY := by
+    rfl
+  haveI : IsIso φS.τ₁ := by
+    rw [hφY]
+    dsimp [φY, Y]
+    exact E.property
+  constructor
+  · intro α β hαβ
+    rcases delta_surjective_of_injective_middle hS α with ⟨q, hq⟩
+    rcases delta_surjective_of_injective_middle hS β with ⟨r, hr⟩
+    rw [← hq, ← hr]
+    apply delta_eq_of_delta_sub_eq_zero hS
+    have hαβ' :
+        (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp
+            ((Ext.mk₀ q).comp hS.extClass (zero_add 1)) (zero_add 1) =
+          (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp
+            ((Ext.mk₀ r).comp hS.extClass (zero_add 1)) (zero_add 1) := by
+      rw [hq, hr]
+      exact hαβ
+    have hσeq :
+        (Ext.mk₀ (((oneMinusShift ℤ) ▷ X) ≫ q)).comp hS.extClass (zero_add 1) =
+          (Ext.mk₀ (((oneMinusShift ℤ) ▷ X) ≫ r)).comp hS.extClass (zero_add 1) := by
+      simpa [precomp_delta hS ((oneMinusShift ℤ) ▷ X) q,
+        precomp_delta hS ((oneMinusShift ℤ) ▷ X) r] using hαβ'
+    have hσzero :
+        (Ext.mk₀ (((oneMinusShift ℤ) ▷ X) ≫ (q - r))).comp hS.extClass (zero_add 1) = 0 := by
+      rw [Preadditive.comp_sub, sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg,
+        Ext.add_comp, Ext.neg_comp, hσeq]
+      simp
+    have hGσzero := (curry_delta_zero_iff hS (((oneMinusShift ℤ) ▷ X) ≫ (q - r))).2 hσzero
+    have hcurryσ : MonoidalClosed.curry (((oneMinusShift ℤ) ▷ X) ≫ (q - r)) =
+        MonoidalClosed.curry (q - r) ≫ (MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃ := by
+      rw [MonoidalClosed.curry_pre_app]
+    rw [hcurryσ] at hGσzero
+    let dqr : X ⟶ (S.map (ihom (P ℤ))).X₃ := MonoidalClosed.curry (q - r)
+    change (Ext.mk₀ (dqr ≫ φS.τ₃)).comp hGS.extClass (zero_add 1) = 0 at hGσzero
+    have hδφ := delta_comp_ihomOneMinusShift hS (d := dqr)
+    rw [hδφ] at hGσzero
+    have hGzero : (Ext.mk₀ (MonoidalClosed.curry (q - r))).comp hGS.extClass (zero_add 1) = 0 := by
+      change (Ext.mk₀ dqr).comp hGS.extClass (zero_add 1) = 0
+      have htmp := congrArg (fun z => z.comp (Ext.mk₀ (inv φS.τ₁)) (add_zero 1)) hGσzero
+      simpa [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀] using htmp
+    exact (curry_delta_zero_iff hS (q - r)).1 hGzero
+  · intro α
+    rcases delta_surjective_of_injective_middle hS α with ⟨q, hq⟩
+    let δGq : Ext X (S.map (ihom (P ℤ))).X₁ 1 :=
+      (Ext.mk₀ (MonoidalClosed.curry q)).comp hGS.extClass (zero_add 1)
+    let γ : Ext X (S.map (ihom (P ℤ))).X₁ 1 :=
+      δGq.comp (Ext.mk₀ (inv φS.τ₁)) (add_zero 1)
+    rcases delta_surjective_of_injective_middle hGS γ with ⟨d, hd⟩
+    let d' : X ⟶ (ihom (P ℤ)).obj S.X₃ := d
+    let q' : P ℤ ⊗ X ⟶ S.X₃ := MonoidalClosed.uncurry d'
+    refine ⟨(Ext.mk₀ q').comp hS.extClass (zero_add 1), ?_⟩
+    change (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp
+        ((Ext.mk₀ q').comp hS.extClass (zero_add 1)) (zero_add 1) = α
+    rw [precomp_delta hS ((oneMinusShift ℤ) ▷ X) q']
+    rw [← hq]
+    apply (delta_eq_iff_curry_delta_eq hS (((oneMinusShift ℤ) ▷ X) ≫ q') q).2
+    have hcurryσ : MonoidalClosed.curry (((oneMinusShift ℤ) ▷ X) ≫ q') =
+        d' ≫ (MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃ := by
+      dsimp [q']
+      calc
+        MonoidalClosed.curry (((oneMinusShift ℤ) ▷ X) ≫ MonoidalClosed.uncurry d') =
+            MonoidalClosed.curry (MonoidalClosed.uncurry d') ≫
+              (MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃ :=
+          (MonoidalClosed.curry_pre_app (oneMinusShift ℤ) (MonoidalClosed.uncurry d')).symm
+        _ = d' ≫ (MonoidalClosed.pre (oneMinusShift ℤ)).app S.X₃ := by
+          rw [MonoidalClosed.curry_uncurry]
+    rw [hcurryσ]
+    change (Ext.mk₀ (d ≫ φS.τ₃)).comp hGS.extClass (zero_add 1) =
+      (Ext.mk₀ (MonoidalClosed.curry q)).comp hGS.extClass (zero_add 1)
+    have hδφ := delta_comp_ihomOneMinusShift hS (d := d)
+    rw [hδφ, hd]
+    dsimp [γ, δGq]
+    simp [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀]
+
+end ExtOne
+
+/-- The SPG12b statement in degree `1`: precomposition by `(oneMinusShift ℤ) ▷ X` is
+bijective on `Ext¹` for every solid target. -/
+lemma ext1_precomp_oneMinusShift_tensor_bijective
+    (X : LightCondAb) (E : Solid) :
+    Function.Bijective
+      (fun α : Ext (P ℤ ⊗ X) ((isSolid.ι).obj E) 1 =>
+        (Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp α (zero_add 1)) :=
+  ExtOne.ext1_precomp_oneMinusShift_tensor_bijective X E
 
 end ProjectiveGeneratorProof
 end Solid
