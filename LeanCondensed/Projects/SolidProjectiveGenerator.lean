@@ -11,6 +11,7 @@ public import LeanCondensed.Projects.SolidProjectiveGenerator.BoundedIso
 public import LeanCondensed.Projects.SolidProjectiveGenerator.RealSequences
 public import LeanCondensed.Projects.SolidProjectiveGenerator.RealQuotient
 public import LeanCondensed.Projects.SolidProjectiveGenerator.RealVanishing
+public import LeanCondensed.Projects.SolidProjectiveGenerator.ProductIso
 public import LeanCondensed.Projects.SolidProjectiveGenerator.ZdiscSeparation
 public import LeanCondensed.Projects.SolidProjectiveGenerator.InfiniteTail
 public import LeanCondensed.Projects.SolidProjectiveGenerator.InfiniteDifference

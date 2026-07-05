@@ -427,11 +427,6 @@ lemma solidification_map_oneMinusShift_tensor_isIso (M : LightCondAb) :
   apply Localization.inverts solidification isSolid.isLocal
   exact isSolid.isLocal.whiskerRight_mem (oneMinusShift ℤ) oneMinusShift_mem_isLocal M
 
-/-- Obligation: the solidification of `P ℤ` is the countable product of copies of `ℤ`.  This is the
-heart-level form of the paper's bounded-sequence and derived-solidification calculation. -/
-noncomputable def solidPIsoProduct : solidP ≅ productInt := by
-  sorry
-
 /-- Homs from solidified free representables are their values on the representing test object. -/
 noncomputable def solidifiedFreeHomEquiv
     (T : LightProfinite) (A : Solid) :

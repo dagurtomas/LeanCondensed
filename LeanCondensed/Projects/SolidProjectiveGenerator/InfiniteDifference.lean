@@ -1,6 +1,7 @@
 module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.InfiniteTail
+public import LeanCondensed.Projects.SolidProjectiveGenerator.ProductIso
 @[expose] public section
 
 noncomputable section
