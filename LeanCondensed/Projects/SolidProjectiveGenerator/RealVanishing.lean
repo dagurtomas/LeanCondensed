@@ -12,6 +12,7 @@ public import Mathlib.Algebra.Homology.DerivedCategory.Ext.ExactSequences
 public import Mathlib.CategoryTheory.Abelian.GrothendieckCategory.EnoughInjectives
 public import Mathlib.CategoryTheory.Abelian.Injective.Resolution
 public import Mathlib.CategoryTheory.Adjunction.Additive
+public import Mathlib.CategoryTheory.Adjunction.FullyFaithful
 public import Mathlib.CategoryTheory.Limits.Constructions.EpiMono
 public import Mathlib.CategoryTheory.Preadditive.Injective.Preserves
 public import Mathlib.CategoryTheory.Sites.LeftExact
@@ -1753,6 +1754,97 @@ lemma instIsZero_solidification_cokernel_boundedToProduct :
     IsZero (solidification.obj (cokernel boundedToProduct)) :=
   isZero_solidification_of_solid_hom_zero (cokernel boundedToProduct)
     hom_cokernel_boundedToProduct_solid_eq_zero
+
+/-- A morphism of light condensed abelian groups is a solidification equivalence if restriction
+along it gives bijections on maps to every solid target. -/
+def IsSolidificationEquivalence {A B : LightCondAb} (f : A ⟶ B) : Prop :=
+  ∀ E : Solid, Function.Bijective
+    (fun g : B ⟶ (isSolid.ι).obj E => f ≫ g)
+
+lemma isIso_solidification_map_of_isSolidificationEquivalence
+    {A B : LightCondAb} (f : A ⟶ B)
+    (hf : IsSolidificationEquivalence f) :
+    IsIso (solidification.map f) := by
+  apply isIso_of_coyoneda_map_bijective
+  intro E
+  let eA := solidificationAdjunction.homEquiv A E
+  let eB := solidificationAdjunction.homEquiv B E
+  let φ : (solidification.obj B ⟶ E) ≃ (B ⟶ (isSolid.ι).obj E) := eB
+  let ψ : (solidification.obj A ⟶ E) ≃ (A ⟶ (isSolid.ι).obj E) := eA
+  have hcompat : ∀ g : solidification.obj B ⟶ E,
+      ψ (solidification.map f ≫ g) = f ≫ φ g := by
+    intro g
+    exact solidificationAdjunction.homEquiv_naturality_left f g
+  constructor
+  · intro g h hgh
+    apply φ.injective
+    apply (hf E).1
+    simpa only [hcompat] using congrArg ψ hgh
+  · intro h
+    rcases (hf E).2 (ψ h) with ⟨g, hg⟩
+    refine ⟨φ.symm g, ?_⟩
+    apply ψ.injective
+    simpa only [hcompat, Equiv.apply_symm_apply] using hg
+
+lemma isSolidificationEquivalence_of_mono_cokernel_ext01
+    {A B : LightCondAb} (f : A ⟶ B) [Mono f]
+    (hHom : ∀ E : Solid, ∀ q : cokernel f ⟶ (isSolid.ι).obj E, q = 0)
+    (hExt : ∀ E : Solid, ∀ α : Abelian.Ext (cokernel f) ((isSolid.ι).obj E) 1,
+      α = 0) :
+    IsSolidificationEquivalence f := by
+  intro E
+  let Y : LightCondAb := (isSolid.ι).obj E
+  constructor
+  · intro g h hgh
+    have hdiff : f ≫ (g - h) = 0 := by
+      rw [Preadditive.comp_sub]
+      exact sub_eq_zero.mpr hgh
+    have hfactor : cokernel.π f ≫ cokernel.desc f (g - h) hdiff = g - h :=
+      cokernel.π_desc f (g - h) hdiff
+    have hzero : cokernel.desc f (g - h) hdiff = 0 := hHom E _
+    have hdiffzero : g - h = 0 := by
+      rw [← hfactor, hzero, comp_zero]
+    exact sub_eq_zero.mp hdiffzero
+  · intro a
+    let S := ShortComplex.mk f (cokernel.π f) (cokernel.condition f)
+    have hS : S.ShortExact := ⟨ShortComplex.exact_cokernel f⟩
+    have hδ : hS.extClass.comp (Ext.mk₀ a) (rfl : 1 + 0 = 1) = 0 :=
+      hExt E (hS.extClass.comp (Ext.mk₀ a) (rfl : 1 + 0 = 1))
+    rcases Ext.contravariant_sequence_exact₁ hS Y (Ext.mk₀ a) (rfl : 1 + 0 = 1) hδ
+      with ⟨β, hβ⟩
+    rcases (Ext.mk₀_bijective B Y).2 β with ⟨b, rfl⟩
+    refine ⟨b, ?_⟩
+    simp only [Ext.mk₀_comp_mk₀] at hβ
+    exact (Ext.mk₀_bijective A Y).1 hβ
+
+lemma boundedToProduct_isSolidificationEquivalence :
+    IsSolidificationEquivalence boundedToProduct :=
+  isSolidificationEquivalence_of_mono_cokernel_ext01 boundedToProduct
+    hom_cokernel_boundedToProduct_solid_eq_zero
+    ext1_cokernel_boundedToProduct_solid_eq_zero
+
+instance instIsIso_solidification_map_boundedToProduct :
+    IsIso (solidification.map boundedToProduct) :=
+  isIso_solidification_map_of_isSolidificationEquivalence boundedToProduct
+    boundedToProduct_isSolidificationEquivalence
+
+/-- The counit isomorphism identifying the solidification of a solid object with itself. -/
+noncomputable def solidificationObjValIso (A : Solid) :
+    solidification.obj ((isSolid.ι).obj A) ≅ A := by
+  haveI : IsIso solidificationAdjunction.counit := inferInstance
+  exact (asIso solidificationAdjunction.counit).app A
+
+/-- The solidification of bounded integer sequences is the solid product of countably many
+copies of `ℤ`. -/
+noncomputable def solidBoundedIsoProduct :
+    solidification.obj boundedIntSequences ≅ productInt :=
+  asIso (solidification.map boundedToProduct) ≪≫ solidificationObjValIso productInt
+
+lemma solidBoundedIsoProduct_hom_eq :
+    solidBoundedIsoProduct.hom =
+      (asIso (solidification.map boundedToProduct)).hom ≫
+        (solidificationObjValIso productInt).hom :=
+  rfl
 
 end ProjectiveGeneratorProof
 end Solid
