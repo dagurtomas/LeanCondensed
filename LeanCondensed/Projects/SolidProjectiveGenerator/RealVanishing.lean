@@ -6,6 +6,7 @@ Authors: Dagur Asgeirsson
 module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
+public import Mathlib.Algebra.Homology.DerivedCategory.Ext.Basic
 
 @[expose] public section
 
@@ -315,6 +316,65 @@ lemma pSplitMap_comp_oneMinusShift :
     _ = P_proj ℤ ≫ oneMinusShift ℤ ≫ pOddMap := by
           simpa [Category.assoc] using
             congrArg (fun f => f ≫ pOddMap) P_proj_oneMinusShift.symm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Degree-zero solidity for `(oneMinusShift ℤ) ▷ X`, stated before passing to `Ext⁰`.
+
+Under the closed monoidal adjunction, precomposition by `(oneMinusShift ℤ) ▷ X` is
+postcomposition by the solid isomorphism
+`(MonoidalClosed.pre (oneMinusShift ℤ)).app ((isSolid.ι).obj E)`. -/
+lemma hom_precomp_oneMinusShift_tensor_bijective
+    (X : LightCondAb) (E : Solid) :
+    Function.Bijective
+      (fun f : P ℤ ⊗ X ⟶ (isSolid.ι).obj E => ((oneMinusShift ℤ) ▷ X) ≫ f) := by
+  let φ := (MonoidalClosed.pre (oneMinusShift ℤ)).app ((isSolid.ι).obj E)
+  haveI : IsIso φ := E.property
+  have hcompat : ∀ f : P ℤ ⊗ X ⟶ (isSolid.ι).obj E,
+      MonoidalClosed.curry (((oneMinusShift ℤ) ▷ X) ≫ f) =
+        MonoidalClosed.curry f ≫ φ := by
+    intro f
+    dsimp [φ]
+    rw [MonoidalClosed.curry_pre_app]
+  constructor
+  · intro f g hfg
+    apply MonoidalClosed.curry_injective
+    apply (cancel_mono φ).1
+    rw [← hcompat f, ← hcompat g]
+    exact congrArg MonoidalClosed.curry hfg
+  · intro g
+    let a : X ⟶ (ihom (P ℤ)).obj ((isSolid.ι).obj E) := MonoidalClosed.curry g ≫ inv φ
+    refine ⟨MonoidalClosed.uncurry a, ?_⟩
+    apply MonoidalClosed.curry_injective
+    rw [hcompat]
+    dsimp [a, φ]
+    simp
+
+attribute [local instance] CategoryTheory.HasExt.standard
+
+/-- The SPG12b statement in degree `0`: precomposition by `(oneMinusShift ℤ) ▷ X` is
+bijective on `Ext⁰`, equivalently on ordinary Homs. -/
+lemma ext0_precomp_oneMinusShift_tensor_bijective
+    (X : LightCondAb) (E : Solid) :
+    Function.Bijective
+      (fun α : CategoryTheory.Abelian.Ext (P ℤ ⊗ X) ((isSolid.ι).obj E) 0 =>
+        (CategoryTheory.Abelian.Ext.mk₀ ((oneMinusShift ℤ) ▷ X)).comp α (zero_add 0)) := by
+  have hhom := hom_precomp_oneMinusShift_tensor_bijective X E
+  constructor
+  · intro α β hαβ
+    rcases (CategoryTheory.Abelian.Ext.mk₀_bijective (P ℤ ⊗ X) ((isSolid.ι).obj E)).2 α
+      with ⟨f, rfl⟩
+    rcases (CategoryTheory.Abelian.Ext.mk₀_bijective (P ℤ ⊗ X) ((isSolid.ι).obj E)).2 β
+      with ⟨g, rfl⟩
+    simp only [CategoryTheory.Abelian.Ext.mk₀_comp_mk₀] at hαβ ⊢
+    apply congrArg CategoryTheory.Abelian.Ext.mk₀
+    exact hhom.1 ((CategoryTheory.Abelian.Ext.mk₀_bijective _ _).1 hαβ)
+  · intro α
+    rcases (CategoryTheory.Abelian.Ext.mk₀_bijective (P ℤ ⊗ X) ((isSolid.ι).obj E)).2 α
+      with ⟨g, rfl⟩
+    rcases hhom.2 g with ⟨f, hf⟩
+    refine ⟨CategoryTheory.Abelian.Ext.mk₀ f, ?_⟩
+    simp only [CategoryTheory.Abelian.Ext.mk₀_comp_mk₀]
+    exact congrArg CategoryTheory.Abelian.Ext.mk₀ hf
 
 end ProjectiveGeneratorProof
 end Solid
