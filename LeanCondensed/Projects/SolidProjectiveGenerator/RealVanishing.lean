@@ -6,7 +6,12 @@ Authors: Dagur Asgeirsson
 module
 
 public import LeanCondensed.Projects.SolidProjectiveGenerator.PBasisTensorDesc
-public import Mathlib.Algebra.Homology.DerivedCategory.Ext.Basic
+public import Mathlib.Algebra.Homology.DerivedCategory.Ext.EnoughInjectives
+public import Mathlib.CategoryTheory.Limits.Constructions.EpiMono
+public import Mathlib.CategoryTheory.Preadditive.Injective.Preserves
+public import Mathlib.CategoryTheory.Sites.LeftExact
+public import Mathlib.Condensed.Light.AB
+public import Mathlib.RingTheory.Flat.CategoryTheory
 
 @[expose] public section
 
@@ -316,6 +321,151 @@ lemma pSplitMap_comp_oneMinusShift :
     _ = P_proj ℤ ≫ oneMinusShift ℤ ≫ pOddMap := by
           simpa [Category.assoc] using
             congrArg (fun f => f ≫ pOddMap) P_proj_oneMinusShift.symm
+
+abbrev lightCondAbPresheaf := LightProfinite.{0}ᵒᵖ ⥤ ModuleCat.{0} ℤ
+
+lemma presheaf_freeTensor_preservesFiniteLimits (X : LightProfinite.{0}) :
+    PreservesFiniteLimits (tensorLeft (X.toCondensed.obj ⋙ ModuleCat.free ℤ : lightCondAbPresheaf)) := by
+  apply preservesFiniteLimits_of_evaluation
+  intro S
+  have hflat : Module.Flat ℤ ((X.toCondensed.obj ⋙ ModuleCat.free ℤ : lightCondAbPresheaf).obj S) := by
+    change Module.Flat ℤ (X.toCondensed.obj.obj S →₀ ℤ)
+    infer_instance
+  letI := hflat
+  exact preservesFiniteLimits_of_natIso
+    (F := ((evaluation LightProfinite.{0}ᵒᵖ (ModuleCat.{0} ℤ)).obj S ⋙
+      tensorLeft ((X.toCondensed.obj ⋙ ModuleCat.free ℤ : lightCondAbPresheaf).obj S)))
+    (G := (tensorLeft (X.toCondensed.obj ⋙ ModuleCat.free ℤ : lightCondAbPresheaf) ⋙
+      (evaluation LightProfinite.{0}ᵒᵖ (ModuleCat.{0} ℤ)).obj S))
+    (by
+      refine NatIso.ofComponents (fun _ => Iso.refl _) ?_
+      intro _ _ f
+      ext x
+      rfl)
+
+/-- The functor obtained by tensoring the underlying presheaf with the free presheaf on `X`, then
+sheafifying.  This is naturally isomorphic to sheaf-level tensoring by `ℤ[X]`. -/
+noncomputable def freePresheafTensorFunctor (X : LightProfinite.{0}) : LightCondAb ⥤ LightCondAb :=
+  sheafToPresheaf (coherentTopology LightProfinite.{0}) (ModuleCat.{0} ℤ) ⋙
+    tensorLeft (X.toCondensed.obj ⋙ ModuleCat.free ℤ : lightCondAbPresheaf) ⋙
+      presheafToSheaf (coherentTopology LightProfinite.{0}) (ModuleCat.{0} ℤ)
+
+set_option synthInstance.maxHeartbeats 120000 in
+lemma freePresheafTensorFunctor_preservesFiniteLimits (X : LightProfinite.{0}) :
+    PreservesFiniteLimits (freePresheafTensorFunctor X) := by
+  let F : lightCondAbPresheaf := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  haveI : PreservesFiniteLimits (tensorLeft F) := presheaf_freeTensor_preservesFiniteLimits X
+  haveI : PreservesFiniteLimits
+      (sheafToPresheaf (coherentTopology LightProfinite.{0}) (ModuleCat.{0} ℤ)) := inferInstance
+  haveI : PreservesFiniteLimits
+      (presheafToSheaf (coherentTopology LightProfinite.{0}) (ModuleCat.{0} ℤ)) := inferInstance
+  dsimp [freePresheafTensorFunctor, F]
+  infer_instance
+
+set_option maxHeartbeats 1000000 in
+set_option synthInstance.maxHeartbeats 120000 in
+noncomputable def freeTensorFunctorIsoApp (X : LightProfinite.{0}) (B : LightCondAb) :
+    (tensorLeft ((free ℤ).obj X.toCondensed)).obj B ≅ (freePresheafTensorFunctor X).obj B := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : lightCondAbPresheaf := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let cB : L.obj B.obj ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  haveI : IsIso cB := by
+    dsimp [cB, L]
+    exact isIso_sheafificationAdjunction_counit B
+  dsimp [freePresheafTensorFunctor, tensorLeft, LightCondensed.free, Sheaf.composeAndSheafify]
+  change L.obj F ⊗ B ≅ L.obj (F ⊗ B.obj)
+  exact (Iso.refl (L.obj F) ⊗ᵢ (asIso cB).symm) ≪≫ Functor.Monoidal.μIso L F B.obj
+
+set_option maxHeartbeats 1000000 in
+set_option synthInstance.maxHeartbeats 120000 in
+lemma freeTensorFunctorIsoApp_hom_naturality (X : LightProfinite.{0}) {B C : LightCondAb}
+    (f : B ⟶ C) :
+    (freeTensorFunctorIsoApp X B).hom ≫ (freePresheafTensorFunctor X).map f =
+      (tensorLeft ((free ℤ).obj X.toCondensed)).map f ≫ (freeTensorFunctorIsoApp X C).hom := by
+  let L := presheafToSheaf (coherentTopology LightProfinite) (ModuleCat ℤ)
+  let F : lightCondAbPresheaf := X.toCondensed.obj ⋙ ModuleCat.free ℤ
+  let cB : L.obj B.obj ⟶ B :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app B
+  let cC : L.obj C.obj ⟶ C :=
+    (sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.app C
+  haveI : IsIso cB := by
+    dsimp [cB, L]
+    exact isIso_sheafificationAdjunction_counit B
+  haveI : IsIso cC := by
+    dsimp [cC, L]
+    exact isIso_sheafificationAdjunction_counit C
+  dsimp [freeTensorFunctorIsoApp]
+  dsimp [freePresheafTensorFunctor, tensorLeft, LightCondensed.free, Sheaf.composeAndSheafify]
+  change ((Iso.refl (L.obj F) ⊗ᵢ (asIso cB).symm) ≪≫ Functor.Monoidal.μIso L F B.obj).hom ≫
+      L.map (F ◁ f.hom) =
+    (L.obj F ◁ f) ≫
+      (((Iso.refl (L.obj F) ⊗ᵢ (asIso cC).symm) ≪≫ Functor.Monoidal.μIso L F C.obj).hom)
+  simp only [Iso.trans_hom, tensorIso_hom, Iso.refl_hom, id_tensorHom,
+    Functor.Monoidal.μIso_hom, Category.assoc]
+  slice_lhs 2 3 => rw [← Functor.LaxMonoidal.μ_natural_right L F f.hom]
+  rw [← MonoidalCategory.whiskerLeft_comp_assoc]
+  have hc : cB ≫ f = L.map f.hom ≫ cC := by
+    dsimp [cB, cC]
+    exact ((sheafificationAdjunction (coherentTopology LightProfinite) (ModuleCat ℤ)).counit.naturality f).symm
+  have hinv : inv cB ≫ L.map f.hom = f ≫ inv cC := by
+    rw [← cancel_mono cC]
+    simp [Category.assoc, hc]
+  have hinv' : (asIso cB).symm.hom ≫ L.map f.hom = f ≫ (asIso cC).symm.hom := by
+    simpa using hinv
+  rw [hinv']
+  rw [MonoidalCategory.whiskerLeft_comp_assoc]
+
+set_option maxHeartbeats 1000000 in
+set_option synthInstance.maxHeartbeats 120000 in
+/-- Tensoring by a free light condensed abelian group is the sheafification of objectwise tensoring
+by the corresponding free presheaf. -/
+noncomputable def freeTensorFunctorIso (X : LightProfinite.{0}) :
+    tensorLeft ((free ℤ).obj X.toCondensed) ≅ freePresheafTensorFunctor X :=
+  NatIso.ofComponents (fun B => freeTensorFunctorIsoApp X B)
+    (fun f => (freeTensorFunctorIsoApp_hom_naturality X f).symm)
+
+set_option maxHeartbeats 1000000 in
+set_option synthInstance.maxHeartbeats 120000 in
+lemma tensorLeft_free_preservesFiniteLimits (X : LightProfinite.{0}) :
+    PreservesFiniteLimits (tensorLeft ((free ℤ).obj X.toCondensed)) := by
+  haveI : PreservesFiniteLimits (freePresheafTensorFunctor X) :=
+    freePresheafTensorFunctor_preservesFiniteLimits X
+  exact preservesFiniteLimits_of_natIso (freeTensorFunctorIso X).symm
+
+/-- `tensorLeft (P ℤ)` is a functor retract of tensoring by the free sheaf on `ℕ∪{∞}`. -/
+noncomputable def tensorLeftP_retract_tensorLeftFreeNinf :
+    Retract (tensorLeft (P ℤ)) (tensorLeft ((free ℤ).obj (ℕ∪{∞}).toCondensed)) where
+  i := {
+    app X := (P_retract ℤ).i ▷ X
+    naturality X Y f := by
+      change (P ℤ ◁ f) ≫ ((P_retract ℤ).i ▷ Y) =
+        ((P_retract ℤ).i ▷ X) ≫ ((free ℤ).obj (ℕ∪{∞}).toCondensed ◁ f)
+      rw [whisker_exchange] }
+  r := {
+    app X := (P_retract ℤ).r ▷ X
+    naturality X Y f := by
+      change ((free ℤ).obj (ℕ∪{∞}).toCondensed ◁ f) ≫ ((P_retract ℤ).r ▷ Y) =
+        ((P_retract ℤ).r ▷ X) ≫ (P ℤ ◁ f)
+      rw [whisker_exchange] }
+  retract := by
+    apply NatTrans.ext
+    funext X
+    change ((P_retract ℤ).i ▷ X) ≫ ((P_retract ℤ).r ▷ X) = 𝟙 (P ℤ ⊗ X)
+    rw [← comp_whiskerRight, (P_retract ℤ).retract]
+    simp
+
+set_option maxHeartbeats 1000000 in
+instance tensorLeft_P_preservesMonomorphisms : (tensorLeft (P ℤ)).PreservesMonomorphisms := by
+  haveI : PreservesFiniteLimits (tensorLeft ((free ℤ).obj (ℕ∪{∞}).toCondensed)) :=
+    tensorLeft_free_preservesFiniteLimits (ℕ∪{∞})
+  haveI : (tensorLeft ((free ℤ).obj (ℕ∪{∞}).toCondensed)).PreservesMonomorphisms :=
+    inferInstance
+  exact CategoryTheory.Functor.preservesMonomorphisms.ofRetract tensorLeftP_retract_tensorLeftFreeNinf
+
+/-- Since `tensorLeft (P ℤ)` preserves monomorphisms, its right adjoint preserves injectives. -/
+instance ihom_P_preservesInjectiveObjects : (ihom (P ℤ)).PreservesInjectiveObjects :=
+  Functor.preservesInjectiveObjects_of_adjunction_of_preservesMonomorphisms (ihom.adjunction (P ℤ))
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Degree-zero solidity for `(oneMinusShift ℤ) ▷ X`, stated before passing to `Ext⁰`.
