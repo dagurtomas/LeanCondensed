@@ -385,12 +385,12 @@ instance (J : Type) [SmallCategory J] : isSolid.IsClosedUnderColimitsOfShape J :
 instance : isSolid.IsClosedUnderKernels where
   kernels_le := by
     rintro _ ⟨_, k, hk, hf⟩
-    exact isSolid.prop_of_isLimit hk (by rintro (_ | _) <;> first | exact hf.1 | exact hf.2)
+    exact isSolid.prop_of_isLimit hk (by rintro (_ | _) <;> dsimp; exacts [hf.1, hf.2])
 
 instance : isSolid.IsClosedUnderCokernels where
   cokernels_le := by
     rintro _ ⟨_, k, hk, hf⟩
-    exact isSolid.prop_of_isColimit hk (by rintro (_ | _) <;> first | exact hf.1 | exact hf.2)
+    exact isSolid.prop_of_isColimit hk (by rintro (_ | _) <;> dsimp; exacts [hf.1, hf.2])
 
 instance : isSolid.IsClosedUnderFiniteProducts where
   isClosedUnderLimitsOfShape _ _ := inferInstance
