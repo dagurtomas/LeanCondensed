@@ -10,7 +10,6 @@ public import LeanCondensed.Projects.FreeCondensed.ComparisonIso
 public import LeanCondensed.Projects.SolidProjectiveGenerator
 public import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 public import Mathlib.CategoryTheory.Monoidal.Closed.Braided
-public import Mathlib.Topology.Category.Profinite.Nobeling.Induction
 public import Mathlib.Topology.Category.LightProfinite.Extend
 
 /-!
@@ -251,12 +250,6 @@ lemma classicalCompletion_comp_sequentialLimit_π (S : LightProfinite) (n : ℕ)
       lightProfiniteFreeℤ.map (S.proj n) := by
   rw [classicalCompletedFreeIsoSequentialLimit_hom_π]
   exact classicalCompletion_comp_sequentialCone_π S n
-
-/-- Nöbeling's theorem for a light profinite set. -/
-instance locallyConstantInt_free (S : LightProfinite) :
-    Module.Free ℤ (LocallyConstant S ℤ) := by
-  change Module.Free ℤ (LocallyConstant (lightToProfinite.obj S) ℤ)
-  infer_instance
 
 /-- Integer-valued locally constant functions on a light profinite set form a countable type. -/
 instance locallyConstantInt_countable (S : LightProfinite) : Countable (LocallyConstant S ℤ) := by
