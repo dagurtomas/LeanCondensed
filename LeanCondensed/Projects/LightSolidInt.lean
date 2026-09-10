@@ -85,6 +85,7 @@ def seqTailSumAddHom : SeqZ →+ SeqZ where
     simp [tailFun]
   map_add' b c := by
     ext n
+    change tailFun (b + c) n = tailFun b n + tailFun c n
     dsimp [tailFun]
     rw [Finsupp.sum_add_index']
     all_goals grind
@@ -213,6 +214,7 @@ section FreeDiscrete
 variable (R : Type) [Ring R]
 variable (T : LightProfinite) (M : ModuleCat R)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Maps from the free light condensed `R`-module on a light profinite set `T` to a discrete
 module `M` are locally constant `M`-valued functions on `T`. -/
 noncomputable def freeHomDiscreteEquiv :
@@ -242,8 +244,8 @@ noncomputable def freeHomDiscreteEquiv :
         ((LightCondMod.LocallyConstant.functorIsoDiscrete R).hom.app M)
     exact ((LightCondensed.freeForgetAdjunction R).homEquiv T.toCondensed
       ((LightCondensed.discrete (ModuleCat R)).obj M)).symm g
-  left_inv f := by simp
-  right_inv x := by simp
+  left_inv f := by simp [_root_.id, ← Functor.map_comp]
+  right_inv x := by simp [_root_.id, ← Functor.map_comp]
 
 set_option backward.isDefEq.respectTransparency false in
 lemma freeHomDiscreteEquiv_map {T T' : LightProfinite} (φ : T' ⟶ T)
@@ -460,8 +462,6 @@ lemma tensorCokerIsoInt_π_inv {C : LightCondAb} :
         (tensorCokerIsoInt (P_map ℤ) : P ℤ ⊗ C ≅ cokernel (P_map ℤ ▷ C)).inv =
       P_proj ℤ ▷ C := by
   simp [tensorCokerIsoInt, P_proj]
-  change 𝟙 ((free ℤ).obj (ℕ∪{∞}).toCondensed ⊗ C) ≫ P_proj ℤ ▷ C = P_proj ℤ ▷ C
-  rw [Category.id_comp]
 
 set_option backward.isDefEq.respectTransparency false in
 lemma pTensorHomSubtypeEquiv_apply_coe (S : LightProfinite)
@@ -496,6 +496,7 @@ section VanishingAtInfinity
 abbrev VanishAtInfinity (S : LightProfinite) :=
   { h : LocallyConstant (NinfTensor S) ℤ // ∀ s : S, h (∞, s) = 0 }
 
+set_option backward.isDefEq.respectTransparency false in
 lemma vanish_supportN_finite {S : LightProfinite} (h : VanishAtInfinity S) :
     Set.Finite {n : ℕ | ∃ s : S, h.1 ((n : ℕ∪{∞}), s) ≠ 0} := by
   let K : Set (NinfTensor S) := {x | h.1 x ≠ 0}
@@ -564,13 +565,15 @@ noncomputable def vanishToSeq {S : LightProfinite} (h : VanishAtInfinity S) :
   let coords : Fin N → LocallyConstant S ℤ := fun i => h.1.comap (finitePointMap S i.1)
   exact (LocallyConstant.unflip coords).map (finFunToSeq N)
 
+set_option backward.isDefEq.respectTransparency false in
 lemma vanishToSeq_apply {S : LightProfinite} (h : VanishAtInfinity S) (s : S) (n : ℕ) :
     vanishToSeq h s n = h.1 ((n : ℕ∪{∞}), s) := by
   dsimp [vanishToSeq]
   let N := Classical.choose (vanish_eventually_zero h)
   have hN := Classical.choose_spec (vanish_eventually_zero h)
   by_cases hn : n < N
-  · simp [N, hn, finitePointMap, LocallyConstant.unflip, LocallyConstant.comap]
+  · simp [N, hn, finitePointMap, LocallyConstant.unflip, LocallyConstant.comap,
+      ContinuousMap.coe_mk]
   · have hzero := hN s n (by omega)
     simp [N, hn, hzero]
 
@@ -628,6 +631,7 @@ lemma seq_family_eventually_zero {S : LightProfinite} (g : LocallyConstant S Seq
   have := hN hmem
   omega
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A locally constant `S`-family of finitely supported sequences gives a locally constant function
 on `(ℕ∪{∞}) × S` that vanishes along `{∞} × S`. -/
 noncomputable def seqToVanish {S : LightProfinite} (g : LocallyConstant S SeqZ) :
@@ -639,17 +643,18 @@ noncomputable def seqToVanish {S : LightProfinite} (g : LocallyConstant S SeqZ) 
   · exact idx.isLocallyConstant.comp₂ fam.isLocallyConstant fun oi a =>
       match oi with | none => 0 | Option.some i => a i.1
   · intro s
-    simp [idx, truncIndex, truncIndexFun, fstMap]
+    simp [idx, truncIndex, truncIndexFun, fstMap, ContinuousMap.coe_mk]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma seqToVanish_apply_nat {S : LightProfinite} (g : LocallyConstant S SeqZ) (s : S) (n : ℕ) :
     (seqToVanish g).1 ((n : ℕ∪{∞}), s) = g s n := by
   dsimp [seqToVanish]
   let N := Classical.choose (seq_family_eventually_zero g)
   have hN := Classical.choose_spec (seq_family_eventually_zero g)
   by_cases hn : n < N
-  · simp [N, hn, truncIndex, truncIndexFun, fstMap, sndMap]
+  · simp [N, hn, truncIndex, truncIndexFun, fstMap, sndMap, ContinuousMap.coe_mk]
   · have hzero := hN s n (by omega)
-    simp [N, hn, truncIndex, truncIndexFun, fstMap, hzero]
+    simp [N, hn, truncIndex, truncIndexFun, fstMap, hzero, ContinuousMap.coe_mk]
 
 lemma seqToVanish_apply_infty {S : LightProfinite} (g : LocallyConstant S SeqZ) (s : S) :
     (seqToVanish g).1 ((∞ : ℕ∪{∞}), s) = 0 := by
@@ -684,6 +689,7 @@ noncomputable def iotaTensorMap (S : LightProfinite) :
 lemma iotaTensorMap_apply (S : LightProfinite) (s : S) :
     iotaTensorMap S (PUnit.unit, s) = ((∞ : ℕ∪{∞}), s) := rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The cokernel relation on numerator maps is exactly vanishing along `{∞} × S`. -/
 noncomputable def numeratorSubtypeVanishEquiv (S : LightProfinite) :
     {g : (((free ℤ).obj (ℕ∪{∞}).toCondensed) ⊗ (free ℤ).obj S.toCondensed ⟶ Zdisc) //
@@ -695,7 +701,8 @@ noncomputable def numeratorSubtypeVanishEquiv (S : LightProfinite) :
     dsimp [P_map] at hfun
     rw [freeProductHomEquiv_precomp_left] at hfun
     have hpoint := LocallyConstant.congr_fun hfun (PUnit.unit, s)
-    rw [freeProductHomEquiv_zero_apply] at hpoint
+    rw [freeProductHomEquiv_zero_apply (LightProfinite.of PUnit.{1}) S (PUnit.unit, s)]
+      at hpoint
     change ((numeratorHomEquiv S) q.1)
       ((TopCat.Hom.hom (ι ▷ S).hom) (PUnit.unit, s)) = 0
     simpa [numeratorHomEquiv] using hpoint
@@ -713,7 +720,8 @@ noncomputable def numeratorSubtypeVanishEquiv (S : LightProfinite) :
       freeProductHomEquiv (LightProfinite.of PUnit.{1}) S
         (0 : (free ℤ).obj (LightProfinite.of PUnit.{1}).toCondensed ⊗
           (free ℤ).obj S.toCondensed ⟶ Zdisc) (PUnit.unit, s)
-    simp [h.2 s, freeProductHomEquiv_zero_apply]
+    rw [freeProductHomEquiv_zero_apply (LightProfinite.of PUnit.{1}) S (PUnit.unit, s)]
+    exact h.2 s
   left_inv q := by
     ext
     simp

@@ -675,6 +675,7 @@ lemma delta_eq_iff_curry_delta_eq {X : LightCondAb} {S : ShortComplex LightCondA
     rw [sub_eq_add_neg, Ext.mk₀_add, Ext.mk₀_neg, Ext.add_comp, Ext.neg_comp] at hzero
     exact sub_eq_zero.mp (by simpa [sub_eq_add_neg] using hzero)
 
+set_option backward.isDefEq.respectTransparency false in
 lemma ext1_precomp_oneMinusShift_tensor_bijective
     (X : LightCondAb) (E : Solid) :
     Function.Bijective
@@ -732,10 +733,13 @@ lemma ext1_precomp_oneMinusShift_tensor_bijective
     change (Ext.mk₀ (dqr ≫ φS.τ₃)).comp hGS.extClass (zero_add 1) = 0 at hGσzero
     have hδφ := delta_comp_ihomOneMinusShift hS (d := dqr)
     rw [hδφ] at hGσzero
+    change ((Ext.mk₀ dqr).comp hGS.extClass (zero_add 1)).comp
+      (Ext.mk₀ φS.τ₁) (add_zero 1) = 0 at hGσzero
     have hGzero : (Ext.mk₀ (MonoidalClosed.curry (q - r))).comp hGS.extClass (zero_add 1) = 0 := by
       change (Ext.mk₀ dqr).comp hGS.extClass (zero_add 1) = 0
       have htmp := congrArg (fun z => z.comp (Ext.mk₀ (inv φS.τ₁)) (add_zero 1)) hGσzero
-      simpa [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀] using htmp
+      simpa only [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀,
+        IsIso.hom_inv_id, Ext.comp_mk₀_id, Ext.zero_comp] using htmp
     exact (curry_delta_zero_iff hS (q - r)).1 hGzero
   · intro α
     rcases delta_surjective_of_injective_middle hS α with ⟨q, hq⟩
@@ -767,8 +771,10 @@ lemma ext1_precomp_oneMinusShift_tensor_bijective
       (Ext.mk₀ (MonoidalClosed.curry q)).comp hGS.extClass (zero_add 1)
     have hδφ := delta_comp_ihomOneMinusShift hS (d := d)
     rw [hδφ, hd]
-    dsimp [γ, δGq]
-    simp [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀]
+    change (δGq.comp (Ext.mk₀ (inv φS.τ₁)) (add_zero 1)).comp
+      (Ext.mk₀ φS.τ₁) (add_zero 1) = δGq
+    simp only [Ext.comp_assoc_of_third_deg_zero, Ext.mk₀_comp_mk₀,
+      IsIso.inv_hom_id, Ext.comp_mk₀_id]
 
 end ExtOne
 
@@ -881,7 +887,6 @@ private lemma ext_eq_zero_of_dyadicContractionData_of_precomp_bijective
         dsimp [β0, β1]
         rw [ext_mk₀_sub]
         simp [sub_eq_add_neg]
-        rfl
       _ = (Ext.mk₀ (ι0 ≫ σ)).comp β (zero_add n) := by
         rw [pBasisTensorSlice_comp_oneMinusShift]
       _ = (Ext.mk₀ ι0).comp ((Ext.mk₀ σ).comp β (zero_add n)) (zero_add n) := by
@@ -1148,7 +1153,8 @@ lemma realCondensedAbScalarEndo_one : realCondensedAbScalarEndo 1 = 𝟙 realCon
   change (ContinuousMap.const S.unop 1) * (show C(S.unop, ℝ) from x) =
     (show C(S.unop, ℝ) from x)
   ext s
-  simp
+  change (1 : ℝ) * ((show C(S.unop, ℝ) from x) s) = _
+  exact one_mul _
 
 lemma realCondensedAbScalarEndo_add (c d : ℝ) :
     realCondensedAbScalarEndo (c + d) = realCondensedAbScalarEndo c +
@@ -1172,13 +1178,14 @@ noncomputable def realDyadicFamilyLinear (S : LightProfinite)
         ((show C(S, ℝ) from x) + (show C(S, ℝ) from y)) =
       dyadicScalarFunction f * (show C(S, ℝ) from x) +
         dyadicScalarFunction f * (show C(S, ℝ) from y)
-    ext s
-    simp [mul_add]
+    exact mul_add _ _ _
   map_smul' := by
     intro a x
     change dyadicScalarFunction f * (a • (show C(S, ℝ) from x)) =
       a • (dyadicScalarFunction f * (show C(S, ℝ) from x))
     ext s
+    change dyadicScalarFunction f s * (a • (show C(S, ℝ) from x) s) =
+      a • (dyadicScalarFunction f s * (show C(S, ℝ) from x) s)
     simp [zsmul_eq_mul]
     ring
 

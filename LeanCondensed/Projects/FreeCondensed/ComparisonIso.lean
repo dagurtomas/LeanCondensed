@@ -122,6 +122,7 @@ lemma freeForgetAdjunction_unit_app_id :
   rw [LightCondensed.freeForgetAdjunction, CategoryTheory.Sheaf.adjunction_unit_app_hom]
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The sheafified presheaf comparison sends the represented Dirac generator to the represented
 topological Dirac section. -/
 lemma freePresheafComparison_diracSection :
@@ -145,6 +146,7 @@ lemma freePresheafComparison_diracSection :
     rw [topologicalFreeDiracSection_yoneda_apply]
     rfl)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Under the free/forget adjunction, the sheafified presheaf comparison is characterized by the
 represented topological Dirac section. -/
 lemma freeForgetAdjunction_homEquiv_freePresheafComparisonSheafification :
@@ -229,7 +231,7 @@ lemma sheafified_presheaf_comparison_comp_topologicalFreeCondensedSheafifyIso_in
           (𝟙 (topologicalFreePresheaf S)) (topologicalFreeCondensed S).property =
       CategoryTheory.sheafifyLift (coherentTopology LightProfinite)
         (freePresheafToTopologicalFreePresheaf S) (topologicalFreeCondensed S).property
-  rw [CategoryTheory.sheafifyMap_sheafifyLift]
+  erw [CategoryTheory.sheafifyMap_sheafifyLift]
   simp
 
 instance instIsIso_sheafifiedPresheafComparison (S : LightProfinite.{0}) :

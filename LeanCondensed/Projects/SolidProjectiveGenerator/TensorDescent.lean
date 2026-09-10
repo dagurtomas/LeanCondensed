@@ -212,11 +212,12 @@ noncomputable def freeHomEquivPoints (T : LightProfinite) (A : LightCondAb) :
   ((freeForgetAdjunction ℤ).homEquiv T.toCondensed A).trans
     (coherentTopology LightProfinite).yonedaEquiv
 
+set_option backward.isDefEq.respectTransparency false in
 lemma freeHomEquivPoints_map {T T' : LightProfinite} (φ : T' ⟶ T)
     (A : LightCondAb) (f : (free ℤ).obj T.toCondensed ⟶ A) :
     freeHomEquivPoints T' A (((free ℤ).map (lightProfiniteToLightCondSet.map φ)) ≫ f) =
       A.obj.map φ.op (freeHomEquivPoints T A f) := by
-  dsimp [freeHomEquivPoints]
+  simp only [freeHomEquivPoints, Equiv.trans_apply]
   erw [Adjunction.homEquiv_naturality_left]
   exact (GrothendieckTopology.yonedaEquiv_naturality (coherentTopology LightProfinite)
     (((freeForgetAdjunction ℤ).homEquiv T.toCondensed A) f) φ).symm
@@ -230,12 +231,13 @@ lemma freeHomEquivPoints_symm_map {T T' : LightProfinite} (φ : T' ⟶ T)
   rw [freeHomEquivPoints_map]
   simp
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The point-value description of maps out of a free object is natural in the target. -/
 lemma freeHomEquivPoints_comp (T : LightProfinite) {A B : LightCondAb}
     (f : (free ℤ).obj T.toCondensed ⟶ A) (φ : A ⟶ B) :
     freeHomEquivPoints T B (f ≫ φ) =
       φ.hom.app ⟨T⟩ (freeHomEquivPoints T A f) := by
-  dsimp [freeHomEquivPoints]
+  simp only [freeHomEquivPoints, Equiv.trans_apply]
   erw [Adjunction.homEquiv_naturality_right]
   erw [GrothendieckTopology.yonedaEquiv_comp]
 
@@ -246,6 +248,7 @@ lemma freeHomEquivPoints_zero (T : LightProfinite) (A : LightCondAb) :
     (0 : (free ℤ).obj T.toCondensed ⟶ A)
   simpa using h
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The point-value description of maps out of a free object preserves subtraction. -/
 lemma freeHomEquivPoints_sub (T : LightProfinite) (A : LightCondAb)
     (f g : (free ℤ).obj T.toCondensed ⟶ A) :
@@ -270,6 +273,7 @@ lemma freeHomEquivPoints_sub (T : LightProfinite) (A : LightCondAb)
   change (f - g).hom.app ⟨T⟩ u = f.hom.app ⟨T⟩ u - g.hom.app ⟨T⟩ u
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The free/topological-free comparison sends the free map induced by a continuous map to the
 corresponding Dirac family. -/
 lemma freeMap_topologicalFree_apply {S T : LightProfinite} (f : S ⟶ T) (s : S) :
@@ -306,7 +310,7 @@ lemma freeMap_topologicalFree_apply {S T : LightProfinite} (f : S ⟶ T) (s : S)
   have hfree : freeHomEquivPoints S (LightCondAb.topologicalFreeCondensed S)
       (LightCondAb.freeToTopologicalFree S) =
       (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection S) := by
-    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints]
+    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints, Equiv.trans_apply]
     rfl
   rw [hfree]
   change (LightCondAb.topologicalFreeMap f).hom
@@ -315,6 +319,7 @@ lemma freeMap_topologicalFree_apply {S T : LightProfinite} (f : S ⟶ T) (s : S)
   rw [LightCondAb.topologicalFreeDiracSection_yoneda_apply]
   rw [LightCondAb.topologicalFreeMap_single]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The identity endomorphism corresponds to the topological Dirac family. -/
 lemma freeToTopologicalFree_id_apply (T : LightProfinite) (t : T) :
     (show C(↑T.toTop, ↑(LightCondAb.topologicalFree T).toModuleCat) from
@@ -332,7 +337,7 @@ lemma freeToTopologicalFree_id_apply (T : LightProfinite) (t : T) :
   have hfree : freeHomEquivPoints T (LightCondAb.topologicalFreeCondensed T)
       (LightCondAb.freeToTopologicalFree T) =
       (coherentTopology LightProfinite).yonedaEquiv (LightCondAb.topologicalFreeDiracSection T) := by
-    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints]
+    simp [LightCondAb.freeToTopologicalFree, freeHomEquivPoints, Equiv.trans_apply]
     rfl
   rw [hfree]
   exact LightCondAb.topologicalFreeDiracSection_yoneda_apply T t
@@ -435,6 +440,7 @@ noncomputable def solidifiedFreeHomEquiv
     (((LightCondensed.freeForgetAdjunction ℤ).homEquiv T.toCondensed (isSolid.ι.obj A)).trans
       (coherentTopology LightProfinite).yonedaEquiv)
 
+set_option backward.isDefEq.respectTransparency false in
 lemma solidifiedFreeHomEquiv_comp
     (T : LightProfinite) {A B : Solid}
     (k : solidification.obj ((free ℤ).obj T.toCondensed) ⟶ A)

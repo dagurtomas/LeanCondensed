@@ -623,6 +623,7 @@ noncomputable def internalDualDiscreteSectionsEquiv (M : ModuleCat ℤ)
         apply ModuleCat.hom_ext
         ext m
         simp
+        rfl
       right_inv := by
         intro g
         ext m t
@@ -639,6 +640,7 @@ noncomputable def internalDualDiscreteSectionsEquiv (M : ModuleCat ℤ)
       map_smul' := by intro n x; exact map_intCast_smul e ℤ ℤ n x }
   exact LinearEquiv.ofBijective l e.bijective
 
+set_option backward.isDefEq.respectTransparency false in
 lemma internalDualDiscreteSectionsEquiv_restrict (M : ModuleCat ℤ)
     {T T' : LightProfinite} (f : T' ⟶ T)
     (x : (internalDual ((LightCondensed.discrete (ModuleCat ℤ)).obj M)).obj.obj ⟨T⟩) :
@@ -961,6 +963,7 @@ noncomputable def piZdiscLocallyConstantSectionsEquiv (I : Type) (T : LightProfi
       map_smul' := by intro n x; exact map_intCast_smul e ℤ ℤ n x }
   exact LinearEquiv.ofBijective l e.bijective
 
+set_option backward.isDefEq.respectTransparency false in
 lemma piZdiscLocallyConstantSectionsEquiv_restrict (I : Type)
     {T T' : LightProfinite} (f : T' ⟶ T)
     (x : (∏ᶜ fun _ : I => IntProof.Zdisc).obj.obj ⟨T⟩) (i : I) :
@@ -1238,6 +1241,7 @@ lemma pointSectionToGlobal_naturality {A B : LightCondAb} (f : A ⟶ B)
   rw [Equiv.apply_symm_apply]
   rw [Equiv.apply_symm_apply]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma discreteGlobalElement_naturality (M : ModuleCat ℤ) (m : M)
     {A : LightCondAb} (f : (LightCondensed.discrete (ModuleCat ℤ)).obj M ⟶ A) :
     discreteGlobalElement M m ≫ f =
@@ -2278,6 +2282,7 @@ theorem classicalIsSolid_iff_doubleDualExtensionProperty (A : LightCondAb) :
 
 
 set_option maxRecDepth 10000 in
+set_option backward.isDefEq.respectTransparency false in
 lemma doubleInternalDualPIsoProduct_hom_π (i : ℕ) :
     doubleInternalDualPIsoProduct.hom ≫
         Limits.Pi.π (fun _ : ℕ => IntProof.Zdisc) i =
@@ -2354,7 +2359,7 @@ lemma isIso_internalDualMap_solidificationUnit (X : LightCondAb) :
   have h₁ : ∀ (c : Solid) (d : LightCondAb),
       IsIso ((MonoidalClosed.pre (solidificationAdjunction.unit.app d)).app
         (isSolid.ι.obj c)) :=
-    ((Monoidal.Reflective.isIso_tfae solidificationAdjunction).out 1 0).mpr h₀
+    ((Monoidal.Reflective.isIso_tfae solidificationAdjunction).out 2 1).mpr h₀
   exact h₁ solidInteger X
 
 /-- Double internal duality inverts the unit of solidification. -/

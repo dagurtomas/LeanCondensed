@@ -296,7 +296,7 @@ lemma boundedIntSeqPresheaf_equalizerCondition_underlying :
       val := fun n =>
         descendLocallyConstantInt π c hc (yX.val n) (by
           have hcoord := congrArg (fun z : BoundedIntSeqSection c.pt => z.val n) compat
-          simpa [boundedIntSeqPresheaf_map_val] using hcoord)
+          exact hcoord)
       isBounded := by
         obtain ⟨N, hN⟩ := yX.isBounded
         refine ⟨N, ?_⟩
@@ -306,7 +306,7 @@ lemma boundedIntSeqPresheaf_equalizerCondition_underlying :
         obtain ⟨x, hx⟩ := hsurj b
         have hspec := descendLocallyConstantInt_spec π c hc (yX.val n) (by
           have hcoord := congrArg (fun z : BoundedIntSeqSection c.pt => z.val n) compat
-          simpa [boundedIntSeqPresheaf_map_val] using hcoord)
+          exact hcoord)
         have hpoint := congrArg (fun f : LocallyConstant X ℤ => f x) hspec
         change (descendLocallyConstantInt π c hc (yX.val n) _ (π x)) = yX.val n x at hpoint
         rw [hx] at hpoint
@@ -318,7 +318,7 @@ lemma boundedIntSeqPresheaf_equalizerCondition_underlying :
     intro n
     exact descendLocallyConstantInt_spec π c hc (yX.val n) (by
       have hcoord := congrArg (fun z : BoundedIntSeqSection c.pt => z.val n) compat
-      simpa [boundedIntSeqPresheaf_map_val] using hcoord)
+      exact hcoord)
 
 
 lemma binaryProduct_jointly_surjective {S T : LightProfiniteᵒᵖ} (p : (S ⨯ T).unop) :

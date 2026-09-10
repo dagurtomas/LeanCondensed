@@ -7,7 +7,7 @@ module
 
 public import LeanCondensed.Mathlib.CategoryTheory.Limits.Constructions.Filtered
 public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-public import LeanCondensed.Projects.AdjointFunctorTheorem
+public import Mathlib.CategoryTheory.Presentable.OrthogonalReflection
 public import LeanCondensed.Projects.LightSolidInt
 public import LeanCondensed.Projects.LightSolidFilteredScaffold
 public import LeanCondensed.Projects.Sequence
@@ -420,6 +420,67 @@ instance : Functor.IsAccessible.{0} isSolid.ι where
 instance : LocallySmall.{0} LightCondAb where
 
 instance : LocallySmall.{0} Solid := locallySmall_of_faithful isSolid.ι
+
+/-- A small family of maps whose local objects are the solid groups. -/
+private def solidGeneratingMaps : MorphismProperty LightCondAb :=
+  .ofHoms (fun S : SmallModel.{0} LightProfinite ↦
+    oneMinusShift ℤ ▷ (free ℤ).obj
+      ((equivSmallModel LightProfinite).inverse.obj S).toCondensed)
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma isSolid_iff_isLocal (A : LightCondAb) :
+    isSolid A ↔ solidGeneratingMaps.isLocal A := by
+  rw [isSolid, ← isIso_iff_of_reflects_iso _ (equivSmall (ModuleCat ℤ)).functor,
+    ← isIso_iff_of_reflects_iso _ (sheafToPresheaf _ _), NatTrans.isIso_iff_isIso_app]
+  have h (S : SmallModel.{0} LightProfinite) :
+      IsIso ((((MonoidalClosed.pre (oneMinusShift ℤ)).app A).hom.app
+        ⟨(equivSmallModel LightProfinite).inverse.obj S⟩)) ↔
+      Function.Bijective (fun (g : P ℤ ⊗ (free ℤ).obj
+          ((equivSmallModel LightProfinite).inverse.obj S).toCondensed ⟶ A) ↦
+        (oneMinusShift ℤ ▷ _) ≫ g) := by
+    rw [ConcreteCategory.isIso_iff_bijective]
+    let e := ihomPoints ℤ (P ℤ) A ((equivSmallModel LightProfinite).inverse.obj S)
+    rw [← Function.Bijective.of_comp_iff _ e.bijective,
+      ← Function.Bijective.of_comp_iff' e.bijective]
+    apply Iff.of_eq
+    congr 1
+    funext x
+    exact IntProof.ihomPoints_pre_app (oneMinusShift ℤ) _ x
+  constructor
+  · intro hA X Y f hf
+    cases hf with
+    | mk S => exact (h S).1 (hA ⟨S⟩)
+  · intro hA S
+    exact (h S.unop).2 (hA _ (.mk S.unop))
+
+/-- Orthogonal reflection applies because the generating maps have finitely presentable
+domains and codomains. -/
+instance : isSolid.ι.IsRightAdjoint := by
+  have := Cardinal.fact_isRegular_aleph0
+  have : MorphismProperty.IsSmall.{0} solidGeneratingMaps :=
+    inferInstanceAs (MorphismProperty.IsSmall (.ofHoms _))
+  have hW : ∀ ⦃X Y : LightCondAb⦄ (f : X ⟶ Y), solidGeneratingMaps f →
+      IsCardinalPresentable X Cardinal.aleph0 ∧
+        IsCardinalPresentable Y Cardinal.aleph0 := by
+    intro X Y f hf
+    cases hf with
+    | mk S =>
+      have := LightSolidFilteredScaffold.preservesFilteredColimits_hom_P_tensor_free
+        ((equivSmallModel LightProfinite).inverse.obj S)
+      have h : IsCardinalPresentable
+          (P ℤ ⊗ (free ℤ).obj
+            ((equivSmallModel LightProfinite).inverse.obj S).toCondensed)
+          Cardinal.aleph0 := {
+        preservesColimitOfShape J _ _ := by
+          have := isFiltered_of_isCardinalFiltered J Cardinal.aleph0
+          infer_instance }
+      exact ⟨h, h⟩
+  have h := solidGeneratingMaps.isRightAdjoint_ι_isLocal Cardinal.aleph0 hW
+  have heq : isSolid = solidGeneratingMaps.isLocal := by
+    ext A
+    exact isSolid_iff_isLocal A
+  rw [heq]
+  exact h
 
 section
 

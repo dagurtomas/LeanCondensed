@@ -5,7 +5,6 @@ public import LeanCondensed.Mathlib.CategoryTheory.Sites.DirectImage
 public import LeanCondensed.Mathlib.Condensed.Adjunctions
 public import LeanCondensed.Mathlib.Condensed.Light.Limits
 public import LeanCondensed.Mathlib.Condensed.Light.Monoidal
-public import LeanCondensed.Projects.AdjointFunctorTheorem
 public import LeanCondensed.Projects.ClassicalSolidification
 public import LeanCondensed.Projects.FreeCondensed
 public import LeanCondensed.Projects.IsLocalizedMonoidal

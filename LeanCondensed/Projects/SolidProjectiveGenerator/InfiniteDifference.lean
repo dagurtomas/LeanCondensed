@@ -175,6 +175,7 @@ noncomputable def finiteDifferenceIndexOverNinfFun (T : LightProfinite) [Infinit
   | (∞, _) => ∞
   | (OnePoint.some n, t) => (finiteDifferenceIndex T ⟨n, T.proj n t⟩ : ℕ∪{∞})
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The finite fiber of the finite-difference index function is one finite slice of
 `(ℕ∪∞) × T`, cut out by a finite quotient of `T`. -/
 lemma finiteDifferenceIndexOverNinfFun_fiber_eq (T : LightProfinite) [Infinite T] (i : ℕ) :
@@ -212,11 +213,12 @@ lemma finiteDifferenceIndexOverNinfFun_fiber_eq (T : LightProfinite) [Infinite T
             rw [hseqi] at hsnd
             exact hsnd
           rw [hseqi]
-          simp [hsnd']
+          exact congrArg (fun b : T.component m0 ↦ (⟨m0, b⟩ : finiteDifferencePoint T)) hsnd'
         have hidx := congrArg (finiteDifferenceIndex T) hp
         rw [finiteDifferenceIndex_seq] at hidx
         simpa [finiteDifferenceIndexOverNinfFun] using hidx
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Finite fibers of the finite-difference index function are open. -/
 lemma isOpen_finiteDifferenceIndexOverNinfFun_fiber (T : LightProfinite) [Infinite T] (i : ℕ) :
     IsOpen {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |
@@ -244,6 +246,7 @@ lemma isOpen_finiteDifferenceIndexOverNinfFun_fiber (T : LightProfinite) [Infini
     simpa [Set.preimage, Set.setOf_eq_eq_singleton] using hopen.preimage hcont
   simpa [Set.setOf_and] using hfirst.inter hsecond
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Finite fibers of the finite-difference index function are closed. -/
 lemma isClosed_finiteDifferenceIndexOverNinfFun_fiber (T : LightProfinite) [Infinite T] (i : ℕ) :
     IsClosed {x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) |

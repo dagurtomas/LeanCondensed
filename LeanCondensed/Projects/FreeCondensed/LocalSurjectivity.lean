@@ -23,8 +23,7 @@ lemma topologicalFreeMap_single {S T : LightProfinite.{0}} (f : S ⟶ T) (s : S)
     (topologicalFreeMap f).hom (Finsupp.single s (1 : ℤ)) = Finsupp.single (f s) (1 : ℤ) := by
   change (Finsupp.mapDomain (LightProfinite.toTopCat.map f).hom (Finsupp.single s (1 : ℤ))) =
     Finsupp.single (f s) (1 : ℤ)
-  simp [Finsupp.mapDomain_single]
-  rfl
+  exact Finsupp.mapDomain_single
 
 /-- The induced map between represented topological free abelian groups. -/
 noncomputable def topologicalFreeCondensedMap {S T : LightProfinite.{0}} (f : S ⟶ T) :
@@ -38,6 +37,7 @@ noncomputable def topologicalFreeDiracSection :
     topCatToLightCondSet.map (topologicalFreeDirac S) ≫
       (LightCondensed.topModuleToLightCondAbForgetIso (topologicalFree S)).inv
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp]
 lemma topologicalFreeDiracSection_yoneda_apply (s : S) :
     ((show C(↑S.toTop, ↑(topologicalFree S).toModuleCat) from
@@ -135,6 +135,7 @@ noncomputable def discreteIntTopModuleCondensedIso :
   discreteIntTopModuleLocallyConstantIso ≪≫
     (LightCondMod.LocallyConstant.functorIsoDiscrete ℤ).app (ModuleCat.of ℤ ℤ)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Sections of the represented topological `ℤ` as locally constant integer-valued functions. -/
 noncomputable def discreteIntTopModuleSectionsEquiv (T : LightProfinite.{0}) :
     (LightCondensed.topModuleToLightCondAbObj discreteIntTopModule).obj.obj ⟨T⟩ ≃
@@ -145,12 +146,12 @@ noncomputable def discreteIntTopModuleSectionsEquiv (T : LightProfinite.{0}) :
     change (discreteIntTopModulePresheafIso.hom.app ⟨T⟩ ≫
       discreteIntTopModulePresheafIso.inv.app ⟨T⟩) x = x
     rw [← NatTrans.comp_app]
-    simp
+    simp [_root_.id]
   right_inv x := by
     change (discreteIntTopModulePresheafIso.inv.app ⟨T⟩ ≫
       discreteIntTopModulePresheafIso.hom.app ⟨T⟩) x = x
     rw [← NatTrans.comp_app]
-    simp
+    simp [_root_.id]
 
 /-- The previous equivalence is compatible with the comparison to the discrete light condensed
 abelian group `ℤ`. -/
@@ -247,6 +248,7 @@ lemma topologicalFreeEval_apply (f : LocallyConstant S ℤ) (μ : topologicalFre
   convert topologicalFreeEval_single S f s
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Locally constant integer evaluations separate distinct points of the topological free abelian
  group. -/
 lemma topologicalFreeEval_separates_points {μ ν : topologicalFree S} (hμν : μ ≠ ν) :
@@ -295,7 +297,8 @@ lemma topologicalFreeEval_separates_points {μ ν : topologicalFree S} (hμν : 
       apply hn hst hs₀t
       change (ConcreteCategory.hom (S.proj n)) s = (ConcreteCategory.hom (S.proj n)) s₀
       exact hq
-    simp [f, g, q₀, hproj]
+    change (if (S.proj n).hom.hom s = (S.proj n).hom.hom s₀ then (1 : ℤ) else 0) = 0
+    exact if_neg hproj
   have h_eval (η : S →₀ ℤ) (hsupp : η.support ⊆ t) :
       (topologicalFreeEval S f).hom η = η s₀ := by
     rw [topologicalFreeEval_apply, Finsupp.linearCombination_apply]
@@ -695,6 +698,7 @@ noncomputable def freePresheaf_signedTupleSection
   ∑ j : Fin i.1.1,
     Finsupp.single (τ ≫ signedTupleProj S i j) (if i.2 j then (-1 : ℤ) else 1)
 
+set_option backward.isDefEq.respectTransparency false in
 lemma freePresheafToTopologicalFreePresheaf_signedTupleSection
     (S V : LightProfinite.{0}) {N : ℕ} (i : signedTupleIndex N)
     (τ : V ⟶ signedTupleSpace S i) :

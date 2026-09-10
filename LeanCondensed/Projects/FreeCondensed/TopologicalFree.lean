@@ -207,6 +207,7 @@ lemma freePresheafToTopologicalFreePresheaf_naturality_apply
   have h := congrArg (fun m => m a) ((freePresheafToTopologicalFreePresheaf S).naturality f)
   simpa [ModuleCat.comp_apply] using h
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Pointwise, the presheaf comparison sends a formal sum of maps `U ⟶ S` to the corresponding
 finite signed measure on `S`.  This is the algebraic reduction used in the local-injectivity
 argument: equality in the represented topological free group gives equality of these pushed-forward
@@ -249,12 +250,12 @@ lemma freePresheafToTopologicalFreePresheaf_apply
   suffices L = R by rw [this]
   refine Finsupp.lhom_ext' fun g => LinearMap.ext_ring ?_
   change L (Finsupp.single g (1 : ℤ)) = R (Finsupp.single g (1 : ℤ))
-  dsimp [L, R]
-  rw [freePresheafToTopologicalFreePresheaf_apply_single]
+  refine (freePresheafToTopologicalFreePresheaf_apply_single S U g u).trans ?_
   change Finsupp.single ((show U ⟶ S from g) u) (1 : ℤ) =
     Finsupp.mapDomain (fun h : S.toCondensed.obj.obj ⟨U⟩ => ((show U ⟶ S from h) u))
       (Finsupp.single g (1 : ℤ))
-  rw [Finsupp.mapDomain_single]
+  exact (Finsupp.mapDomain_single (f := fun h : S.toCondensed.obj.obj ⟨U⟩ ↦
+    (show U ⟶ S from h) u) (a := g) (b := (1 : ℤ))).symm
 
 lemma freePresheafToTopologicalFreePresheaf_pointwise_mapDomain_eq_of_eq
     (S U : LightProfinite.{0}) {a b : (freePresheaf S).obj ⟨U⟩}

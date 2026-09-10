@@ -429,7 +429,7 @@ lemma boundedRealSeqPresheaf_equalizerCondition_underlying :
       val := fun n =>
         descendContinuousReal π c hc (yX.val n) (by
           have hcoord := congrArg (fun z : BoundedRealSeqSection c.pt => z.val n) compat
-          simpa [boundedRealSeqPresheaf_map_val] using hcoord)
+          exact hcoord)
       isBounded := by
         obtain ⟨N, hN⟩ := yX.isBounded
         refine ⟨N, ?_⟩
@@ -439,7 +439,7 @@ lemma boundedRealSeqPresheaf_equalizerCondition_underlying :
         obtain ⟨x, hx⟩ := hsurj b
         have hspec := descendContinuousReal_spec π c hc (yX.val n) (by
           have hcoord := congrArg (fun z : BoundedRealSeqSection c.pt => z.val n) compat
-          simpa [boundedRealSeqPresheaf_map_val] using hcoord)
+          exact hcoord)
         have hpoint := congrArg (fun f : C(X, ℝ) => f x) hspec
         change (descendContinuousReal π c hc (yX.val n) _ (π x)) = yX.val n x at hpoint
         rw [hx] at hpoint
@@ -451,7 +451,7 @@ lemma boundedRealSeqPresheaf_equalizerCondition_underlying :
     intro n
     exact descendContinuousReal_spec π c hc (yX.val n) (by
       have hcoord := congrArg (fun z : BoundedRealSeqSection c.pt => z.val n) compat
-      simpa [boundedRealSeqPresheaf_map_val] using hcoord)
+      exact hcoord)
 
 instance uniqueRealSectionOfIsEmpty (S : LightProfinite) [IsEmpty S] :
     Unique (BoundedRealSeqSection S) where
@@ -480,7 +480,7 @@ lemma glueContinuousRealBinary_fst {S T : LightProfiniteᵒᵖ}
     (Types.binaryProductIso (F.obj S) (F.obj T)).inv
       ((realCondensedAbSectionsEquiv S.unop).symm xS,
         (realCondensedAbSectionsEquiv T.unop).symm xT)
-  rw [← realCondensedAbSectionsEquiv_map]
+  erw [← realCondensedAbSectionsEquiv_map (prod.fst : S ⨯ T ⟶ S).unop]
   have h := congrArg (fun f : F.obj S ⨯ F.obj T ⟶ F.obj S => f pair)
     (inv_prodComparison_map_fst (F := F) (A := S) (B := T))
   change realCondensedAbSectionsEquiv S.unop
@@ -497,7 +497,7 @@ lemma glueContinuousRealBinary_snd {S T : LightProfiniteᵒᵖ}
     (Types.binaryProductIso (F.obj S) (F.obj T)).inv
       ((realCondensedAbSectionsEquiv S.unop).symm xS,
         (realCondensedAbSectionsEquiv T.unop).symm xT)
-  rw [← realCondensedAbSectionsEquiv_map]
+  erw [← realCondensedAbSectionsEquiv_map (prod.snd : S ⨯ T ⟶ T).unop]
   have h := congrArg (fun f : F.obj S ⨯ F.obj T ⟶ F.obj T => f pair)
     (inv_prodComparison_map_snd (F := F) (A := S) (B := T))
   change realCondensedAbSectionsEquiv T.unop

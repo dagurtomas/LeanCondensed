@@ -33,6 +33,7 @@ lemma zdiscSectionsEquiv_zdiscMapOfLocallyConstant (T : LightProfinite)
     zdiscSectionsEquiv T (freeHomEquivPoints T Zdisc (zdiscMapOfLocallyConstant T f)) = f := by
   simp
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The `Zdisc` map induced by a locally constant function agrees with the represented-topological
 free evaluation after the canonical comparison to the topological free abelian group. -/
 lemma zdiscMapOfLocallyConstant_eq_freeToTopologicalFree_eval (T : LightProfinite)

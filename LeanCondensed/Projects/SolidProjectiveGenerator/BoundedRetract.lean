@@ -108,6 +108,7 @@ lemma topologicalTailMeasure_totalVariation_le_two (T : LightProfinite)
             totalVariation_single_sub_single_le_two t
               (LightProfinite.finiteApproxRetraction T m t)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Continuity of every finite quotient projection of the topological tail family. -/
 lemma topologicalTailMeasure_finiteProj_continuous (T : LightProfinite) (k : ℕ) :
     Continuous fun x : ((ℕ∪{∞} : LightProfinite) ⊗ T : LightProfinite) =>
@@ -133,7 +134,9 @@ lemma topologicalTailMeasure_finiteProj_continuous (T : LightProfinite) (k : ℕ
     | zero => omega
     | succ m =>
         have hle : k ≤ m := by omega
-        dsimp [f]
+        change (Finsupp.single (T.proj k t) (1 : ℤ) -
+          Finsupp.single (T.proj k (LightProfinite.finiteApproxRetraction T m t)) 1 :
+            T.component k →₀ ℤ) = 0
         have hpts : T.proj k (LightProfinite.finiteApproxRetraction T m t) = T.proj k t := by
           have hmap := congrArg (fun f : T ⟶ T.component k => f t)
             (LightProfinite.finiteApproxRetraction_proj_le T hle)
@@ -145,7 +148,7 @@ lemma topologicalTailMeasure_finiteProj_continuous (T : LightProfinite) (k : ℕ
   ext x
   rcases x with ⟨a, t⟩
   cases a using OnePoint.rec with
-  | infty => simp [topologicalTailMeasure]
+  | infty => exact (LightCondAb.topologicalFreeMap (T.proj k)).hom.map_zero
   | coe n =>
       cases n with
       | zero => simp [f, topologicalTailMeasure, LightCondAb.topologicalFreeMap_single]
@@ -361,6 +364,7 @@ lemma boundedDifferenceMeasure_totalVariation_le {S : LightProfinite}
   refine le_trans htv ?_
   exact_mod_cast Nat.mul_le_mul_left 2 hcoeff
 
+set_option backward.isDefEq.respectTransparency false in
 lemma boundedDifferenceMeasure_finiteProj_continuous {S : LightProfinite}
     (f : S ⟶ (ℕ∪{∞} : LightProfinite)) (x : BoundedIntSeqSection S) (k : ℕ) :
     Continuous fun s : S =>
@@ -373,7 +377,9 @@ lemma boundedDifferenceMeasure_finiteProj_continuous {S : LightProfinite}
     ⟨fun s => (x.val n s) •
         topologicalFreeDiracDiff ((ℕ∪{∞} : LightProfinite).component k)
           (q (n : ℕ∪{∞})) (q (∞ : ℕ∪{∞})),
-      by exact (x.val n).continuous.smul continuous_const⟩
+      by exact ((x.val n).map (fun z : ℤ ↦ z •
+        topologicalFreeDiracDiff ((ℕ∪{∞} : LightProfinite).component k)
+          (q (n : ℕ∪{∞})) (q (∞ : ℕ∪{∞})))).continuous⟩
   have hg : ∀ᶠ n : ℕ in Filter.atTop, g n = 0 := by
     filter_upwards [ninf_map_eventually_eq_infty ((ℕ∪{∞} : LightProfinite).component k) q] with n hn
     ext s
@@ -388,10 +394,11 @@ lemma boundedDifferenceMeasure_finiteProj_continuous {S : LightProfinite}
     exact f.hom.hom.continuous.prodMk continuous_id
   refine (hcont.comp hgraph).congr ?_
   intro s
-  dsimp [boundedDifferenceMeasure]
+  dsimp [boundedDifferenceMeasure, Function.comp_def]
   cases hfs : f s using OnePoint.rec with
   | infty =>
       simp [boundedDifferenceCoeff, hfs]
+      exact (LightCondAb.topologicalFreeMap q).hom.map_zero.symm
   | coe n =>
       have hcoeff : boundedDifferenceCoeff f x s = x.val n s := by
         simp [boundedDifferenceCoeff, hfs]
@@ -542,6 +549,7 @@ lemma boundedDifferenceNumerator_slice (n : ℕ) :
   dsimp [numeratorSlice, freeNatBasis, boundedDifferenceNumerator]
   rw [freeTensorDescLin_point]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma boundedDifferenceFamilyMap_infty :
     freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences (P ℤ)
       boundedDifferenceFamilyLinear boundedDifferenceFamilyLinear_naturality' ι =

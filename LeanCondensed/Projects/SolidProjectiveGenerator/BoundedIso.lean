@@ -590,6 +590,7 @@ lemma boundedDifferenceFreeNumerator_slice (n : ℕ) :
   dsimp [numeratorSlice, freeNatBasis, boundedDifferenceFreeNumerator]
   rw [freeTensorDescLin_point]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma boundedDifferenceFreeFamilyMap_infty :
     freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences
       ((free ℤ).obj (ℕ∪{∞}).toCondensed)
@@ -640,6 +641,7 @@ lemma boundedDifferenceFreeNumerator_comp_P_proj :
         (boundedDifferenceTopologicalSection f (show BoundedIntSeqSection S from m)))
   exact map_zsmul ((P_proj ℤ).hom.app ⟨S⟩).hom r _
 
+set_option backward.isDefEq.respectTransparency false in
 lemma basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint (n : ℕ) :
     basisMapNumerator ≫
       freeTensorFamilyMap (ℕ∪{∞} : LightProfinite) boundedIntSequences
@@ -699,7 +701,6 @@ lemma basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint (n : ℕ) :
           Finsupp.single (pTailTruncFun ((((n + 1 : ℕ) : ℕ∪{∞})), (∞ : ℕ∪{∞}))) 1
       simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
         boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun]
-      abel
   | coe k =>
       change boundedDifferenceMeasure (toPointMap (ℕ∪{∞} : LightProfinite) ≫ natPoint n)
           boundedStandardBasisSection (k : (ℕ∪{∞} : LightProfinite)) =
@@ -709,7 +710,6 @@ lemma basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint (n : ℕ) :
       · subst k
         simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
           boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun]
-        rfl
       · have hkn : k ≠ n := fun hk => hnk hk.symm
         by_cases hlt : n < k
         · have hnle : n ≤ k := Nat.le_of_lt hlt
@@ -717,13 +717,11 @@ lemma basisMapNumerator_comp_boundedDifferenceFreeFamilyMap_natPoint (n : ℕ) :
           simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
             boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun,
             hkn, hnle, hsucc]
-          abel
         · have hnle : ¬ n ≤ k := by omega
           have hsucc : ¬ n + 1 ≤ k := by omega
           simp [boundedDifferenceMeasure, boundedDifferenceCoeff, boundedStandardBasisSection,
             boundedStandardBasisCoord, topologicalFreeDiracDiff, toPointMap, natPoint, pTailTruncFun,
             hkn, hnle, hsucc]
-          abel
 
 lemma boundedDifferenceFreeNumerator_basisMapNumerator :
     (((free ℤ).obj (ℕ∪{∞}).toCondensed) ◁ basisMapNumerator) ≫
@@ -929,7 +927,7 @@ lemma boundedShiftRetract_idempotent_eq_identity_of_solidified_basisMap_mono
         solidification.map basisMap
         = solidification.map basisMap ≫
             ((boundedShiftRetractData.retract).i ≫ solidification.map basisMap) := by
-          rw [Category.assoc]
+          exact Category.assoc (solidification.map basisMap) _ _
     _ = solidification.map basisMap ≫ 𝟙 (solidification.obj boundedIntSequences) := by
           change solidification.map basisMap ≫
             ((boundedShiftRetractData.retract).i ≫ (boundedShiftRetractData.retract).r) =

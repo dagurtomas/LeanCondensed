@@ -40,12 +40,7 @@ noncomputable def closedSubLightProfiniteι {X : LightProfinite.{0}} (s : Set X)
 
 @[simp]
 lemma closedSubLightProfiniteι_apply {X : LightProfinite.{0}} (s : Set X) (hs : IsClosed s)
-    (x : closedSubLightProfinite s hs) : closedSubLightProfiniteι s hs x = (x : s).1 := by
-  change (ConcreteCategory.hom (closedSubLightProfiniteι s hs)) x = (x : s).1
-  rw [show ConcreteCategory.hom (closedSubLightProfiniteι s hs) =
-      (⟨Subtype.val, continuous_subtype_val⟩ : C(s, X)) by
-    simp [closedSubLightProfiniteι, closedSubLightProfinite]]
-  rfl
+    (x : closedSubLightProfinite s hs) : closedSubLightProfiniteι s hs x = (x : s).1 := rfl
 
 /-- A finite jointly-surjective family in `LightProfinite` is an effective-epi family. -/
 lemma effectiveEpiFamily_of_jointly_surjective {α : Type} [Finite α]

@@ -63,7 +63,7 @@ noncomputable def colimitCoconeOfTop_isColimit {J : Type} [Category J]
         (sequentialToTop.preimage (X := (colimitCoconeOfTop F).pt) (Y := s.pt)
           (colimit.desc (F ⋙ sequentialToTop) (sequentialToTop.mapCocone s))) =
       colimit.desc (F ⋙ sequentialToTop) (sequentialToTop.mapCocone s)
-    rw [Functor.map_preimage]
+    exact Functor.map_preimage _ _
 
 /-- The inclusion of sequential spaces into topological spaces preserves colimits. -/
 noncomputable instance preservesColimit_sequentialToTop {J : Type} [Category J]
@@ -490,8 +490,7 @@ lemma profiniteComponentEval_bound (S : LightProfinite.{0}) {c d : ℤ} (hcd : c
   let α := Functor.whiskerLeft S.fintypeDiagram (functorBoundInclusion hcd)
   have hπ : profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩ =
       limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩ ≫ α.app ⟨k⟩ := by
-    dsimp [profiniteComponentMap]
-    rw [lim_map]
+    change limMap α ≫ _ = _
     exact limMap_π α ⟨k⟩
   have hx : ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
       (α.app ⟨k⟩ ((limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩) x)) := by
@@ -499,7 +498,7 @@ lemma profiniteComponentEval_bound (S : LightProfinite.{0}) {c d : ℤ} (hcd : c
       (fun m : profiniteComponent S c ⟶ (S.fintypeDiagram ⋙ functor d).obj ⟨k⟩ => m x) hπ
     change ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
       ((limit.π (S.fintypeDiagram ⋙ functor c) ⟨k⟩ ≫ α.app ⟨k⟩) x) at hxraw
-    simpa only [CategoryTheory.comp_apply] using hxraw
+    exact hxraw
   dsimp [profiniteComponentEval]
   change finiteStageEval (S.fintypeDiagram.obj ⟨k⟩) d g
       ((profiniteComponentMap S hcd ≫ limit.π (S.fintypeDiagram ⋙ functor d) ⟨k⟩) x) =
@@ -561,8 +560,13 @@ noncomputable def diracCone (S : LightProfinite.{0}) :
       refine ConcreteCategory.ofHom ?_
       refine (⟨fun s => diracFintype (S.fintypeDiagram.obj k) (S.proj k.unop s), ?_⟩ :
         C(↑S.toTop, ↑(component (S.fintypeDiagram.obj k) (1 : ℤ)).toTop))
-      dsimp [component, FintypeCat.toLightProfinite]
-      fun_prop
+      letI : TopologicalSpace (S.fintypeDiagram.obj k) := (S.diagram.obj k).toTop.str
+      letI : DiscreteTopology (S.fintypeDiagram.obj k) := ⟨rfl⟩
+      letI : TopologicalSpace (set (S.fintypeDiagram.obj k) 1) :=
+        (component (S.fintypeDiagram.obj k) 1).toTop.str
+      exact (continuous_of_discreteTopology :
+        Continuous (diracFintype (S.fintypeDiagram.obj k))).comp
+        (S.proj k.unop).hom.hom.continuous
     naturality := by
       intro i j h
       ext s
@@ -570,7 +574,7 @@ noncomputable def diracCone (S : LightProfinite.{0}) :
       change diracFintype (S.fintypeDiagram.obj j) (S.proj j.unop s) =
         (fintypeMap (1 : ℤ) (S.fintypeDiagram.map h)
           (diracFintype (S.fintypeDiagram.obj i) (S.proj i.unop s)))
-      rw [fintypeMap_diracFintype]
+      erw [fintypeMap_diracFintype]
       have hw := congrArg (fun f : S ⟶ S.diagram.obj j => f s) (S.asLimitCone.w h)
       exact (congrArg (fun x => diracFintype (S.fintypeDiagram.obj j) x) hw).symm }
 
@@ -607,7 +611,7 @@ lemma profiniteComponentEval_diracComponent (S : LightProfinite.{0}) (k : ℕ)
       ((limit.π (S.fintypeDiagram ⋙ functor (1 : ℤ)) ⟨k⟩) (diracComponent S s)) =
     g (S.proj k s)
   rw [diracComponent_apply_π]
-  simp
+  exact finiteStageEval_diracFintype _ _ _
 
 /-- The map from `S` into the full sequential finite-measure model sending a point to its Dirac
 measure. -/

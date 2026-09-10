@@ -347,7 +347,6 @@ lemma curriedTensor_invertsKFlatQuasiIso₂
   have hW : W C ((Functor.uncurry.obj (curriedTensor (Complex C))).map f') := by
     rw [Functor.uncurry_obj_map]
     dsimp [f'] at hf ⊢
-    simp only [Functor.prod_map]
     haveI : IsKFlat X.2.1 := X.2.2
     haveI : IsKFlat Y.1.1 := Y.1.2
     let φ := ((curriedTensor (Complex C)).map ((kFlatInclusion C).map f.1)).app X.2.1
